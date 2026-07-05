@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Ball at a Time</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="sparkle-field" id="sparkleField"></div>
+
+<div class="login-screen" id="loginScreen">
+  <form class="login-card" id="pinForm">
+    <p class="eyebrow">Five in the Air, One in Hand</p>
+    <h1 class="login-title">One Ball at a Time <span class="bow">♡</span></h1>
+    <label>Enter your PIN
+      <input type="password" id="pinInput" inputmode="text" autocomplete="off" maxlength="40" required>
+    </label>
+    <div class="pin-error" id="pinError"></div>
+    <button class="btn primary" type="submit">Unlock</button>
+  </form>
+</div>
+
+<div class="app" style="display:none;">
+
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Five in the Air, One in Hand</p>
+      <h1>One Ball at a Time <span class="bow">♡</span></h1>
+      <p class="subtitle" id="todayLabel"></p>
+      <p class="subtitle philosophy">Multitasking's a gift when it's mindless — a killer when it's not. Catch one. Fully.</p>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="board">Board</button>
+      <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+      <button class="tab-btn" data-tab="analytics">Analytics</button>
+      <button class="tab-btn" data-tab="log">Log</button>
+      <button class="tab-btn" data-tab="guide">Points Guide</button>
+      <button class="tab-btn" data-tab="targets">Targets</button>
+    </nav>
+  </header>
+
+  <!-- BOARD -->
+  <section id="tab-board" class="tab-panel active">
+    <div class="muse-card" id="museCard">
+      <div class="muse-avatar">
+        <img class="muse-img" id="museImg" src="" alt="">
+      </div>
+      <div class="muse-info">
+        <div class="muse-eyebrow">Today's Muse</div>
+        <div class="muse-name" id="museName"></div>
+        <div class="muse-line" id="museLine"></div>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Active Top 5</h2>
+      <span class="hint">Finish one, darling, and a slot opens for the next.</span>
+    </div>
+    <div class="board-grid" id="board"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="tab-panel">
+    <div class="section-head">
+      <h2>Points Dashboard</h2>
+      <span class="hint">Browse any day, week, weekend or month you like.</span>
+    </div>
+
+    <div class="gran-seg" id="granSeg">
+      <button class="seg-btn active" data-period="day">Day</button>
+      <button class="seg-btn" data-period="week">Week</button>
+      <button class="seg-btn" data-period="weekend">Weekend</button>
+      <button class="seg-btn" data-period="month">Month</button>
+    </div>
+
+    <div class="date-nav">
+      <button class="nav-arrow" id="navPrev" aria-label="Previous">&#8249;</button>
+      <div class="date-nav-center">
+        <div class="date-range-label" id="dateRangeLabel"></div>
+        <div class="date-nav-sub" id="dateRangeSub"></div>
+      </div>
+      <button class="nav-arrow" id="navNext" aria-label="Next">&#8250;</button>
+    </div>
+
+    <div class="date-nav-actions">
+      <button class="link-btn" id="jumpToday">Jump to current</button>
+      <input type="date" id="jumpDate" class="date-picker" title="Jump to a specific date">
+    </div>
+
+    <div class="score-card" id="scoreCard"></div>
+
+    <div class="section-head" style="margin-top:26px;">
+      <h3>By Category</h3>
+    </div>
+    <div id="categoryBreakdown" class="category-breakdown"></div>
+  </section>
+
+  <!-- ANALYTICS -->
+  <section id="tab-analytics" class="tab-panel">
+    <div class="section-head">
+      <h2>Analytics</h2>
+      <span class="hint">The bigger picture, darling.</span>
+    </div>
+
+    <div class="stat-chip-row" id="statChipRow"></div>
+
+    <div class="recap-card">
+      <div class="recap-quote-mark">&#8220;</div>
+      <div class="recap-text" id="recapText"></div>
+      <div class="recap-quote" id="recapQuote"></div>
+      <button class="btn ghost small" id="regenRecap">New Chapter &#8635;</button>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>Points Over Time</h3>
+        <canvas id="trendChart" height="190"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Category Share <span class="hint">(all-time)</span></h3>
+        <canvas id="categoryDoughnut" height="190"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Best Days of the Week</h3>
+        <canvas id="dowChart" height="190"></canvas>
+      </div>
+    </div>
+
+    <div class="section-head" style="margin-top:26px;">
+      <h3>Consistency Map</h3>
+      <span class="hint" id="heatmapHint"></span>
+    </div>
+    <div class="heatmap-wrap">
+      <div class="heatmap-grid" id="heatmapGrid"></div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <span class="hm-cell hm-0"></span>
+        <span class="hm-cell hm-1"></span>
+        <span class="hm-cell hm-2"></span>
+        <span class="hm-cell hm-3"></span>
+        <span class="hm-cell hm-4"></span>
+        <span>More</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section id="tab-log" class="tab-panel">
+    <div class="section-head">
+      <h2>Task Log</h2>
+      <span class="hint" id="logCount"></span>
+    </div>
+    <div class="log-table-wrap">
+    <table class="log-table">
+      <thead>
+        <tr><th>Task</th><th>Category</th><th>Points</th><th>Started</th><th>Finished</th><th>Duration</th></tr>
+      </thead>
+      <tbody id="logBody"></tbody>
+    </table>
+    </div>
+  </section>
+
+  <!-- GUIDE -->
+  <section id="tab-guide" class="tab-panel">
+    <div class="section-head">
+      <h2>Points Guide</h2>
+      <span class="hint">Reference scale used when creating a task. You can still override the points manually.</span>
+    </div>
+    <div class="guide-list" id="guideList"></div>
+  </section>
+
+  <!-- TARGETS -->
+  <section id="tab-targets" class="tab-panel">
+    <div class="section-head">
+      <h2>Targets</h2>
+      <span class="hint">Set a points goal for each timeframe.</span>
+    </div>
+    <div class="targets-form" id="targetsForm"></div>
+  </section>
+
+  <footer class="xoxo">one ball, always.</footer>
+
+</div>
+
+<!-- Add / Edit Task Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h3>Add a Task</h3>
+    <label>Title
+      <input type="text" id="taskTitle" placeholder="e.g. LeetCode contest practice" maxlength="80">
+    </label>
+    <label>Category
+      <select id="taskCategory"></select>
+    </label>
+    <label>Points <span class="hint">(suggested — adjust if you like)</span>
+      <input type="number" id="taskPoints" min="1" max="20">
+    </label>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelTask">Cancel</button>
+      <button class="btn primary" id="saveTask">Add to Board</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
