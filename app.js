@@ -68,9 +68,26 @@ async function apiPut(path, body) {
   return res.json();
 }
 
-function saveActive() { apiPut('/api/active', active).catch(() => {}); }
-function saveLog() { apiPut('/api/log', log).catch(() => {}); }
-function saveTargets() { apiPut('/api/targets', targets).catch(() => {}); }
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+function handleSaveError(err) {
+  if (err && err.status === 401) {
+    showLogin("You got logged out (session expired). Log back in — if you made a change right before this, please redo it just in case.");
+  } else {
+    showToast("Couldn't save that — check your connection and try again.");
+  }
+}
+
+function saveActive() { apiPut('/api/active', active).catch(handleSaveError); }
+function saveLog() { apiPut('/api/log', log).catch(handleSaveError); }
+function saveTargets() { apiPut('/api/targets', targets).catch(handleSaveError); }
 
 async function loadState() {
   const state = await apiGet('/api/state');
@@ -910,8 +927,15 @@ const appRoot = document.querySelector('.app');
 const pinInput = document.getElementById('pinInput');
 const pinError = document.getElementById('pinError');
 const pinForm = document.getElementById('pinForm');
+const sessionNotice = document.getElementById('sessionNotice');
 
-function showLogin() {
+function showLogin(message) {
+  if (message) {
+    sessionNotice.textContent = message;
+    sessionNotice.classList.add('show');
+  } else {
+    sessionNotice.classList.remove('show');
+  }
   loginScreen.classList.add('open');
   appRoot.style.display = 'none';
   setTimeout(() => pinInput.focus(), 50);
@@ -948,8 +972,12 @@ async function startApp() {
   try {
     await loadState();
   } catch (err) {
-    if (err.status === 401) { showLogin(); return; }
+    if (err.status === 401) {
+      showLogin("You've been logged out (session expired). Log back in to pick up right where you left off.");
+      return;
+    }
     console.error(err);
+    showToast("Couldn't reach the server — check your connection and refresh.");
     return;
   }
 
