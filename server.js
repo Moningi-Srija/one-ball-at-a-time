@@ -2,6 +2,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const db = require('./db');
 
 const app = express();
@@ -11,6 +12,7 @@ const ACCESS_PIN = process.env.ACCESS_PIN || '';
 app.use(express.json());
 app.set('trust proxy', 1);
 app.use(session({
+  store: new pgSession({ pool: db.pool, tableName: 'user_sessions', createTableIfMissing: true }),
   secret: process.env.SESSION_SECRET || 'one-ball-at-a-time-dev-secret',
   resave: false,
   saveUninitialized: false,
@@ -23,6 +25,7 @@ app.use(session({
 }));
 
 function requireAuth(req, res, next) {
+  res.set('Cache-Control', 'no-store');
   if (req.session && req.session.authed) return next();
   res.status(401).json({ error: 'unauthorized' });
 }
