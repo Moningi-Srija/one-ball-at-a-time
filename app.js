@@ -302,7 +302,12 @@ function renderBoard() {
         burstConfetti(r.left + r.width / 2, r.top + r.height / 2);
         finishTask(task.id);
       });
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn ghost small';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => openEditModal(task.id));
       actions.appendChild(finishBtn);
+      actions.appendChild(editBtn);
       card.appendChild(actions);
     } else {
       const meta = document.createElement('div');
@@ -316,11 +321,16 @@ function renderBoard() {
       startBtn.className = 'btn primary small';
       startBtn.textContent = 'Start';
       startBtn.addEventListener('click', () => startTask(task.id));
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn ghost small';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => openEditModal(task.id));
       const removeBtn = document.createElement('button');
       removeBtn.className = 'btn danger-ghost small';
       removeBtn.textContent = 'Remove';
       removeBtn.addEventListener('click', () => removeTask(task.id));
       actions.appendChild(startBtn);
+      actions.appendChild(editBtn);
       actions.appendChild(removeBtn);
       card.appendChild(actions);
     }
@@ -389,8 +399,15 @@ taskCategorySelect.addEventListener('change', () => {
   taskPointsInput.value = catById(taskCategorySelect.value).points;
 });
 
+let editingTaskId = null;
+const modalTitle = document.getElementById('modalTitle');
+const saveTaskBtn = document.getElementById('saveTask');
+
 function openAddModal() {
   if (active.length >= 5) return;
+  editingTaskId = null;
+  modalTitle.textContent = 'Add a Task';
+  saveTaskBtn.textContent = 'Add to Board';
   taskTitleInput.value = '';
   taskCategorySelect.value = CATEGORIES[0].id;
   taskPointsInput.value = CATEGORIES[0].points;
@@ -398,7 +415,20 @@ function openAddModal() {
   setTimeout(() => taskTitleInput.focus(), 50);
 }
 
-function closeModal() { modalBackdrop.classList.remove('open'); }
+function openEditModal(id) {
+  const task = active.find(t => t.id === id);
+  if (!task) return;
+  editingTaskId = id;
+  modalTitle.textContent = 'Edit Task';
+  saveTaskBtn.textContent = 'Save Changes';
+  taskTitleInput.value = task.title;
+  taskCategorySelect.value = task.category;
+  taskPointsInput.value = task.points;
+  modalBackdrop.classList.add('open');
+  setTimeout(() => taskTitleInput.focus(), 50);
+}
+
+function closeModal() { modalBackdrop.classList.remove('open'); editingTaskId = null; }
 
 document.getElementById('cancelTask').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
@@ -406,8 +436,22 @@ modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) c
 document.getElementById('saveTask').addEventListener('click', () => {
   const title = taskTitleInput.value.trim();
   if (!title) { taskTitleInput.focus(); return; }
-  if (active.length >= 5) { closeModal(); return; }
   const points = Math.max(1, parseInt(taskPointsInput.value, 10) || catById(taskCategorySelect.value).points);
+
+  if (editingTaskId) {
+    const task = active.find(t => t.id === editingTaskId);
+    if (task) {
+      task.title = title;
+      task.category = taskCategorySelect.value;
+      task.points = points;
+    }
+    saveActive();
+    closeModal();
+    renderBoard();
+    return;
+  }
+
+  if (active.length >= 5) { closeModal(); return; }
   active.push({
     id: uid(),
     title,
