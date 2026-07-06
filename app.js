@@ -891,6 +891,9 @@ function renderTargets() {
 const MUSES = [
   { name: 'Blair Waldorf', img: 'assets/muses/blair_power.jpg', line: "Confidence is an outfit you put on before you leave the house. Wear it like you mean it — one thing, fully.", mood: 'high' },
   { name: 'Elle Woods', img: 'assets/muses/elle_power.jpg', line: "What, like it's hard? Underestimated is just an opening move — focus on the one case in front of you.", mood: 'high' },
+  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_1.png', line: "You don't need permission to walk up to the microphone. Just walk up and speak.", mood: 'high' },
+  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_2.png', line: "Every campaign starts with someone underestimated deciding to run anyway.", mood: 'high' },
+  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_3.png', line: "She didn't wait to be taken seriously. She kept talking until they had no choice.", mood: 'high' },
   { name: 'Blair Waldorf', img: 'assets/muses/blair_soft.jpg', line: "Even an off day looks put-together if you decide it does. Pick the one thing and finish it.", mood: 'mid' },
   { name: 'Serena van der Woodsen', img: 'assets/muses/serena.jpg', line: "Effortless isn't lazy. It's the confidence of someone who already decided what mattered today.", mood: 'mid' },
   { name: 'Elle Woods', img: 'assets/muses/elle_soft.jpg', line: "Still showing up, still taking notes. That's half the case won already.", mood: 'low' },
