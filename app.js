@@ -901,6 +901,7 @@ const MUSES = [
   { name: 'Blair Waldorf', img: 'assets/muses/blair_museum.jpg', line: "Even a museum can't out-dazzle someone who knows exactly who she is.", mood: 'mid' },
   { name: 'Blair Waldorf', img: 'assets/muses/blair_floral_street.jpg', line: "Ordinary errands, extraordinary outfit. Same principle applies to ordinary tasks.", mood: 'mid' },
   { name: 'Serena van der Woodsen', img: 'assets/muses/serena.jpg', line: "Effortless isn't lazy. It's the confidence of someone who already decided what mattered today.", mood: 'mid' },
+  { name: 'Serena van der Woodsen', img: 'assets/muses/serena_shopping.jpg', line: "A good day looks like this — easy smile, errands done, nothing forced.", mood: 'mid' },
   { name: 'Elle Woods', img: 'assets/muses/elle_soft.jpg', line: "Still showing up, still taking notes. That's half the case won already.", mood: 'low' },
   { name: 'Blair Waldorf', img: 'assets/muses/blair_tweed_smile.jpg', line: "A real smile still counts on the days you don't feel like giving one.", mood: 'low' },
   { name: 'Krishna', img: 'assets/muses/krishna.png', line: "Perform your one duty fully, without grasping at the rest. That is the whole teaching of the Gita.", mood: 'low' },
