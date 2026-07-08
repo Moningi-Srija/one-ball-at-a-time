@@ -266,7 +266,79 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // ---------- Board ----------
 
+function computeUrgencyMessage() {
+  const now = new Date();
+  const hour = now.getHours();
+  const todayPts = pointsInRange('day', 0);
+  const todayTarget = targets.day || 1;
+  const weekPts = pointsInRange('week', 0);
+  const streaks = computeStreaks();
+
+  if (log.length === 0 && active.length === 0) {
+    return {
+      title: 'Day Zero',
+      text: "Nothing logged, nothing on the board. That's not a blank slate — that's a countdown that already started without you. Add one task right now and start it. Not later. The version of you who does it \"later\" doesn't exist yet, and might never show up."
+    };
+  }
+
+  if (todayPts === 0 && hour >= 19) {
+    return {
+      title: 'The Day Is Almost Over',
+      text: "It's evening and you've earned exactly zero points today. Not a slow day — a wasted one. There are a couple of hours left before this day is gone for good, and it never comes back for a rewrite. Get up and start one task right now."
+    };
+  }
+
+  if (todayPts === 0 && hour >= 14) {
+    return {
+      title: 'Half The Day, Nothing Done',
+      text: "It's already afternoon and the board says zero. Every hour you spend waiting for \"the right moment\" is an hour you chose to lose — there is no right moment, there's just now, and now is running out."
+    };
+  }
+
+  if (streaks.current === 0 && log.length > 0) {
+    return {
+      title: 'Streak: Broken',
+      text: "You had momentum going and let it die. That streak took real days to build and one day of nothing to erase. Stop mourning it and start a new one today — not tomorrow, today."
+    };
+  }
+
+  if ((todayPts / todayTarget) < 0.5 && hour >= 16) {
+    return {
+      title: 'Behind, Not Beaten',
+      text: `You're at ${todayPts}/${todayTarget} points with the day almost gone. This is exactly the moment most people quietly give up and call it a wash. Don't be most people — finish one more thing before you let yourself rest.`
+    };
+  }
+
+  if (todayPts >= todayTarget) {
+    return {
+      title: "Good — Now Don't Stop",
+      text: "Target hit. That buys you exactly nothing tomorrow — it resets to zero and doesn't care what you did today. Enjoy this for a minute, then start thinking about the next one."
+    };
+  }
+
+  if (weekPts === 0 && now.getDay() >= 3) {
+    return {
+      title: 'Half The Week Is Already Gone',
+      text: "It's the middle of the week and the tally is zero. However this week ends, you don't get it back to try again — this exact week only happens once."
+    };
+  }
+
+  return {
+    title: 'Carpe Diem',
+    text: "Time is not renewable. Every day you choose comfort over effort is a day you don't get back — no refund, no replay. Scrolling, sleeping in, \"I'll start Monday\" — that isn't rest, that's your life quietly draining while you tell yourself you'll get to it. Nobody is coming to hand you the outcome you want. Get up. Pick one thing. Finish it. Do it today — \"eventually\" is how a decade disappears."
+  };
+}
+
+function renderUrgencyBanner() {
+  const { title, text } = computeUrgencyMessage();
+  document.getElementById('cdTitle').textContent = title;
+  document.getElementById('cdText').textContent = text;
+}
+
+setInterval(renderUrgencyBanner, 5 * 60 * 1000);
+
 function renderBoard() {
+  renderUrgencyBanner();
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = Date.now();
