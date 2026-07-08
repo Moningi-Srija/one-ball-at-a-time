@@ -266,6 +266,44 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // ---------- Board ----------
 
+const URGENCY_POOL = {
+  dayZero: [
+    "Nothing logged, nothing on the board. That's not a blank slate — that's a countdown that already started without you. Add one task right now and start it. Not later. The version of you who does it \"later\" doesn't exist yet, and might never show up.",
+    "Life is too short to spend it flat on a bed scrolling Instagram. You get exactly one of these — this specific day — and telling yourself it doesn't matter because it's \"just one day\" is precisely how all of them go.",
+    "You're not resting. You're horizontal and scrolling while your one life quietly ticks down in the background. Put the phone down and add a task before you talk yourself into believing lying there counts as anything."
+  ],
+  eveningZero: [
+    "It's evening and you've earned exactly zero points today. Not a slow day — a wasted one. There are a couple of hours left before this day is gone for good, and it never comes back for a rewrite. Get up and start one task right now.",
+    "Another night about to close and all you've got to show for it is a sore thumb from scrolling. Instagram will still be there in an hour. This exact version of today will not."
+  ],
+  afternoonZero: [
+    "It's already afternoon and the board says zero. Every hour you spend waiting for \"the right moment\" is an hour you chose to lose — there is no right moment, there's just now, and now is running out.",
+    "Half the daylight is gone and you've spent it in bed or on your phone. That's not a rest day, that's a life you're not fully using while you still have it."
+  ],
+  streakBroken: [
+    "You had momentum going and let it die. That streak took real days to build and one day of nothing to erase. Stop mourning it and start a new one today — not tomorrow, today."
+  ],
+  behindPace: [
+    "You're at {todayPts}/{todayTarget} points with the day almost gone. This is exactly the moment most people quietly give up and call it a wash. Don't be most people — finish one more thing before you let yourself rest."
+  ],
+  targetHit: [
+    "Target hit. That buys you exactly nothing tomorrow — it resets to zero and doesn't care what you did today. Enjoy this for a minute, then start thinking about the next one."
+  ],
+  weekDead: [
+    "It's the middle of the week and the tally is zero. However this week ends, you don't get it back to try again — this exact week only happens once."
+  ],
+  default: [
+    "Time is not renewable. Every day you choose comfort over effort is a day you don't get back — no refund, no replay. Scrolling, sleeping in, \"I'll start Monday\" — that isn't rest, that's your life quietly draining while you tell yourself you'll get to it. Nobody is coming to hand you the outcome you want. Get up. Pick one thing. Finish it. Do it today — \"eventually\" is how a decade disappears.",
+    "Life is short enough without spending it in bed or scrolling Instagram. Use today like it's the only one you get — because eventually, one of them actually will be.",
+    "Nobody on their deathbed brags about the hours they got in on their phone. Use this one to the fullest instead of numbing through it."
+  ],
+};
+
+function pickUrgency(key) {
+  const pool = URGENCY_POOL[key];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 function computeUrgencyMessage() {
   const now = new Date();
   const hour = now.getHours();
@@ -275,58 +313,34 @@ function computeUrgencyMessage() {
   const streaks = computeStreaks();
 
   if (log.length === 0 && active.length === 0) {
-    return {
-      title: 'Day Zero',
-      text: "Nothing logged, nothing on the board. That's not a blank slate — that's a countdown that already started without you. Add one task right now and start it. Not later. The version of you who does it \"later\" doesn't exist yet, and might never show up."
-    };
+    return { title: 'Day Zero', text: pickUrgency('dayZero') };
   }
 
   if (todayPts === 0 && hour >= 19) {
-    return {
-      title: 'The Day Is Almost Over',
-      text: "It's evening and you've earned exactly zero points today. Not a slow day — a wasted one. There are a couple of hours left before this day is gone for good, and it never comes back for a rewrite. Get up and start one task right now."
-    };
+    return { title: 'The Day Is Almost Over', text: pickUrgency('eveningZero') };
   }
 
   if (todayPts === 0 && hour >= 14) {
-    return {
-      title: 'Half The Day, Nothing Done',
-      text: "It's already afternoon and the board says zero. Every hour you spend waiting for \"the right moment\" is an hour you chose to lose — there is no right moment, there's just now, and now is running out."
-    };
+    return { title: 'Half The Day, Nothing Done', text: pickUrgency('afternoonZero') };
   }
 
   if (streaks.current === 0 && log.length > 0) {
-    return {
-      title: 'Streak: Broken',
-      text: "You had momentum going and let it die. That streak took real days to build and one day of nothing to erase. Stop mourning it and start a new one today — not tomorrow, today."
-    };
+    return { title: 'Streak: Broken', text: pickUrgency('streakBroken') };
   }
 
   if ((todayPts / todayTarget) < 0.5 && hour >= 16) {
-    return {
-      title: 'Behind, Not Beaten',
-      text: `You're at ${todayPts}/${todayTarget} points with the day almost gone. This is exactly the moment most people quietly give up and call it a wash. Don't be most people — finish one more thing before you let yourself rest.`
-    };
+    return { title: 'Behind, Not Beaten', text: pickUrgency('behindPace').replace('{todayPts}', todayPts).replace('{todayTarget}', todayTarget) };
   }
 
   if (todayPts >= todayTarget) {
-    return {
-      title: "Good — Now Don't Stop",
-      text: "Target hit. That buys you exactly nothing tomorrow — it resets to zero and doesn't care what you did today. Enjoy this for a minute, then start thinking about the next one."
-    };
+    return { title: "Good — Now Don't Stop", text: pickUrgency('targetHit') };
   }
 
   if (weekPts === 0 && now.getDay() >= 3) {
-    return {
-      title: 'Half The Week Is Already Gone',
-      text: "It's the middle of the week and the tally is zero. However this week ends, you don't get it back to try again — this exact week only happens once."
-    };
+    return { title: 'Half The Week Is Already Gone', text: pickUrgency('weekDead') };
   }
 
-  return {
-    title: 'Carpe Diem',
-    text: "Time is not renewable. Every day you choose comfort over effort is a day you don't get back — no refund, no replay. Scrolling, sleeping in, \"I'll start Monday\" — that isn't rest, that's your life quietly draining while you tell yourself you'll get to it. Nobody is coming to hand you the outcome you want. Get up. Pick one thing. Finish it. Do it today — \"eventually\" is how a decade disappears."
-  };
+  return { title: 'Carpe Diem', text: pickUrgency('default') };
 }
 
 function renderUrgencyBanner() {
