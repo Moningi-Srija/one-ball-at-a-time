@@ -301,7 +301,13 @@ const URGENCY_POOL = {
 
 function pickUrgency(key) {
   const pool = URGENCY_POOL[key];
-  return pool[Math.floor(Math.random() * pool.length)];
+  // Deterministic per hour+tier so repeated re-renders (e.g. the live timer
+  // tick) don't flicker between variants — it only changes once the hour
+  // or the tier itself changes.
+  const hourSlot = Math.floor(Date.now() / (60 * 60 * 1000));
+  let seed = hourSlot;
+  for (let i = 0; i < key.length; i++) seed += key.charCodeAt(i);
+  return pool[seed % pool.length];
 }
 
 function computeUrgencyMessage() {
