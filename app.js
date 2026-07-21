@@ -255,7 +255,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'board') { renderBoard(); renderMuse(); }
+    if (btn.dataset.tab === 'board') renderBoard();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
     if (btn.dataset.tab === 'log') renderLog();
@@ -355,10 +355,7 @@ function renderUrgencyBanner() {
   document.getElementById('cdText').textContent = text;
 }
 
-setInterval(renderUrgencyBanner, 5 * 60 * 1000);
-
 function renderBoard() {
-  renderUrgencyBanner();
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = Date.now();
@@ -489,7 +486,6 @@ function finishTask(id) {
   saveActive();
   saveLog();
   renderBoard();
-  renderMuse();
 }
 
 function todayCompletedTasks() {
@@ -1207,7 +1203,6 @@ async function startApp() {
 
   hideLogin();
   renderBoard();
-  renderMuse();
 }
 
 async function boot() {
