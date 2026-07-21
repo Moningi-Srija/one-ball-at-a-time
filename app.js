@@ -45,6 +45,7 @@ function migrateCategoryIds(list) {
 }
 
 const DEFAULT_TARGETS = { day: 25, week: 150, weekend: 50, month: 600 };
+const HOME_DAILY_PROGRESS_MAX = 20;
 
 // ---------- Storage (API-backed) ----------
 
@@ -415,8 +416,14 @@ function renderBoard() {
       editBtn.className = 'btn ghost small';
       editBtn.textContent = 'Edit';
       editBtn.addEventListener('click', () => openEditModal(task.id));
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'btn danger-ghost small';
+      removeBtn.textContent = 'Remove';
+      removeBtn.title = 'Remove this task without marking it finished';
+      removeBtn.addEventListener('click', () => removeTask(task.id, true));
       actions.appendChild(finishBtn);
       actions.appendChild(editBtn);
+      actions.appendChild(removeBtn);
       card.appendChild(actions);
     } else {
       const meta = document.createElement('div');
@@ -446,6 +453,8 @@ function renderBoard() {
 
     board.appendChild(card);
   }
+
+  renderTodayProgress();
 }
 
 function startTask(id) {
@@ -456,7 +465,8 @@ function startTask(id) {
   renderBoard();
 }
 
-function removeTask(id) {
+function removeTask(id, isStarted = false) {
+  if (isStarted && !window.confirm('Remove this running task? Its timer progress will be lost and it will not be counted as finished.')) return;
   active = active.filter(t => t.id !== id);
   saveActive();
   renderBoard();
@@ -481,6 +491,108 @@ function finishTask(id) {
   saveLog();
   renderBoard();
   renderMuse();
+}
+
+function todayCompletedTasks() {
+  const [start, end] = getRange('day', 0);
+  return log
+    .filter(t => t.completedAt >= start && t.completedAt < end)
+    .sort((a, b) => b.completedAt - a.completedAt);
+}
+
+function renderTodayProgress() {
+  const container = document.getElementById('todayProgress');
+  const summary = document.getElementById('todayProgressSummary');
+  const tasks = todayCompletedTasks();
+  const points = tasks.reduce((sum, task) => sum + task.points, 0);
+
+  if (!tasks.length) {
+    summary.textContent = 'Your wins will show up here as you finish them.';
+    container.innerHTML = '<div class="today-empty">Nothing finished yet. Start with one task — future you deserves something satisfying to look back on.</div>';
+    return;
+  }
+
+  summary.textContent = `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} finished`;
+  container.innerHTML = '';
+
+  const byCategory = new Map();
+  tasks.forEach(task => {
+    const entry = byCategory.get(task.category) || { points: 0, count: 0 };
+    entry.points += task.points;
+    entry.count += 1;
+    byCategory.set(task.category, entry);
+  });
+  const categories = [...byCategory.entries()]
+    .map(([id, value]) => ({ cat: catById(id), ...value }))
+    .sort((a, b) => b.points - a.points);
+  const layout = document.createElement('div');
+  layout.className = 'today-progress-layout';
+  const areas = document.createElement('div');
+  areas.className = 'today-areas';
+  const list = document.createElement('div');
+  list.className = 'today-task-list';
+
+  const total = document.createElement('div');
+  total.className = 'today-total';
+  const totalHeader = document.createElement('div');
+  totalHeader.className = 'today-total-header';
+  const totalLabel = document.createElement('span');
+  totalLabel.textContent = 'Today’s points';
+  const totalValue = document.createElement('strong');
+  totalValue.textContent = `${points} / ${HOME_DAILY_PROGRESS_MAX} pts`;
+  totalHeader.append(totalLabel, totalValue);
+  const totalTrack = document.createElement('div');
+  totalTrack.className = 'today-total-track';
+  const totalFill = document.createElement('div');
+  totalFill.className = 'today-total-fill';
+  totalFill.style.width = `${Math.min(100, (points / HOME_DAILY_PROGRESS_MAX) * 100)}%`;
+  totalTrack.appendChild(totalFill);
+  const totalMessage = document.createElement('div');
+  totalMessage.className = 'today-total-message';
+  totalMessage.textContent = points >= HOME_DAILY_PROGRESS_MAX
+    ? 'Daily goal hit — look at you go.'
+    : `${HOME_DAILY_PROGRESS_MAX - points} pts left to hit today’s goal.`;
+  total.append(totalHeader, totalTrack, totalMessage);
+  areas.appendChild(total);
+
+  categories.forEach(({ cat, points: categoryPoints, count }) => {
+    const row = document.createElement('div');
+    row.className = 'today-area-row';
+    const label = document.createElement('div');
+    label.className = 'today-area-label';
+    label.textContent = `${cat.icon} ${cat.label}`;
+    const track = document.createElement('div');
+    track.className = 'today-area-track';
+    const value = document.createElement('div');
+    value.className = 'today-area-value';
+    value.textContent = `${categoryPoints} pts · ${count} ${count === 1 ? 'win' : 'wins'}`;
+    row.append(label, track, value);
+    track.style.background = cat.color;
+    areas.appendChild(row);
+  });
+
+  tasks.forEach(task => {
+    const cat = catById(task.category);
+    const item = document.createElement('div');
+    item.className = 'today-task-item';
+    const dot = document.createElement('span');
+    dot.className = 'today-task-dot';
+    dot.style.background = cat.color;
+    const details = document.createElement('div');
+    details.className = 'today-task-details';
+    const title = document.createElement('div');
+    title.className = 'today-task-title';
+    title.textContent = task.title;
+    const meta = document.createElement('div');
+    meta.className = 'today-task-meta';
+    meta.textContent = `${cat.icon} ${cat.label} · ${task.points} pts · finished ${fmtDateTime(task.completedAt)}`;
+    details.append(title, meta);
+    item.append(dot, details);
+    list.appendChild(item);
+  });
+
+  layout.append(areas, list);
+  container.appendChild(layout);
 }
 
 // live timer tick

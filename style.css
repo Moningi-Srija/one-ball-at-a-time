@@ -248,6 +248,41 @@ body::after {
 .task-card .timer { font-variant-numeric: tabular-nums; font-size: 22px; font-weight: 700; color: var(--accent); font-family: var(--serif); text-shadow: 0 0 14px rgba(255, 93, 168, 0.5); }
 .task-card .card-actions { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
 
+/* ---------- Today's progress ---------- */
+
+.today-progress { margin-top: 32px; }
+.today-progress-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+.today-areas, .today-task-list, .today-empty {
+  background: linear-gradient(160deg, var(--panel), var(--panel-soft));
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.38);
+}
+.today-areas { padding: 18px; display: flex; flex-direction: column; gap: 13px; }
+.today-total { padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.today-total-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.today-total-header span { color: var(--text-dim); font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; }
+.today-total-header strong { color: var(--accent-2); font-family: var(--serif); font-size: 22px; }
+.today-total-track { height: 11px; border-radius: 999px; background: var(--panel-hi); border: 1px solid var(--border); overflow: hidden; margin: 8px 0; }
+.today-total-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); box-shadow: 0 0 12px rgba(255, 93, 168, 0.45); }
+.today-total-message { color: var(--text-dim); font-family: var(--serif); font-size: 12.5px; line-height: 1.45; }
+.today-area-row { display: grid; grid-template-columns: minmax(112px, 1fr) 8px auto; gap: 10px; align-items: center; }
+.today-area-label { font-size: 12.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-area-track { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 9px currentColor; }
+.today-area-value { color: var(--text-dim); font-size: 11.5px; white-space: nowrap; }
+.today-task-list { overflow: hidden; }
+.today-task-item { display: flex; gap: 11px; align-items: flex-start; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+.today-task-item:last-child { border-bottom: none; }
+.today-task-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; box-shadow: 0 0 9px currentColor; }
+.today-task-details { min-width: 0; }
+.today-task-title { font-family: var(--serif); font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.today-task-meta { color: var(--text-dim); font-size: 11.5px; margin-top: 3px; line-height: 1.4; }
+.today-empty { color: var(--text-dim); font-family: var(--serif); font-style: italic; padding: 24px; text-align: center; line-height: 1.55; }
+
 .slot-empty {
   background: rgba(255, 255, 255, 0.02);
   border: 1.5px dashed var(--border-strong);
@@ -654,5 +689,7 @@ body::after {
 
 @media (max-width: 560px) {
   .cat-row { grid-template-columns: 140px 1fr 40px; }
+  .today-progress-layout { grid-template-columns: 1fr; }
+  .today-area-row { grid-template-columns: minmax(100px, 1fr) 8px auto; gap: 8px; }
   .topbar h1 { font-size: 30px; }
 }
