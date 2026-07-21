@@ -45,7 +45,6 @@ function migrateCategoryIds(list) {
 }
 
 const DEFAULT_TARGETS = { day: 25, week: 150, weekend: 50, month: 600 };
-const HOME_DAILY_PROGRESS_MAX = 20;
 
 // ---------- Storage (API-backed) ----------
 
@@ -256,7 +255,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'board') renderMuse();
+    if (btn.dataset.tab === 'board') { renderBoard(); renderMuse(); }
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
     if (btn.dataset.tab === 'log') renderLog();
@@ -505,6 +504,7 @@ function renderTodayProgress() {
   const summary = document.getElementById('todayProgressSummary');
   const tasks = todayCompletedTasks();
   const points = tasks.reduce((sum, task) => sum + task.points, 0);
+  const dailyTarget = Math.max(1, Number(targets.day) || DEFAULT_TARGETS.day);
 
   if (!tasks.length) {
     summary.textContent = 'Your wins will show up here as you finish them.';
@@ -539,19 +539,19 @@ function renderTodayProgress() {
   const totalLabel = document.createElement('span');
   totalLabel.textContent = 'Today’s points';
   const totalValue = document.createElement('strong');
-  totalValue.textContent = `${points} / ${HOME_DAILY_PROGRESS_MAX} pts`;
+  totalValue.textContent = `${points} / ${dailyTarget} pts`;
   totalHeader.append(totalLabel, totalValue);
   const totalTrack = document.createElement('div');
   totalTrack.className = 'today-total-track';
   const totalFill = document.createElement('div');
   totalFill.className = 'today-total-fill';
-  totalFill.style.width = `${Math.min(100, (points / HOME_DAILY_PROGRESS_MAX) * 100)}%`;
+  totalFill.style.width = `${Math.min(100, (points / dailyTarget) * 100)}%`;
   totalTrack.appendChild(totalFill);
   const totalMessage = document.createElement('div');
   totalMessage.className = 'today-total-message';
-  totalMessage.textContent = points >= HOME_DAILY_PROGRESS_MAX
+  totalMessage.textContent = points >= dailyTarget
     ? 'Daily goal hit — look at you go.'
-    : `${HOME_DAILY_PROGRESS_MAX - points} pts left to hit today’s goal.`;
+    : `${dailyTarget - points} pts left to hit today’s goal.`;
   total.append(totalHeader, totalTrack, totalMessage);
   areas.appendChild(total);
 
@@ -1084,6 +1084,7 @@ function renderTargets() {
     input.addEventListener('change', () => {
       targets[period] = Math.max(0, parseInt(input.value, 10) || 0);
       saveTargets();
+      if (period === 'day') renderTodayProgress();
     });
     wrapper.appendChild(input);
     form.appendChild(wrapper);
