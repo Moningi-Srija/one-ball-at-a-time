@@ -90,6 +90,16 @@ app.put('/api/targets', requireAuth, async (req, res) => {
   }
 });
 
+app.put('/api/frog', requireAuth, async (req, res) => {
+  try {
+    await db.setState('frog', req.body);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'failed to save frog' });
+  }
+});
+
 app.use(express.static(path.join(__dirname), { extensions: ['html'] }));
 
 db.init()

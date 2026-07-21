@@ -18,6 +18,7 @@ async function init() {
     active: [],
     log: [],
     targets: { day: 25, week: 150, weekend: 50, month: 600 },
+    frog: null,
   };
   for (const [key, value] of Object.entries(defaults)) {
     await pool.query(

@@ -51,6 +51,7 @@ const DEFAULT_TARGETS = { day: 25, week: 150, weekend: 50, month: 600 };
 let active = [];   // up to 5 tasks on the board
 let log = [];      // finished tasks
 let targets = DEFAULT_TARGETS;
+let frog = null;   // today's deliberately chosen hardest/most important task
 
 async function apiGet(path) {
   const res = await fetch(path);
@@ -88,12 +89,14 @@ function handleSaveError(err) {
 function saveActive() { apiPut('/api/active', active).catch(handleSaveError); }
 function saveLog() { apiPut('/api/log', log).catch(handleSaveError); }
 function saveTargets() { apiPut('/api/targets', targets).catch(handleSaveError); }
+function saveFrog() { apiPut('/api/frog', frog).catch(handleSaveError); }
 
 async function loadState() {
   const state = await apiGet('/api/state');
   active = state.active || [];
   log = state.log || [];
   targets = state.targets || DEFAULT_TARGETS;
+  frog = state.frog || null;
 }
 
 // ---------- Helpers ----------
@@ -162,6 +165,12 @@ function fmtDateTime(ms) {
 
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function localDateKey(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 // Monday-start week. offset is in units of the given period, relative to now
 // (0 = current day/week/weekend/month, -1 = previous, +1 = next, etc.)
@@ -451,6 +460,7 @@ function renderBoard() {
   }
 
   renderTodayProgress();
+  renderFrog();
 }
 
 function startTask(id) {
@@ -464,6 +474,10 @@ function startTask(id) {
 function removeTask(id, isStarted = false) {
   if (isStarted && !window.confirm('Remove this running task? Its timer progress will be lost and it will not be counted as finished.')) return;
   active = active.filter(t => t.id !== id);
+  if (frog && frog.date === localDateKey() && frog.taskId === id) {
+    frog = null;
+    saveFrog();
+  }
   saveActive();
   renderBoard();
 }
@@ -482,10 +496,94 @@ function finishTask(id) {
     completedAt,
     duration: completedAt - task.startedAt
   });
+  if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
+    frog = {
+      ...frog,
+      completed: true,
+      task: { title: task.title, category: task.category, points: task.points, completedAt }
+    };
+    saveFrog();
+  }
   active.splice(idx, 1);
   saveActive();
   saveLog();
   renderBoard();
+}
+
+function frogForToday() {
+  return frog && frog.date === localDateKey() ? frog : null;
+}
+
+function setFrog(task) {
+  frog = {
+    date: localDateKey(),
+    taskId: task.id,
+    completed: false,
+    task: { title: task.title, category: task.category, points: task.points }
+  };
+  saveFrog();
+  renderFrog();
+}
+
+function renderFrog() {
+  const container = document.getElementById('frogContent');
+  const todayFrog = frogForToday();
+  container.innerHTML = '';
+
+  const card = document.createElement('div');
+  card.className = `frog-card${todayFrog?.completed ? ' is-eaten' : ''}`;
+  const copy = document.createElement('div');
+  copy.className = 'frog-copy';
+  const title = document.createElement('div');
+  title.className = 'frog-task-title';
+  const detail = document.createElement('div');
+  detail.className = 'frog-task-detail';
+
+  if (todayFrog) {
+    const cat = catById(todayFrog.task.category);
+    title.textContent = todayFrog.completed ? 'Frog eaten. That was the hard thing.' : todayFrog.task.title;
+    detail.textContent = todayFrog.completed
+      ? `${cat.icon} ${todayFrog.task.title} · ${todayFrog.task.points} pts completed`
+      : `${cat.icon} ${cat.label} · ${todayFrog.task.points} pts · do this first`;
+  } else {
+    title.textContent = 'What is the one task you do not want to do today?';
+    detail.textContent = 'Choose it here, then get it done before the smaller tasks take over.';
+  }
+  copy.append(title, detail);
+  card.appendChild(copy);
+
+  if (todayFrog?.completed) {
+    const clear = document.createElement('button');
+    clear.className = 'btn ghost small';
+    clear.textContent = 'Clear';
+    clear.addEventListener('click', () => { frog = null; saveFrog(); renderFrog(); });
+    card.appendChild(clear);
+  } else if (active.length) {
+    const picker = document.createElement('select');
+    picker.className = 'frog-picker';
+    const prompt = document.createElement('option');
+    prompt.value = '';
+    prompt.textContent = todayFrog ? 'Change today’s frog…' : 'Choose today’s frog…';
+    picker.appendChild(prompt);
+    active.forEach(task => {
+      const option = document.createElement('option');
+      option.value = task.id;
+      option.textContent = task.title;
+      option.selected = todayFrog?.taskId === task.id;
+      picker.appendChild(option);
+    });
+    picker.addEventListener('change', () => {
+      const task = active.find(item => item.id === picker.value);
+      if (task) setFrog(task);
+    });
+    card.appendChild(picker);
+  } else {
+    const note = document.createElement('span');
+    note.className = 'frog-empty-note';
+    note.textContent = 'Add a Top 5 task first.';
+    card.appendChild(note);
+  }
+  container.appendChild(card);
 }
 
 function todayCompletedTasks() {
@@ -661,6 +759,10 @@ document.getElementById('saveTask').addEventListener('click', () => {
       task.title = title;
       task.category = taskCategorySelect.value;
       task.points = points;
+      if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
+        frog.task = { title: task.title, category: task.category, points: task.points };
+        saveFrog();
+      }
     }
     saveActive();
     closeModal();
