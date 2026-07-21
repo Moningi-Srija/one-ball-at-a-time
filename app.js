@@ -17,6 +17,13 @@ const CATEGORIES = [
 
 const catById = id => CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 
+const EISENHOWER_QUADRANTS = [
+  { id: 'do', label: 'Do now', sublabel: 'Urgent + important', hint: 'Your frog belongs here.', color: '#ff6f9c' },
+  { id: 'schedule', label: 'Schedule', sublabel: 'Important, not urgent', hint: 'Protect time for it before it becomes urgent.', color: '#e3b23c' },
+  { id: 'delegate', label: 'Delegate / simplify', sublabel: 'Urgent, not important', hint: 'Reduce, automate, or get it out quickly.', color: '#4fb3c9' },
+  { id: 'eliminate', label: 'Eliminate', sublabel: 'Neither urgent nor important', hint: 'Be intentional about what does not deserve your time.', color: '#a7aec2' },
+];
+
 const CATEGORY_MIGRATION = {
   necessities: 'clean_slate',
   food: 'glow_up',
@@ -265,6 +272,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'board') renderBoard();
+    if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
     if (btn.dataset.tab === 'log') renderLog();
@@ -559,6 +567,8 @@ function renderFrog() {
     clear.addEventListener('click', () => { frog = null; saveFrog(); renderFrog(); });
     card.appendChild(clear);
   } else if (active.length) {
+    const controls = document.createElement('div');
+    controls.className = 'frog-controls';
     const picker = document.createElement('select');
     picker.className = 'frog-picker';
     const prompt = document.createElement('option');
@@ -569,14 +579,22 @@ function renderFrog() {
       const option = document.createElement('option');
       option.value = task.id;
       option.textContent = task.title;
-      option.selected = todayFrog?.taskId === task.id;
       picker.appendChild(option);
     });
+    picker.value = todayFrog?.taskId || '';
+    const setButton = document.createElement('button');
+    setButton.className = 'btn primary small';
+    setButton.textContent = todayFrog ? 'Update Frog' : 'Set Frog';
+    setButton.disabled = !picker.value;
     picker.addEventListener('change', () => {
+      setButton.disabled = !picker.value;
+    });
+    setButton.addEventListener('click', () => {
       const task = active.find(item => item.id === picker.value);
       if (task) setFrog(task);
     });
-    card.appendChild(picker);
+    controls.append(picker, setButton);
+    card.appendChild(controls);
   } else {
     const note = document.createElement('span');
     note.className = 'frog-empty-note';
@@ -701,6 +719,7 @@ setInterval(() => {
 const modalBackdrop = document.getElementById('modalBackdrop');
 const taskTitleInput = document.getElementById('taskTitle');
 const taskCategorySelect = document.getElementById('taskCategory');
+const taskQuadrantSelect = document.getElementById('taskQuadrant');
 const taskPointsInput = document.getElementById('taskPoints');
 
 CATEGORIES.forEach(c => {
@@ -708,6 +727,12 @@ CATEGORIES.forEach(c => {
   opt.value = c.id;
   opt.textContent = `${c.icon} ${c.label} (${c.points} pts)`;
   taskCategorySelect.appendChild(opt);
+});
+EISENHOWER_QUADRANTS.forEach(q => {
+  const opt = document.createElement('option');
+  opt.value = q.id;
+  opt.textContent = `${q.label} — ${q.sublabel}`;
+  taskQuadrantSelect.appendChild(opt);
 });
 
 taskCategorySelect.addEventListener('change', () => {
@@ -725,6 +750,7 @@ function openAddModal() {
   saveTaskBtn.textContent = 'Add to Board';
   taskTitleInput.value = '';
   taskCategorySelect.value = CATEGORIES[0].id;
+  taskQuadrantSelect.value = 'schedule';
   taskPointsInput.value = CATEGORIES[0].points;
   modalBackdrop.classList.add('open');
   setTimeout(() => taskTitleInput.focus(), 50);
@@ -738,6 +764,7 @@ function openEditModal(id) {
   saveTaskBtn.textContent = 'Save Changes';
   taskTitleInput.value = task.title;
   taskCategorySelect.value = task.category;
+  taskQuadrantSelect.value = task.quadrant || 'schedule';
   taskPointsInput.value = task.points;
   modalBackdrop.classList.add('open');
   setTimeout(() => taskTitleInput.focus(), 50);
@@ -758,6 +785,7 @@ document.getElementById('saveTask').addEventListener('click', () => {
     if (task) {
       task.title = title;
       task.category = taskCategorySelect.value;
+      task.quadrant = taskQuadrantSelect.value;
       task.points = points;
       if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
         frog.task = { title: task.title, category: task.category, points: task.points };
@@ -775,6 +803,7 @@ document.getElementById('saveTask').addEventListener('click', () => {
     id: uid(),
     title,
     category: taskCategorySelect.value,
+    quadrant: taskQuadrantSelect.value,
     points,
     createdAt: Date.now(),
     startedAt: null
@@ -783,6 +812,48 @@ document.getElementById('saveTask').addEventListener('click', () => {
   closeModal();
   renderBoard();
 });
+
+// ---------- Eisenhower Matrix ----------
+
+function renderMatrix() {
+  const grid = document.getElementById('matrixGrid');
+  grid.innerHTML = '';
+  EISENHOWER_QUADRANTS.forEach(quadrant => {
+    const cell = document.createElement('section');
+    cell.className = 'matrix-cell';
+    cell.style.setProperty('--matrix-color', quadrant.color);
+    const head = document.createElement('div');
+    head.className = 'matrix-head';
+    const label = document.createElement('h3');
+    label.textContent = quadrant.label;
+    const sublabel = document.createElement('div');
+    sublabel.className = 'matrix-sublabel';
+    sublabel.textContent = quadrant.sublabel;
+    head.append(label, sublabel);
+    const hint = document.createElement('p');
+    hint.className = 'matrix-hint';
+    hint.textContent = quadrant.hint;
+    cell.append(head, hint);
+    const tasks = active.filter(task => (task.quadrant || 'schedule') === quadrant.id);
+    if (!tasks.length) {
+      const empty = document.createElement('div');
+      empty.className = 'matrix-empty';
+      empty.textContent = 'No active tasks here.';
+      cell.appendChild(empty);
+    } else {
+      tasks.forEach(task => {
+        const item = document.createElement('button');
+        item.className = 'matrix-task';
+        item.type = 'button';
+        item.textContent = task.title;
+        item.title = 'Edit this task’s priority';
+        item.addEventListener('click', () => openEditModal(task.id));
+        cell.appendChild(item);
+      });
+    }
+    grid.appendChild(cell);
+  });
+}
 
 // ---------- Dashboard ----------
 

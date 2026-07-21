@@ -39,6 +39,7 @@
     </div>
     <nav class="tabs">
       <button class="tab-btn active" data-tab="board">Board</button>
+      <button class="tab-btn" data-tab="matrix">Matrix</button>
       <button class="tab-btn" data-tab="dashboard">Dashboard</button>
       <button class="tab-btn" data-tab="analytics">Analytics</button>
       <button class="tab-btn" data-tab="log">Log</button>
@@ -70,6 +71,15 @@
       <span class="hint">Finish one, darling, and a slot opens for the next.</span>
     </div>
     <div class="board-grid" id="board"></div>
+  </section>
+
+  <!-- EISENHOWER MATRIX -->
+  <section id="tab-matrix" class="tab-panel">
+    <div class="section-head">
+      <h2>Eisenhower Matrix</h2>
+      <span class="hint">Put your energy where it matters, not just where it shouts.</span>
+    </div>
+    <div class="matrix-grid" id="matrixGrid"></div>
   </section>
 
   <!-- DASHBOARD -->
@@ -204,6 +214,9 @@
     </label>
     <label>Category
       <select id="taskCategory"></select>
+    </label>
+    <label>Priority
+      <select id="taskQuadrant"></select>
     </label>
     <label>Points <span class="hint">(suggested — adjust if you like)</span>
       <input type="number" id="taskPoints" min="1" max="20">
