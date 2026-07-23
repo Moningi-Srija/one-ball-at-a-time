@@ -171,9 +171,10 @@ function fmtDateTime(ms) {
 }
 
 function renderDayClock() {
-  document.getElementById('dayClock').textContent = new Date().toLocaleTimeString(undefined, {
-    hour: 'numeric', minute: '2-digit'
-  });
+  const clock = document.getElementById('dayClock');
+  const timeLeft = timeLeftToday().replace(' left today', '');
+  clock.textContent = timeLeft;
+  clock.parentElement.setAttribute('aria-label', `${timeLeft} left today`);
 }
 
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
