@@ -133,6 +133,12 @@
 
     <div class="stat-chip-row" id="statChipRow"></div>
 
+    <div class="analytics-period" id="analyticsPeriod">
+      <button class="seg-btn active" data-analytics-period="week">This week</button>
+      <button class="seg-btn" data-analytics-period="month">This month</button>
+      <button class="seg-btn" data-analytics-period="all">All time</button>
+    </div>
+
     <div class="recap-card">
       <div class="recap-quote-mark">&#8220;</div>
       <div class="recap-text" id="recapText"></div>
@@ -140,14 +146,32 @@
       <button class="btn ghost small" id="regenRecap">New Chapter &#8635;</button>
     </div>
 
+    <div class="category-focus">
+      <section class="category-leaderboard">
+        <div class="section-head">
+          <h3>Your category leaderboard</h3>
+          <span class="hint" id="leaderboardHint"></span>
+        </div>
+        <div id="categoryRankings"></div>
+      </section>
+      <aside class="category-share-card">
+        <h3>Where your energy went</h3>
+        <canvas id="categoryDoughnut" height="220"></canvas>
+      </aside>
+    </div>
+
+    <section class="attention-card">
+      <div class="section-head">
+        <h3>Needs attention</h3>
+        <span class="hint">Only raise what actually matters to you.</span>
+      </div>
+      <div id="categoryAttention" class="attention-list"></div>
+    </section>
+
     <div class="chart-grid">
       <div class="chart-card">
         <h3>Points Over Time</h3>
         <canvas id="trendChart" height="190"></canvas>
-      </div>
-      <div class="chart-card">
-        <h3>Category Share <span class="hint">(all-time)</span></h3>
-        <canvas id="categoryDoughnut" height="190"></canvas>
       </div>
       <div class="chart-card">
         <h3>Best Days of the Week</h3>

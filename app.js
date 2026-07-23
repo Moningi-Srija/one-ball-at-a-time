@@ -949,6 +949,25 @@ function renderCategoryBreakdown() {
 
 const CHART_COLORS = { text: '#b98ba0', grid: 'rgba(185, 139, 160, 0.12)', accent: '#ff5da8', accent2: '#e3b23c', accent3: '#c9a0e8' };
 let charts = {};
+const analytics = { period: 'week' };
+
+function analyticsLogEntries() {
+  if (analytics.period === 'all') return log;
+  const [start, end] = getRange(analytics.period, 0);
+  return log.filter(task => task.completedAt >= start && task.completedAt < end);
+}
+
+function categoryAnalyticsData() {
+  const entries = analyticsLogEntries();
+  const map = {};
+  const taskCounts = {};
+  CATEGORIES.forEach(category => { map[category.id] = 0; taskCounts[category.id] = 0; });
+  entries.forEach(task => {
+    map[task.category] = (map[task.category] || 0) + task.points;
+    taskCounts[task.category] = (taskCounts[task.category] || 0) + 1;
+  });
+  return { entries, map, taskCounts };
+}
 
 function categoryPointsAllTime() {
   const map = {};
@@ -1051,7 +1070,7 @@ function renderCharts() {
     options: baseChartOptions({ plugins: { legend: { display: false } } })
   });
 
-  const catMap = categoryPointsAllTime();
+  const { map: catMap } = categoryAnalyticsData();
   const catEntries = CATEGORIES.map(c => ({ c, val: catMap[c.id] || 0 })).filter(e => e.val > 0);
   charts.doughnut = new Chart(document.getElementById('categoryDoughnut'), {
     type: 'doughnut',
@@ -1080,6 +1099,76 @@ function renderCharts() {
     options: baseChartOptions({ plugins: { legend: { display: false } } })
   });
 }
+
+function renderCategoryInsights() {
+  document.querySelectorAll('#analyticsPeriod .seg-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.analyticsPeriod === analytics.period);
+  });
+  const { entries, map, taskCounts } = categoryAnalyticsData();
+  const total = entries.reduce((sum, task) => sum + task.points, 0);
+  const ranked = CATEGORIES
+    .map(category => ({ category, points: map[category.id] || 0, tasks: taskCounts[category.id] || 0 }))
+    .filter(entry => entry.points > 0)
+    .sort((a, b) => b.points - a.points);
+  const list = document.getElementById('categoryRankings');
+  const hint = document.getElementById('leaderboardHint');
+  list.innerHTML = '';
+  hint.textContent = total ? `${total} pts across ${entries.length} ${entries.length === 1 ? 'task' : 'tasks'}` : 'No points yet';
+
+  if (!ranked.length) {
+    list.innerHTML = '<div class="category-insight-empty">Finish a task to see where your energy is going.</div>';
+  } else {
+    const maxPoints = ranked[0].points;
+    ranked.forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'ranking-row';
+      const rank = document.createElement('span');
+      rank.className = 'ranking-number';
+      rank.textContent = `#${index + 1}`;
+      const name = document.createElement('div');
+      name.className = 'ranking-name';
+      name.textContent = `${entry.category.icon} ${entry.category.label}`;
+      const bar = document.createElement('div');
+      bar.className = 'ranking-track';
+      const fill = document.createElement('div');
+      fill.className = 'ranking-fill';
+      fill.style.width = `${(entry.points / maxPoints) * 100}%`;
+      fill.style.background = entry.category.color;
+      bar.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'ranking-value';
+      const share = total ? Math.round((entry.points / total) * 100) : 0;
+      value.textContent = `${entry.points} pts · ${share}% · ${entry.tasks} ${entry.tasks === 1 ? 'task' : 'tasks'}`;
+      row.append(rank, name, bar, value);
+      list.appendChild(row);
+    });
+  }
+
+  const attention = document.getElementById('categoryAttention');
+  attention.innerHTML = '';
+  const lowest = CATEGORIES
+    .map(category => ({ category, points: map[category.id] || 0 }))
+    .sort((a, b) => a.points - b.points || a.category.label.localeCompare(b.category.label))
+    .slice(0, 3);
+  lowest.forEach(entry => {
+    const item = document.createElement('div');
+    item.className = 'attention-item';
+    const label = document.createElement('div');
+    label.textContent = `${entry.category.icon} ${entry.category.label}`;
+    const value = document.createElement('span');
+    value.textContent = `${entry.points} pts`;
+    item.append(label, value);
+    attention.appendChild(item);
+  });
+}
+
+document.getElementById('analyticsPeriod').addEventListener('click', event => {
+  const button = event.target.closest('[data-analytics-period]');
+  if (!button) return;
+  analytics.period = button.dataset.analyticsPeriod;
+  renderCategoryInsights();
+  renderCharts();
+});
 
 function renderHeatmap() {
   const weeks = 17;
@@ -1205,6 +1294,7 @@ document.getElementById('regenRecap').addEventListener('click', generateRecap);
 function renderAnalytics() {
   renderStatChips();
   generateRecap();
+  renderCategoryInsights();
   renderCharts();
   renderHeatmap();
 }
