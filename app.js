@@ -179,6 +179,15 @@ function localDateKey(d = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
+function timeLeftToday() {
+  const now = new Date();
+  const end = addDays(startOfDay(now), 1);
+  const minutes = Math.max(0, Math.ceil((end - now) / 60000));
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return hours > 0 ? `${hours}h ${mins}m left today` : `${mins}m left today`;
+}
+
 // Monday-start week. offset is in units of the given period, relative to now
 // (0 = current day/week/weekend/month, -1 = previous, +1 = next, etc.)
 function mondayOf(d) {
@@ -619,12 +628,12 @@ function renderTodayProgress() {
   const dailyTarget = Math.max(1, Number(targets.day) || DEFAULT_TARGETS.day);
 
   if (!tasks.length) {
-    summary.textContent = 'Your wins will show up here as you finish them.';
+    summary.textContent = timeLeftToday();
     container.innerHTML = '<div class="today-empty">Nothing finished yet. Start with one task — future you deserves something satisfying to look back on.</div>';
     return;
   }
 
-  summary.textContent = `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} finished`;
+  summary.textContent = `${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'} finished · ${timeLeftToday()}`;
   container.innerHTML = '';
 
   const byCategory = new Map();
@@ -662,8 +671,8 @@ function renderTodayProgress() {
   const totalMessage = document.createElement('div');
   totalMessage.className = 'today-total-message';
   totalMessage.textContent = points >= dailyTarget
-    ? 'Daily goal hit — look at you go.'
-    : `${dailyTarget - points} pts left to hit today’s goal.`;
+    ? `Daily goal hit — look at you go. ${timeLeftToday()}.`
+    : `${dailyTarget - points} pts left to hit today’s goal · ${timeLeftToday()}.`;
   total.append(totalHeader, totalTrack, totalMessage);
   areas.appendChild(total);
 
@@ -713,6 +722,10 @@ setInterval(() => {
     renderBoard();
   }
 }, 1000);
+
+setInterval(() => {
+  if (document.getElementById('tab-board').classList.contains('active')) renderTodayProgress();
+}, 60 * 1000);
 
 // ---------- Add Task Modal ----------
 
