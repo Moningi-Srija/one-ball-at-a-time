@@ -170,6 +170,12 @@ function fmtDateTime(ms) {
   return new Date(ms).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
+function renderDayClock() {
+  document.getElementById('dayClock').textContent = new Date().toLocaleTimeString(undefined, {
+    hour: 'numeric', minute: '2-digit'
+  });
+}
+
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function localDateKey(d = new Date()) {
@@ -1386,6 +1392,7 @@ async function startApp() {
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
+  renderDayClock();
 
   hideLogin();
   renderBoard();
@@ -1403,3 +1410,4 @@ async function boot() {
 }
 
 boot();
+setInterval(renderDayClock, 1000);
