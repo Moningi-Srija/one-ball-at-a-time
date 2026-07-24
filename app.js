@@ -177,6 +177,17 @@ function renderDayClock() {
   clock.parentElement.setAttribute('aria-label', `${timeLeft} left today`);
 }
 
+function renderFitnessNudge() {
+  const completedFitnessTasks = todayCompletedTasks().filter(task => task.category === 'glow_up').length;
+  document.getElementById('fitnessCount').textContent = `${Math.min(completedFitnessTasks, 2)} / 2`;
+  const message = completedFitnessTasks >= 2
+    ? 'Fitness promise kept today. Keep that energy.'
+    : completedFitnessTasks === 1
+      ? 'One more fitness win. Thirty minutes is enough.'
+      : 'Two 30-minute fitness wins today. A walk, workout, or self-care counts.';
+  document.getElementById('fitnessMessage').textContent = message;
+}
+
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
 function addDays(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
 function localDateKey(d = new Date()) {
@@ -485,6 +496,7 @@ function renderBoard() {
 
   renderTodayProgress();
   renderFrog();
+  renderFitnessNudge();
 }
 
 function startTask(id) {
@@ -731,6 +743,7 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
+  renderFitnessNudge();
   if (document.getElementById('tab-board').classList.contains('active')) renderTodayProgress();
 }, 60 * 1000);
 
@@ -1484,6 +1497,7 @@ async function startApp() {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
   renderDayClock();
+  renderFitnessNudge();
 
   hideLogin();
   renderBoard();

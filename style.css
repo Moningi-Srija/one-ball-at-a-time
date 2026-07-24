@@ -93,6 +93,10 @@ body::after {
 }
 .day-clock-label { color: var(--accent-2); font-size: 9px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .day-clock time { color: var(--text); font-family: var(--serif); font-size: 15px; font-weight: 700; margin-top: 3px; }
+.fitness-nudge { width: 245px; padding: 10px 13px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: linear-gradient(135deg, rgba(107,191,107,0.15), var(--panel-soft)); }
+.fitness-nudge-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; color: var(--good); font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.fitness-nudge-head strong { color: var(--text); font-family: var(--serif); font-size: 17px; letter-spacing: 0; }
+.fitness-nudge p { margin: 4px 0 0; color: var(--text-dim); font-size: 11.5px; line-height: 1.4; }
 .eyebrow {
   margin: 0 0 4px;
   font-size: 11px;
@@ -744,6 +748,7 @@ body::after {
 @media (max-width: 560px) {
   .header-right { width: 100%; align-items: flex-start; }
   .day-clock { align-self: flex-end; }
+  .fitness-nudge { width: 100%; }
   .frog-card { align-items: flex-start; flex-direction: column; }
   .frog-controls { width: 100%; }
   .frog-picker { width: 100%; max-width: none; }
