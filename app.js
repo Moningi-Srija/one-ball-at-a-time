@@ -110,6 +110,13 @@ async function loadState() {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+function pointsInQuarterSteps(value, fallback) {
+  const parsed = Number.parseFloat(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  const rounded = Math.round(parsed * 4) / 4;
+  return Math.min(20, Math.max(0.25, rounded));
+}
+
 const CONFETTI_COLORS = ['#ff5da8', '#e3b23c', '#c9a0e8', '#46d9a6', '#ffffff'];
 
 function burstConfetti(x, y) {
@@ -811,7 +818,7 @@ modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) c
 document.getElementById('saveTask').addEventListener('click', () => {
   const title = taskTitleInput.value.trim();
   if (!title) { taskTitleInput.focus(); return; }
-  const points = Math.max(1, parseInt(taskPointsInput.value, 10) || catById(taskCategorySelect.value).points);
+  const points = pointsInQuarterSteps(taskPointsInput.value, catById(taskCategorySelect.value).points);
 
   if (editingTaskId) {
     const task = active.find(t => t.id === editingTaskId);
