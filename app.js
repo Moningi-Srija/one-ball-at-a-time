@@ -776,16 +776,20 @@ EISENHOWER_QUADRANTS.forEach(q => {
 });
 
 taskCategorySelect.addEventListener('change', () => {
-  taskPointsInput.value = catById(taskCategorySelect.value).points;
+  if (!editingTaskId) taskPointsInput.value = catById(taskCategorySelect.value).points;
 });
 
 let editingTaskId = null;
+let editingTaskSource = 'active';
 const modalTitle = document.getElementById('modalTitle');
 const saveTaskBtn = document.getElementById('saveTask');
+const taskQuadrantLabel = taskQuadrantSelect.parentElement;
 
 function openAddModal() {
   if (active.length >= 5) return;
   editingTaskId = null;
+  editingTaskSource = 'active';
+  taskQuadrantLabel.style.display = '';
   modalTitle.textContent = 'Add a Task';
   saveTaskBtn.textContent = 'Add to Board';
   taskTitleInput.value = '';
@@ -796,21 +800,29 @@ function openAddModal() {
   setTimeout(() => taskTitleInput.focus(), 50);
 }
 
-function openEditModal(id) {
-  const task = active.find(t => t.id === id);
+function openEditModal(id, source = 'active') {
+  const tasks = source === 'log' ? log : active;
+  const task = tasks.find(t => t.id === id);
   if (!task) return;
   editingTaskId = id;
-  modalTitle.textContent = 'Edit Task';
+  editingTaskSource = source;
+  modalTitle.textContent = source === 'log' ? 'Edit Finished Task' : 'Edit Task';
   saveTaskBtn.textContent = 'Save Changes';
   taskTitleInput.value = task.title;
   taskCategorySelect.value = task.category;
   taskQuadrantSelect.value = task.quadrant || 'schedule';
+  taskQuadrantLabel.style.display = source === 'log' ? 'none' : '';
   taskPointsInput.value = task.points;
   modalBackdrop.classList.add('open');
   setTimeout(() => taskTitleInput.focus(), 50);
 }
 
-function closeModal() { modalBackdrop.classList.remove('open'); editingTaskId = null; }
+function closeModal() {
+  modalBackdrop.classList.remove('open');
+  editingTaskId = null;
+  editingTaskSource = 'active';
+  taskQuadrantLabel.style.display = '';
+}
 
 document.getElementById('cancelTask').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
@@ -821,20 +833,22 @@ document.getElementById('saveTask').addEventListener('click', () => {
   const points = pointsInQuarterSteps(taskPointsInput.value, catById(taskCategorySelect.value).points);
 
   if (editingTaskId) {
-    const task = active.find(t => t.id === editingTaskId);
+    const source = editingTaskSource;
+    const tasks = source === 'log' ? log : active;
+    const task = tasks.find(t => t.id === editingTaskId);
     if (task) {
       task.title = title;
       task.category = taskCategorySelect.value;
-      task.quadrant = taskQuadrantSelect.value;
+      if (source === 'active') task.quadrant = taskQuadrantSelect.value;
       task.points = points;
-      if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
+      if (source === 'active' && frog && frog.date === localDateKey() && frog.taskId === task.id) {
         frog.task = { title: task.title, category: task.category, points: task.points };
         saveFrog();
       }
     }
-    saveActive();
+    if (source === 'log') saveLog(); else saveActive();
     closeModal();
-    renderBoard();
+    if (source === 'log') renderLog(); else renderBoard();
     return;
   }
 
@@ -1327,7 +1341,7 @@ function renderLog() {
   document.getElementById('logCount').textContent = `${log.length} completed task${log.length === 1 ? '' : 's'}`;
 
   if (log.length === 0) {
-    body.innerHTML = `<tr class="empty-row"><td colspan="6">No finished tasks yet — complete one from the Board.</td></tr>`;
+    body.innerHTML = `<tr class="empty-row"><td colspan="7">No finished tasks yet — complete one from the Board.</td></tr>`;
     return;
   }
 
@@ -1341,7 +1355,14 @@ function renderLog() {
       <td>${fmtDateTime(t.startedAt)}</td>
       <td>${fmtDateTime(t.completedAt)}</td>
       <td>${fmtDuration(t.duration)}</td>
+      <td></td>
     `;
+    const editCell = row.lastElementChild;
+    const editButton = document.createElement('button');
+    editButton.className = 'btn ghost small';
+    editButton.textContent = 'Edit';
+    editButton.addEventListener('click', () => openEditModal(t.id, 'log'));
+    editCell.appendChild(editButton);
     body.appendChild(row);
   });
 }
