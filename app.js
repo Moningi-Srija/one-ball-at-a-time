@@ -59,6 +59,7 @@ let active = [];   // up to 5 tasks on the board
 let log = [];      // finished tasks
 let targets = DEFAULT_TARGETS;
 let frog = null;   // today's deliberately chosen hardest/most important task
+let logCategoryFilter = 'all';
 
 async function apiGet(path) {
   const res = await fetch(path);
@@ -1337,15 +1338,37 @@ function renderAnalytics() {
 
 function renderLog() {
   const body = document.getElementById('logBody');
-  body.innerHTML = '';
-  document.getElementById('logCount').textContent = `${log.length} completed task${log.length === 1 ? '' : 's'}`;
+  const categoryFilter = document.getElementById('logCategoryFilter');
 
-  if (log.length === 0) {
-    body.innerHTML = `<tr class="empty-row"><td colspan="7">No finished tasks yet — complete one from the Board.</td></tr>`;
+  if (categoryFilter.options.length === 1) {
+    CATEGORIES.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category.id;
+      option.textContent = `${category.icon} ${category.label}`;
+      categoryFilter.appendChild(option);
+    });
+  }
+
+  categoryFilter.value = logCategoryFilter;
+  const visibleTasks = logCategoryFilter === 'all'
+    ? log
+    : log.filter(task => task.category === logCategoryFilter);
+
+  body.innerHTML = '';
+  const countText = `${visibleTasks.length} completed task${visibleTasks.length === 1 ? '' : 's'}`;
+  document.getElementById('logCount').textContent = logCategoryFilter === 'all'
+    ? countText
+    : `${countText} in ${catById(logCategoryFilter).label}`;
+
+  if (visibleTasks.length === 0) {
+    const emptyMessage = logCategoryFilter === 'all'
+      ? 'No finished tasks yet — complete one from the Board.'
+      : `No finished tasks in ${catById(logCategoryFilter).label} yet.`;
+    body.innerHTML = `<tr class="empty-row"><td colspan="7">${emptyMessage}</td></tr>`;
     return;
   }
 
-  [...log].sort((a, b) => b.completedAt - a.completedAt).forEach(t => {
+  [...visibleTasks].sort((a, b) => b.completedAt - a.completedAt).forEach(t => {
     const cat = catById(t.category);
     const row = document.createElement('tr');
     row.innerHTML = `
@@ -1366,6 +1389,11 @@ function renderLog() {
     body.appendChild(row);
   });
 }
+
+document.getElementById('logCategoryFilter').addEventListener('change', event => {
+  logCategoryFilter = event.target.value;
+  renderLog();
+});
 
 // ---------- Guide ----------
 

@@ -205,7 +205,13 @@
   <section id="tab-log" class="tab-panel">
     <div class="section-head">
       <h2>Task Log</h2>
-      <span class="hint" id="logCount"></span>
+      <div class="log-tools">
+        <span class="hint" id="logCount"></span>
+        <label class="log-filter-label" for="logCategoryFilter">Category</label>
+        <select id="logCategoryFilter" class="log-filter" aria-label="Filter task log by category">
+          <option value="all">All Categories</option>
+        </select>
+      </div>
     </div>
     <div class="log-table-wrap">
     <table class="log-table">
