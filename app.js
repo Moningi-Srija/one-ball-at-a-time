@@ -1,16 +1,16 @@
 // ---------- Data ----------
 
 const CATEGORIES = [
-  { id: 'clean_slate',    label: 'Clean Slate',            icon: '🧹', desc: 'Cleaning, bathing — least points, but still counted because they\'re necessary.',          points: 2,  color: '#b5a89f' },
+  { id: 'clean_slate',    label: 'Reset Ritual',           icon: '🧹', desc: 'Cleaning, bathing — least points, but still counted because they\'re necessary.',          points: 2,  color: '#b5a89f' },
   { id: 'glow_up',        label: 'Glow Up',                icon: '💪', desc: 'Eating well, good food, exercise/gym/walking — body maintenance as self-improvement.',      points: 4,  color: '#6bbf6b' },
-  { id: 'creator_mode',   label: 'Creator Mode',           icon: '🎨', desc: 'Content creation, art, writing — a step up from chores, but not the top priority.',       points: 5,  color: '#c9a7eb' },
+  { id: 'creator_mode',   label: 'Studio Mode',            icon: '🎨', desc: 'Content creation, art, writing — a step up from chores, but not the top priority.',       points: 5,  color: '#c9a7eb' },
   { id: 'money_moves',    label: 'Money Moves',            icon: '📈', desc: 'Trading and investing practice.',                                                        points: 8,  color: '#d4af37' },
-  { id: 'level_up',       label: 'Level Up',               icon: '🔓', desc: 'Passport, driving license, swimming/sports classes — unlocking real capability.',         points: 8,  color: '#e3b23c' },
-  { id: 'office_grind',   label: 'Office Grind',           icon: '📎', desc: 'Everyday busywork at the job — low points, still builds a track record.',                 points: 4,  color: '#a7aec2' },
-  { id: 'boardroom_brain',label: 'Boardroom Brain',        icon: '🧠', desc: 'Studying office things, design discussions, genuinely understanding & participating — this is where credibility compounds.', points: 10, color: '#5b6ee1' },
-  { id: 'empire_building',label: 'Empire Building',        icon: '👑', desc: 'CP practice, resume, skills, projects, hackathons, contests, job applications — pick the points per task, this one has range.', points: 9,  color: '#8c52d9' },
+  { id: 'level_up',       label: 'Freedom Blueprint',      icon: '🔓', desc: 'Passport, driving license, swimming/sports classes — unlocking real capability.',         points: 8,  color: '#e3b23c' },
+  { id: 'office_grind',   label: 'Show Up & Thrive',       icon: '📎', desc: 'Everyday busywork at the job — low points, still builds a track record.',                 points: 4,  color: '#a7aec2' },
+  { id: 'boardroom_brain',label: 'Blair Waldorf Strategy', icon: '🧠', desc: 'Studying office things, design discussions, genuinely understanding & participating — this is where credibility compounds.', points: 10, color: '#5b6ee1' },
+  { id: 'empire_building',label: 'Jenny Humphrey Hustle',  icon: '👑', desc: 'CP practice, resume, skills, projects, hackathons, contests, job applications — pick the points per task, this one has range.', points: 9,  color: '#8c52d9' },
   { id: 'ride_or_die',    label: 'Ride or Die',            icon: '💕', desc: 'Love, loyalty, good deeds — how loving and friendly you are, not the top category but good points.', points: 6,  color: '#ff6f9c' },
-  { id: 'main_character', label: 'Main Character Energy',  icon: '🌟', desc: 'Socializing, style, going out, plans, presenting yourself well, Instagram stories.',      points: 4,  color: '#4fb3c9' },
+  { id: 'main_character', label: 'It Girl Energy',         icon: '🌟', desc: 'Socializing, style, going out, plans, presenting yourself well, Instagram stories.',      points: 4,  color: '#4fb3c9' },
   { id: 'passport_stamps',label: 'Passport Stamps',        icon: '✈️', desc: 'Trips and travel.',                                                                       points: 6,  color: '#e6547a' },
   { id: 'other',          label: 'Other',                  icon: '✨', desc: 'Anything that doesn\'t fit elsewhere.',                                                   points: 3,  color: '#9a8f99' },
 ];
