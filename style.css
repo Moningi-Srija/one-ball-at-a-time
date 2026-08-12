@@ -571,6 +571,7 @@ body::after {
 }
 .log-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .log-table td:first-child { white-space: normal; min-width: 160px; }
+.log-table td.log-actions { display: flex; align-items: center; gap: 6px; }
 .log-table tr:last-child td { border-bottom: none; }
 .log-table tr:hover td { background: var(--panel-hi); }
 .empty-row td { text-align: center; color: var(--text-dim); padding: 34px; font-style: italic; font-family: var(--serif); }

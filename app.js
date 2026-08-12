@@ -1386,13 +1386,29 @@ function renderLog() {
       <td></td>
     `;
     const editCell = row.lastElementChild;
+    editCell.className = 'log-actions';
     const editButton = document.createElement('button');
     editButton.className = 'btn ghost small';
     editButton.textContent = 'Edit';
     editButton.addEventListener('click', () => openEditModal(t.id, 'log', t.completedAt));
-    editCell.appendChild(editButton);
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'btn danger-ghost small';
+    deleteButton.textContent = 'Delete';
+    deleteButton.addEventListener('click', () => deleteFinishedTask(t.id, t.completedAt));
+    editCell.append(editButton, deleteButton);
     body.appendChild(row);
   });
+}
+
+function deleteFinishedTask(id, completedAt) {
+  const taskIndex = log.findIndex(task => task.id === id && task.completedAt === completedAt);
+  if (taskIndex < 0) return;
+  const task = log[taskIndex];
+  if (!window.confirm(`Delete “${task.title}” from your finished log? This cannot be undone.`)) return;
+  log.splice(taskIndex, 1);
+  saveLog();
+  renderLog();
+  showToast('Finished task deleted.');
 }
 
 document.getElementById('logCategoryFilter').addEventListener('change', event => {
