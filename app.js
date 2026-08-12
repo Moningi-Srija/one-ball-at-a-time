@@ -781,6 +781,7 @@ taskCategorySelect.addEventListener('change', () => {
 });
 
 let editingTaskId = null;
+let editingTaskCompletedAt = null;
 let editingTaskSource = 'active';
 const modalTitle = document.getElementById('modalTitle');
 const saveTaskBtn = document.getElementById('saveTask');
@@ -789,6 +790,7 @@ const taskQuadrantLabel = taskQuadrantSelect.parentElement;
 function openAddModal() {
   if (active.length >= 5) return;
   editingTaskId = null;
+  editingTaskCompletedAt = null;
   editingTaskSource = 'active';
   taskQuadrantLabel.style.display = '';
   modalTitle.textContent = 'Add a Task';
@@ -801,11 +803,12 @@ function openAddModal() {
   setTimeout(() => taskTitleInput.focus(), 50);
 }
 
-function openEditModal(id, source = 'active') {
+function openEditModal(id, source = 'active', completedAt = null) {
   const tasks = source === 'log' ? log : active;
-  const task = tasks.find(t => t.id === id);
+  const task = tasks.find(t => t.id === id && (source !== 'log' || completedAt === null || t.completedAt === completedAt));
   if (!task) return;
   editingTaskId = id;
+  editingTaskCompletedAt = source === 'log' ? task.completedAt : null;
   editingTaskSource = source;
   modalTitle.textContent = source === 'log' ? 'Edit Finished Task' : 'Edit Task';
   saveTaskBtn.textContent = 'Save Changes';
@@ -821,6 +824,7 @@ function openEditModal(id, source = 'active') {
 function closeModal() {
   modalBackdrop.classList.remove('open');
   editingTaskId = null;
+  editingTaskCompletedAt = null;
   editingTaskSource = 'active';
   taskQuadrantLabel.style.display = '';
 }
@@ -836,7 +840,8 @@ document.getElementById('saveTask').addEventListener('click', () => {
   if (editingTaskId) {
     const source = editingTaskSource;
     const tasks = source === 'log' ? log : active;
-    const task = tasks.find(t => t.id === editingTaskId);
+    const task = tasks.find(t => t.id === editingTaskId
+      && (source !== 'log' || editingTaskCompletedAt === null || t.completedAt === editingTaskCompletedAt));
     if (task) {
       task.title = title;
       task.category = taskCategorySelect.value;
@@ -1384,7 +1389,7 @@ function renderLog() {
     const editButton = document.createElement('button');
     editButton.className = 'btn ghost small';
     editButton.textContent = 'Edit';
-    editButton.addEventListener('click', () => openEditModal(t.id, 'log'));
+    editButton.addEventListener('click', () => openEditModal(t.id, 'log', t.completedAt));
     editCell.appendChild(editButton);
     body.appendChild(row);
   });
