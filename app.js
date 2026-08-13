@@ -17,6 +17,16 @@ const CATEGORIES = [
 
 const catById = id => CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 
+const BODY_SLOT_MESSAGES = [
+  'This space is for your body — move it because you want to love and care for it.',
+  'Remember pretty privilege? Go earn the glow with 30 minutes of movement.',
+  'Move your body. Enjoy your freedom. Have some fun outside.',
+  'Fresh air is part of freedom too. Take your body somewhere beyond this room.',
+  'No perfect workout needed — just give your body 30 honest minutes.',
+  'Your body carries every ambition you have. Take care of her today.',
+  'Walk, stretch, dance, lift — choose something that makes you feel alive.'
+];
+
 const EISENHOWER_QUADRANTS = [
   { id: 'do', label: 'Do now', sublabel: 'Urgent + important', hint: 'Your frog belongs here.', color: '#ff6f9c' },
   { id: 'schedule', label: 'Schedule', sublabel: 'Important, not urgent', hint: 'Protect time for it before it becomes urgent.', color: '#e3b23c' },
@@ -411,20 +421,40 @@ function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = Date.now();
+  const bodyTask = active.find(task => task.bodySlot);
+  const flexibleTasks = active.filter(task => !task.bodySlot);
 
-  for (let i = 0; i < 5; i++) {
-    const task = active[i];
+  for (let i = 0; i < Math.max(4, flexibleTasks.length); i++) {
+    const task = flexibleTasks[i];
     if (!task) {
       const slot = document.createElement('div');
       slot.className = 'slot-empty';
       slot.textContent = '+ Add Task';
-      slot.addEventListener('click', openAddModal);
+      slot.addEventListener('click', () => openAddModal(false));
       board.appendChild(slot);
       continue;
     }
+    board.appendChild(renderTaskCard(task, now));
+  }
+
+  board.appendChild(renderBodySlot(bodyTask, now));
+
+  renderTodayProgress();
+  renderFrog();
+  renderFitnessNudge();
+}
+
+function renderTaskCard(task, now, isBodySlot = false) {
     const cat = catById(task.category);
     const card = document.createElement('div');
-    card.className = 'task-card';
+    card.className = `task-card${isBodySlot ? ' body-task-card' : ''}`;
+
+    if (isBodySlot) {
+      const slotLabel = document.createElement('div');
+      slotLabel.className = 'body-slot-label';
+      slotLabel.textContent = '🔒 Your Body Slot';
+      card.appendChild(slotLabel);
+    }
 
     const badge = document.createElement('span');
     badge.className = 'cat-badge';
@@ -437,6 +467,17 @@ function renderBoard() {
 
     card.appendChild(badge);
     card.appendChild(title);
+
+    if (isBodySlot) {
+      const motivation = document.createElement('div');
+      motivation.className = 'body-slot-message';
+      motivation.textContent = bodyMessageForToday();
+      card.appendChild(motivation);
+      const waiting = document.createElement('div');
+      waiting.className = 'body-waiting';
+      waiting.textContent = bodyWaitingCopy(task.createdAt);
+      card.appendChild(waiting);
+    }
 
     if (task.startedAt) {
       card.classList.add('is-running');
@@ -499,12 +540,41 @@ function renderBoard() {
       card.appendChild(actions);
     }
 
-    board.appendChild(card);
-  }
+    return card;
+}
 
-  renderTodayProgress();
-  renderFrog();
-  renderFitnessNudge();
+function renderBodySlot(task, now) {
+  if (task) return renderTaskCard(task, now, true);
+
+  const slot = document.createElement('button');
+  slot.type = 'button';
+  slot.className = 'body-slot-empty';
+  slot.innerHTML = `
+    <span class="body-slot-label">🔒 Your Body Slot</span>
+    <strong>Choose today’s movement</strong>
+    <span class="body-slot-message">${bodyMessageForToday()}</span>
+    <span class="body-slot-cta">+ Add a 30-minute body task</span>
+  `;
+  slot.addEventListener('click', () => openAddModal(true));
+  return slot;
+}
+
+function bodyMessageForToday() {
+  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0)) % BODY_SLOT_MESSAGES.length;
+  return BODY_SLOT_MESSAGES[messageIndex];
+}
+
+function bodyWaitingCopy(createdAt) {
+  if (!createdAt) return 'Waiting for you — 30 minutes is enough.';
+  const elapsed = Math.max(0, Date.now() - createdAt);
+  const hours = Math.floor(elapsed / 3600000);
+  if (hours < 1) return 'Fresh promise · added just now';
+  if (hours < 24) return `Waiting for you · added ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  const leftoverHours = hours % 24;
+  if (days === 1) return `Waiting since yesterday · ${leftoverHours}h beyond the first day`;
+  if (days < 4) return `Your body is still waiting · added ${days}d ${leftoverHours}h ago`;
+  return `No perfect workout needed · waiting ${days}d ${leftoverHours}h`;
 }
 
 function startTask(id) {
@@ -783,22 +853,27 @@ taskCategorySelect.addEventListener('change', () => {
 let editingTaskId = null;
 let editingTaskCompletedAt = null;
 let editingTaskSource = 'active';
+let addingToBodySlot = false;
 const modalTitle = document.getElementById('modalTitle');
 const saveTaskBtn = document.getElementById('saveTask');
 const taskQuadrantLabel = taskQuadrantSelect.parentElement;
 
-function openAddModal() {
-  if (active.length >= 5) return;
+function openAddModal(forBodySlot = false) {
+  const flexibleTaskCount = active.filter(task => !task.bodySlot).length;
+  if ((forBodySlot && active.some(task => task.bodySlot)) || (!forBodySlot && flexibleTaskCount >= 4)) return;
   editingTaskId = null;
   editingTaskCompletedAt = null;
   editingTaskSource = 'active';
+  addingToBodySlot = forBodySlot;
   taskQuadrantLabel.style.display = '';
-  modalTitle.textContent = 'Add a Task';
-  saveTaskBtn.textContent = 'Add to Board';
+  modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : 'Add a Task';
+  saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : 'Add to Board';
   taskTitleInput.value = '';
-  taskCategorySelect.value = CATEGORIES[0].id;
+  taskTitleInput.placeholder = forBodySlot ? 'e.g. Walk outside for 30 minutes' : 'e.g. LeetCode contest practice';
+  taskCategorySelect.value = forBodySlot ? 'glow_up' : CATEGORIES[0].id;
+  taskCategorySelect.disabled = forBodySlot;
   taskQuadrantSelect.value = 'schedule';
-  taskPointsInput.value = CATEGORIES[0].points;
+  taskPointsInput.value = catById(taskCategorySelect.value).points;
   modalBackdrop.classList.add('open');
   setTimeout(() => taskTitleInput.focus(), 50);
 }
@@ -810,10 +885,12 @@ function openEditModal(id, source = 'active', completedAt = null) {
   editingTaskId = id;
   editingTaskCompletedAt = source === 'log' ? task.completedAt : null;
   editingTaskSource = source;
+  addingToBodySlot = false;
   modalTitle.textContent = source === 'log' ? 'Edit Finished Task' : 'Edit Task';
   saveTaskBtn.textContent = 'Save Changes';
   taskTitleInput.value = task.title;
   taskCategorySelect.value = task.category;
+  taskCategorySelect.disabled = source === 'active' && Boolean(task.bodySlot);
   taskQuadrantSelect.value = task.quadrant || 'schedule';
   taskQuadrantLabel.style.display = source === 'log' ? 'none' : '';
   taskPointsInput.value = task.points;
@@ -826,6 +903,9 @@ function closeModal() {
   editingTaskId = null;
   editingTaskCompletedAt = null;
   editingTaskSource = 'active';
+  addingToBodySlot = false;
+  taskCategorySelect.disabled = false;
+  taskTitleInput.placeholder = 'e.g. LeetCode contest practice';
   taskQuadrantLabel.style.display = '';
 }
 
@@ -858,13 +938,15 @@ document.getElementById('saveTask').addEventListener('click', () => {
     return;
   }
 
-  if (active.length >= 5) { closeModal(); return; }
+  const flexibleTaskCount = active.filter(task => !task.bodySlot).length;
+  if ((addingToBodySlot && active.some(task => task.bodySlot)) || (!addingToBodySlot && flexibleTaskCount >= 4)) { closeModal(); return; }
   active.push({
     id: uid(),
     title,
     category: taskCategorySelect.value,
     quadrant: taskQuadrantSelect.value,
     points,
+    bodySlot: addingToBodySlot,
     createdAt: Date.now(),
     startedAt: null
   });
