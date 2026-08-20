@@ -27,6 +27,16 @@ const BODY_SLOT_MESSAGES = [
   'Walk, stretch, dance, lift — choose something that makes you feel alive.'
 ];
 
+const CAREER_SLOT_MESSAGES = [
+  'Your quant-dev life will be built in sessions like this one. Put in the work.',
+  'Dream job, dream lifestyle, respect and self-satisfaction — earn one piece today.',
+  'CP, C++, OS, Architecture, Networks or applications — one serious move brings the switch closer.',
+  'You said ASAP. Protect the preparation that makes ASAP possible.',
+  'Jenny Humphrey did not wait for permission. Build the skill and make your move.',
+  'Your current role pays today. This slot builds the career you actually want.',
+  'No zero days on the quant-dev escape plan. Choose the next concrete step.'
+];
+
 const EISENHOWER_QUADRANTS = [
   { id: 'do', label: 'Do now', sublabel: 'Urgent + important', hint: 'Your frog belongs here.', color: '#ff6f9c' },
   { id: 'schedule', label: 'Schedule', sublabel: 'Important, not urgent', hint: 'Protect time for it before it becomes urgent.', color: '#e3b23c' },
@@ -411,15 +421,16 @@ function renderBoard() {
   board.innerHTML = '';
   const now = Date.now();
   const bodyTask = active.find(task => task.bodySlot);
-  const flexibleTasks = active.filter(task => !task.bodySlot);
+  const careerTask = active.find(task => task.careerSlot);
+  const flexibleTasks = active.filter(task => !task.bodySlot && !task.careerSlot);
 
-  for (let i = 0; i < Math.max(4, flexibleTasks.length); i++) {
+  for (let i = 0; i < Math.max(3, flexibleTasks.length); i++) {
     const task = flexibleTasks[i];
     if (!task) {
       const slot = document.createElement('div');
       slot.className = 'slot-empty';
       slot.textContent = '+ Add Task';
-      slot.addEventListener('click', () => openAddModal(false));
+      slot.addEventListener('click', () => openAddModal('flexible'));
       board.appendChild(slot);
       continue;
     }
@@ -427,20 +438,28 @@ function renderBoard() {
   }
 
   board.appendChild(renderBodySlot(bodyTask, now));
+  board.appendChild(renderCareerSlot(careerTask, now));
 
   renderTodayProgress();
   renderFrog();
 }
 
-function renderTaskCard(task, now, isBodySlot = false) {
+function renderTaskCard(task, now, protectedSlot = null) {
+    const isBodySlot = protectedSlot === 'body';
+    const isCareerSlot = protectedSlot === 'career';
     const cat = catById(task.category);
     const card = document.createElement('div');
-    card.className = `task-card${isBodySlot ? ' body-task-card' : ''}`;
+    card.className = `task-card${isBodySlot ? ' body-task-card' : ''}${isCareerSlot ? ' career-task-card' : ''}`;
 
     if (isBodySlot) {
       const slotLabel = document.createElement('div');
       slotLabel.className = 'body-slot-label';
       slotLabel.textContent = '🔒 Your Body Slot';
+      card.appendChild(slotLabel);
+    } else if (isCareerSlot) {
+      const slotLabel = document.createElement('div');
+      slotLabel.className = 'career-slot-label';
+      slotLabel.textContent = '🔒 Your Quant Dev Slot';
       card.appendChild(slotLabel);
     }
 
@@ -464,6 +483,15 @@ function renderTaskCard(task, now, isBodySlot = false) {
       const waiting = document.createElement('div');
       waiting.className = 'body-waiting';
       waiting.textContent = bodyWaitingCopy(task.createdAt);
+      card.appendChild(waiting);
+    } else if (isCareerSlot) {
+      const motivation = document.createElement('div');
+      motivation.className = 'career-slot-message';
+      motivation.textContent = careerMessageForToday();
+      card.appendChild(motivation);
+      const waiting = document.createElement('div');
+      waiting.className = 'career-waiting';
+      waiting.textContent = careerWaitingCopy(task.createdAt);
       card.appendChild(waiting);
     }
 
@@ -532,7 +560,7 @@ function renderTaskCard(task, now, isBodySlot = false) {
 }
 
 function renderBodySlot(task, now) {
-  if (task) return renderTaskCard(task, now, true);
+  if (task) return renderTaskCard(task, now, 'body');
 
   const slot = document.createElement('button');
   slot.type = 'button';
@@ -543,13 +571,34 @@ function renderBodySlot(task, now) {
     <span class="body-slot-message">${bodyMessageForToday()}</span>
     <span class="body-slot-cta">+ Add a 30-minute body task</span>
   `;
-  slot.addEventListener('click', () => openAddModal(true));
+  slot.addEventListener('click', () => openAddModal('body'));
+  return slot;
+}
+
+function renderCareerSlot(task, now) {
+  if (task) return renderTaskCard(task, now, 'career');
+
+  const slot = document.createElement('button');
+  slot.type = 'button';
+  slot.className = 'career-slot-empty';
+  slot.innerHTML = `
+    <span class="career-slot-label">🔒 Your Quant Dev Slot</span>
+    <strong>Choose your next quant-dev move</strong>
+    <span class="career-slot-message">${careerMessageForToday()}</span>
+    <span class="career-slot-cta">+ Add job-switch preparation</span>
+  `;
+  slot.addEventListener('click', () => openAddModal('career'));
   return slot;
 }
 
 function bodyMessageForToday() {
   const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0)) % BODY_SLOT_MESSAGES.length;
   return BODY_SLOT_MESSAGES[messageIndex];
+}
+
+function careerMessageForToday() {
+  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0) + 3) % CAREER_SLOT_MESSAGES.length;
+  return CAREER_SLOT_MESSAGES[messageIndex];
 }
 
 function bodyWaitingCopy(createdAt) {
@@ -563,6 +612,19 @@ function bodyWaitingCopy(createdAt) {
   if (days === 1) return `Waiting since yesterday · ${leftoverHours}h beyond the first day`;
   if (days < 4) return `Your body is still waiting · added ${days}d ${leftoverHours}h ago`;
   return `No perfect workout needed · waiting ${days}d ${leftoverHours}h`;
+}
+
+function careerWaitingCopy(createdAt) {
+  if (!createdAt) return 'Your switch starts with one focused session.';
+  const elapsed = Math.max(0, Date.now() - createdAt);
+  const hours = Math.floor(elapsed / 3600000);
+  if (hours < 1) return 'Fresh career move · added just now';
+  if (hours < 24) return `Quant goal waiting · added ${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  const leftoverHours = hours % 24;
+  if (days === 1) return `Your dream role has waited since yesterday · ${leftoverHours}h more`;
+  if (days < 4) return `Job-switch prep waiting · added ${days}d ${leftoverHours}h ago`;
+  return `ASAP needs action · waiting ${days}d ${leftoverHours}h`;
 }
 
 function startTask(id) {
@@ -840,25 +902,31 @@ taskCategorySelect.addEventListener('change', () => {
 let editingTaskId = null;
 let editingTaskCompletedAt = null;
 let editingTaskSource = 'active';
-let addingToBodySlot = false;
+let addingToProtectedSlot = null;
 const modalTitle = document.getElementById('modalTitle');
 const saveTaskBtn = document.getElementById('saveTask');
 const taskQuadrantLabel = taskQuadrantSelect.parentElement;
 
-function openAddModal(forBodySlot = false) {
-  const flexibleTaskCount = active.filter(task => !task.bodySlot).length;
-  if ((forBodySlot && active.some(task => task.bodySlot)) || (!forBodySlot && flexibleTaskCount >= 4)) return;
+function openAddModal(slotType = 'flexible') {
+  const forBodySlot = slotType === 'body';
+  const forCareerSlot = slotType === 'career';
+  const flexibleTaskCount = active.filter(task => !task.bodySlot && !task.careerSlot).length;
+  if ((forBodySlot && active.some(task => task.bodySlot))
+    || (forCareerSlot && active.some(task => task.careerSlot))
+    || (slotType === 'flexible' && flexibleTaskCount >= 3)) return;
   editingTaskId = null;
   editingTaskCompletedAt = null;
   editingTaskSource = 'active';
-  addingToBodySlot = forBodySlot;
+  addingToProtectedSlot = forBodySlot ? 'body' : (forCareerSlot ? 'career' : null);
   taskQuadrantLabel.style.display = '';
-  modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : 'Add a Task';
-  saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : 'Add to Board';
+  modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : (forCareerSlot ? 'Add Your Quant Dev Task' : 'Add a Task');
+  saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : (forCareerSlot ? 'Build My Escape Plan' : 'Add to Board');
   taskTitleInput.value = '';
-  taskTitleInput.placeholder = forBodySlot ? 'e.g. Walk outside for 30 minutes' : 'e.g. LeetCode contest practice';
-  taskCategorySelect.value = forBodySlot ? 'glow_up' : CATEGORIES[0].id;
-  taskCategorySelect.disabled = forBodySlot;
+  taskTitleInput.placeholder = forBodySlot
+    ? 'e.g. Walk outside for 30 minutes'
+    : (forCareerSlot ? 'e.g. Solve 3 Codeforces problems' : 'e.g. LeetCode contest practice');
+  taskCategorySelect.value = forBodySlot ? 'glow_up' : (forCareerSlot ? 'empire_building' : CATEGORIES[0].id);
+  taskCategorySelect.disabled = forBodySlot || forCareerSlot;
   taskQuadrantSelect.value = 'schedule';
   taskPointsInput.value = catById(taskCategorySelect.value).points;
   modalBackdrop.classList.add('open');
@@ -872,12 +940,12 @@ function openEditModal(id, source = 'active', completedAt = null) {
   editingTaskId = id;
   editingTaskCompletedAt = source === 'log' ? task.completedAt : null;
   editingTaskSource = source;
-  addingToBodySlot = false;
+  addingToProtectedSlot = null;
   modalTitle.textContent = source === 'log' ? 'Edit Finished Task' : 'Edit Task';
   saveTaskBtn.textContent = 'Save Changes';
   taskTitleInput.value = task.title;
   taskCategorySelect.value = task.category;
-  taskCategorySelect.disabled = source === 'active' && Boolean(task.bodySlot);
+  taskCategorySelect.disabled = source === 'active' && Boolean(task.bodySlot || task.careerSlot);
   taskQuadrantSelect.value = task.quadrant || 'schedule';
   taskQuadrantLabel.style.display = source === 'log' ? 'none' : '';
   taskPointsInput.value = task.points;
@@ -890,7 +958,7 @@ function closeModal() {
   editingTaskId = null;
   editingTaskCompletedAt = null;
   editingTaskSource = 'active';
-  addingToBodySlot = false;
+  addingToProtectedSlot = null;
   taskCategorySelect.disabled = false;
   taskTitleInput.placeholder = 'e.g. LeetCode contest practice';
   taskQuadrantLabel.style.display = '';
@@ -925,15 +993,18 @@ document.getElementById('saveTask').addEventListener('click', () => {
     return;
   }
 
-  const flexibleTaskCount = active.filter(task => !task.bodySlot).length;
-  if ((addingToBodySlot && active.some(task => task.bodySlot)) || (!addingToBodySlot && flexibleTaskCount >= 4)) { closeModal(); return; }
+  const flexibleTaskCount = active.filter(task => !task.bodySlot && !task.careerSlot).length;
+  if ((addingToProtectedSlot === 'body' && active.some(task => task.bodySlot))
+    || (addingToProtectedSlot === 'career' && active.some(task => task.careerSlot))
+    || (!addingToProtectedSlot && flexibleTaskCount >= 3)) { closeModal(); return; }
   active.push({
     id: uid(),
     title,
     category: taskCategorySelect.value,
     quadrant: taskQuadrantSelect.value,
     points,
-    bodySlot: addingToBodySlot,
+    bodySlot: addingToProtectedSlot === 'body',
+    careerSlot: addingToProtectedSlot === 'career',
     createdAt: Date.now(),
     startedAt: null
   });
@@ -1636,7 +1707,15 @@ async function startApp() {
 
   const activeChanged = migrateCategoryIds(active);
   const logChanged = migrateCategoryIds(log);
-  if (activeChanged) saveActive();
+  let protectedSlotChanged = false;
+  if (!active.some(task => task.careerSlot)) {
+    const existingQuantTask = active.find(task => !task.bodySlot && task.category === 'empire_building');
+    if (existingQuantTask) {
+      existingQuantTask.careerSlot = true;
+      protectedSlotChanged = true;
+    }
+  }
+  if (activeChanged || protectedSlotChanged) saveActive();
   if (logChanged) saveLog();
 
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, {
