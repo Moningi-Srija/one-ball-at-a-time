@@ -169,9 +169,16 @@
     </section>
 
     <div class="chart-grid">
-      <div class="chart-card">
-        <h3>Points Over Time</h3>
-        <canvas id="trendChart" height="190"></canvas>
+      <div class="chart-card trend-chart-card" id="trendChartCard">
+        <div class="trend-chart-head">
+          <h3>Points Per Day <span class="hint" id="trendChartHint"></span></h3>
+          <button class="btn ghost small" id="toggleTrendChart" type="button" aria-expanded="false">Maximize</button>
+        </div>
+        <div class="trend-chart-scroll" id="trendChartScroll">
+          <div class="trend-chart-stage" id="trendChartStage">
+            <canvas id="trendChart"></canvas>
+          </div>
+        </div>
       </div>
       <div class="chart-card">
         <h3>Best Days of the Week</h3>

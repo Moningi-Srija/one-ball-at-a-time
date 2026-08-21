@@ -584,6 +584,24 @@ body::after {
 }
 .chart-card h3 { margin: 0 0 12px; font-family: var(--serif); font-size: 15px; color: var(--text); font-weight: 700; }
 .chart-card h3 .hint { font-size: 11px; font-weight: 400; }
+.trend-chart-card { min-width: 0; }
+.trend-chart-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.trend-chart-head h3 { margin: 0; }
+.trend-chart-scroll { width: 100%; overflow-x: auto; overflow-y: hidden; padding-bottom: 8px; scrollbar-color: var(--border-strong) var(--panel-soft); }
+.trend-chart-stage { position: relative; height: 310px; min-width: 680px; }
+.trend-chart-card.is-expanded {
+  position: fixed;
+  inset: 18px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: linear-gradient(160deg, #321b27, #1b1017);
+  box-shadow: 0 26px 80px rgba(0,0,0,.72), 0 0 0 9999px rgba(10,4,8,.82);
+}
+.trend-chart-card.is-expanded .trend-chart-scroll { flex: 1; }
+.trend-chart-card.is-expanded .trend-chart-stage { height: calc(100vh - 125px); }
+body.chart-expanded-open { overflow: hidden; }
 
 .heatmap-wrap { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; overflow-x: auto; padding-bottom: 6px; }
 .heatmap-grid { display: grid; grid-template-rows: repeat(7, 13px); grid-auto-flow: column; gap: 3px; }

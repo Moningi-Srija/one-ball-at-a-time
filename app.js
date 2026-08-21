@@ -1176,6 +1176,44 @@ function trendSeries(days) {
   return { labels, data };
 }
 
+function analyticsDailyTrendSeries() {
+  const today = startOfDay(new Date());
+  let start;
+  let periodLabel;
+
+  if (analytics.period === 'all') {
+    start = log.length
+      ? startOfDay(new Date(Math.min(...log.map(task => task.completedAt))))
+      : today;
+    periodLabel = 'All time';
+  } else {
+    const [rangeStart] = getRange(analytics.period, 0);
+    start = startOfDay(new Date(rangeStart));
+    periodLabel = analytics.period === 'week' ? 'This week' : 'This month';
+  }
+
+  const pointsByDay = new Map();
+  log.forEach(task => {
+    const taskDay = localDateKey(new Date(task.completedAt));
+    pointsByDay.set(taskDay, (pointsByDay.get(taskDay) || 0) + task.points);
+  });
+
+  const labels = [];
+  const data = [];
+  const dates = [];
+  for (let day = new Date(start); day <= today; day = addDays(day, 1)) {
+    dates.push(new Date(day));
+    labels.push(day.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      ...(analytics.period === 'all' && day.getFullYear() !== today.getFullYear() ? { year: '2-digit' } : {})
+    }));
+    data.push(pointsByDay.get(localDateKey(day)) || 0);
+  }
+
+  return { labels, data, dates, periodLabel };
+}
+
 function computeStreaks() {
   const daySet = new Set(log.map(t => new Date(t.completedAt).toDateString()));
   let current = 0;
@@ -1232,7 +1270,10 @@ function renderCharts() {
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
 
-  const { labels, data } = trendSeries(30);
+  const { labels, data, periodLabel } = analyticsDailyTrendSeries();
+  const trendStage = document.getElementById('trendChartStage');
+  trendStage.style.width = `${Math.max(680, labels.length * 38)}px`;
+  document.getElementById('trendChartHint').textContent = `· ${periodLabel} · ${labels.length} day${labels.length === 1 ? '' : 's'}`;
   charts.trend = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
@@ -1247,7 +1288,30 @@ function renderCharts() {
         pointBackgroundColor: CHART_COLORS.accent2,
       }]
     },
-    options: baseChartOptions({ plugins: { legend: { display: false } } })
+    options: baseChartOptions({
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => items[0]?.label || '',
+            label: item => `${item.raw} point${item.raw === 1 ? '' : 's'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, maxRotation: 50, minRotation: 40 },
+          grid: { color: CHART_COLORS.grid }
+        },
+        y: {
+          ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, precision: 0 },
+          grid: { color: CHART_COLORS.grid },
+          beginAtZero: true
+        }
+      }
+    })
   });
 
   const { map: catMap } = categoryAnalyticsData();
@@ -1348,6 +1412,26 @@ document.getElementById('analyticsPeriod').addEventListener('click', event => {
   analytics.period = button.dataset.analyticsPeriod;
   renderCategoryInsights();
   renderCharts();
+});
+
+function setTrendChartExpanded(expanded) {
+  const card = document.getElementById('trendChartCard');
+  const button = document.getElementById('toggleTrendChart');
+  card.classList.toggle('is-expanded', expanded);
+  document.body.classList.toggle('chart-expanded-open', expanded);
+  button.textContent = expanded ? 'Close' : 'Maximize';
+  button.setAttribute('aria-expanded', String(expanded));
+  requestAnimationFrame(() => charts.trend?.resize());
+}
+
+document.getElementById('toggleTrendChart').addEventListener('click', () => {
+  setTrendChartExpanded(!document.getElementById('trendChartCard').classList.contains('is-expanded'));
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.getElementById('trendChartCard').classList.contains('is-expanded')) {
+    setTrendChartExpanded(false);
+  }
 });
 
 function renderHeatmap() {
