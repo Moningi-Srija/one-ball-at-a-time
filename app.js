@@ -1273,12 +1273,13 @@ function renderCharts() {
   const { labels, data, periodLabel } = analyticsDailyTrendSeries();
   const trendStage = document.getElementById('trendChartStage');
   trendStage.style.width = `${Math.max(680, labels.length * 38)}px`;
-  document.getElementById('trendChartHint').textContent = `· ${periodLabel} · ${labels.length} day${labels.length === 1 ? '' : 's'}`;
+  document.getElementById('trendChartHint').textContent = `· ${periodLabel} · ${labels.length} day${labels.length === 1 ? '' : 's'} · target ${targets.day}`;
   charts.trend = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
       labels,
       datasets: [{
+        label: 'Daily points',
         data,
         borderColor: CHART_COLORS.accent,
         backgroundColor: 'rgba(255, 93, 168, 0.15)',
@@ -1286,6 +1287,15 @@ function renderCharts() {
         tension: 0.35,
         pointRadius: 2,
         pointBackgroundColor: CHART_COLORS.accent2,
+      }, {
+        label: `${targets.day}-point target`,
+        data: labels.map(() => targets.day),
+        borderColor: CHART_COLORS.accent2,
+        borderDash: [8, 6],
+        borderWidth: 2,
+        pointRadius: 0,
+        fill: false,
+        tension: 0,
       }]
     },
     options: baseChartOptions({
@@ -1296,7 +1306,7 @@ function renderCharts() {
         tooltip: {
           callbacks: {
             title: items => items[0]?.label || '',
-            label: item => `${item.raw} point${item.raw === 1 ? '' : 's'}`
+            label: item => `${item.dataset.label}: ${item.raw} point${item.raw === 1 ? '' : 's'}`
           }
         }
       },
@@ -1434,6 +1444,93 @@ document.addEventListener('keydown', event => {
   }
 });
 
+function dailyAccountabilityData() {
+  const today = startOfDay(new Date());
+  const firstCompletedAt = log.length ? Math.min(...log.map(task => task.completedAt)) : Date.now();
+  const firstDay = startOfDay(new Date(firstCompletedAt));
+  const target = targets.day;
+  const pointsByDay = new Map();
+  const tasksByDay = new Map();
+
+  log.forEach(task => {
+    const key = localDateKey(new Date(task.completedAt));
+    pointsByDay.set(key, (pointsByDay.get(key) || 0) + task.points);
+    tasksByDay.set(key, (tasksByDay.get(key) || 0) + 1);
+  });
+
+  const days = [];
+  for (let day = new Date(firstDay); day <= today; day = addDays(day, 1)) {
+    const key = localDateKey(day);
+    const points = pointsByDay.get(key) || 0;
+    const taskCount = tasksByDay.get(key) || 0;
+    const isToday = key === localDateKey(today);
+    days.push({ date: new Date(day), points, taskCount, gap: Math.max(0, target - points), isToday });
+  }
+
+  const completedDays = days.filter(day => !day.isToday);
+  const targetDays = days.filter(day => day.points >= target).length;
+  const belowTargetDays = completedDays.filter(day => day.points < target).length;
+  const zeroDays = completedDays.filter(day => day.points === 0).length;
+  const historicalGap = completedDays.reduce((sum, day) => sum + day.gap, 0);
+  const hitRate = completedDays.length
+    ? Math.round((completedDays.filter(day => day.points >= target).length / completedDays.length) * 100)
+    : 0;
+  const elapsedHours = Math.max(0, Math.floor((Date.now() - firstCompletedAt) / 3600000));
+
+  return { days, target, targetDays, belowTargetDays, zeroDays, historicalGap, hitRate, elapsedHours, firstCompletedAt };
+}
+
+function renderDailyAccountability() {
+  const data = dailyAccountabilityData();
+  const summary = document.getElementById('accountabilitySummary');
+  const body = document.getElementById('accountabilityBody');
+  const todayRecord = data.days[data.days.length - 1];
+  const firstDate = new Date(data.firstCompletedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+  document.getElementById('accountabilityHint').textContent = `Since your first logged task on ${firstDate}`;
+  summary.innerHTML = [
+    { value: data.days.length, label: 'Calendar Days' },
+    { value: `${data.elapsedHours}h`, label: 'Time Elapsed' },
+    { value: data.targetDays, label: `${data.target}-Point Days` },
+    { value: data.belowTargetDays, label: 'Past Days Below Target' },
+    { value: data.zeroDays, label: 'Zero-Point Days' },
+    { value: `${data.hitRate}%`, label: 'Historical Hit Rate' },
+    { value: data.historicalGap, label: 'Past Points Left' },
+    { value: todayRecord?.gap || 0, label: 'Points Needed Today' }
+  ].map(item => `
+    <div class="accountability-stat">
+      <strong>${item.value}</strong>
+      <span>${item.label}</span>
+    </div>
+  `).join('');
+
+  body.innerHTML = '';
+  [...data.days].reverse().forEach(day => {
+    let status = 'Target hit';
+    let statusClass = 'is-hit';
+    if (day.points < data.target && day.isToday) {
+      status = `${day.gap} pts to go`;
+      statusClass = 'is-progress';
+    } else if (day.points === 0) {
+      status = 'Zero-point day';
+      statusClass = 'is-zero';
+    } else if (day.points < data.target) {
+      status = `${day.gap} pts short`;
+      statusClass = 'is-short';
+    }
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${day.date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}${day.isToday ? ' · Today' : ''}</td>
+      <td><strong>${day.points}</strong> / ${data.target}</td>
+      <td>${day.taskCount}</td>
+      <td>${day.gap}</td>
+      <td><span class="accountability-status ${statusClass}">${status}</span></td>
+    `;
+    body.appendChild(row);
+  });
+}
+
 function renderHeatmap() {
   const weeks = 17;
   const days = weeks * 7;
@@ -1560,6 +1657,7 @@ function renderAnalytics() {
   generateRecap();
   renderCategoryInsights();
   renderCharts();
+  renderDailyAccountability();
   renderHeatmap();
 }
 
