@@ -80,6 +80,7 @@ let log = [];      // finished tasks
 let targets = DEFAULT_TARGETS;
 let frog = null;   // today's deliberately chosen hardest/most important task
 let logCategoryFilter = 'all';
+let logDateFilter = '';
 
 async function apiGet(path) {
   const res = await fetch(path);
@@ -1130,6 +1131,7 @@ function renderCategoryBreakdown() {
 const CHART_COLORS = { text: '#b98ba0', grid: 'rgba(185, 139, 160, 0.12)', accent: '#ff5da8', accent2: '#e3b23c', accent3: '#c9a0e8' };
 let charts = {};
 const analytics = { period: 'week' };
+let analyticsCategoryId = 'glow_up';
 
 function analyticsLogEntries() {
   if (analytics.period === 'all') return log;
@@ -1214,6 +1216,55 @@ function analyticsDailyTrendSeries() {
   return { labels, data, dates, periodLabel };
 }
 
+function allTimeCategoryDailySeries(categoryId) {
+  const today = startOfDay(new Date());
+  const start = log.length
+    ? startOfDay(new Date(Math.min(...log.map(task => task.completedAt))))
+    : today;
+  const pointsByDay = new Map();
+
+  log.filter(task => task.category === categoryId).forEach(task => {
+    const key = localDateKey(new Date(task.completedAt));
+    pointsByDay.set(key, (pointsByDay.get(key) || 0) + task.points);
+  });
+
+  const labels = [];
+  const data = [];
+  const dates = [];
+  for (let day = new Date(start); day <= today; day = addDays(day, 1)) {
+    dates.push(new Date(day));
+    labels.push(day.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      ...(day.getFullYear() !== today.getFullYear() ? { year: '2-digit' } : {})
+    }));
+    data.push(pointsByDay.get(localDateKey(day)) || 0);
+  }
+
+  return { labels, data, dates };
+}
+
+function openLogForDate(date, categoryId = 'all') {
+  logDateFilter = localDateKey(date);
+  logCategoryFilter = categoryId;
+  document.querySelector('[data-tab="log"]')?.click();
+}
+
+function dailyPointInteraction(dates, categoryId = 'all') {
+  return {
+    onClick: (event, _elements, chart) => {
+      const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+      const dailyPoint = points.find(point => point.datasetIndex === 0);
+      if (dailyPoint) openLogForDate(dates[dailyPoint.index], categoryId);
+    },
+    onHover: (event, _elements, chart) => {
+      const points = chart.getElementsAtEventForMode(event, 'nearest', { intersect: true }, true);
+      const target = event.native?.target;
+      if (target) target.style.cursor = points.some(point => point.datasetIndex === 0) ? 'pointer' : 'default';
+    }
+  };
+}
+
 function computeStreaks() {
   const daySet = new Set(log.map(t => new Date(t.completedAt).toDateString()));
   let current = 0;
@@ -1270,10 +1321,10 @@ function renderCharts() {
   Object.values(charts).forEach(c => c.destroy());
   charts = {};
 
-  const { labels, data, periodLabel } = analyticsDailyTrendSeries();
+  const { labels, data, dates, periodLabel } = analyticsDailyTrendSeries();
   const trendStage = document.getElementById('trendChartStage');
   trendStage.style.width = `${Math.max(680, labels.length * 38)}px`;
-  document.getElementById('trendChartHint').textContent = `· ${periodLabel} · ${labels.length} day${labels.length === 1 ? '' : 's'} · target ${targets.day}`;
+  document.getElementById('trendChartHint').textContent = `· ${periodLabel} · ${labels.length} day${labels.length === 1 ? '' : 's'} · target ${targets.day}${analytics.period === 'all' ? ' · click a dot for its log' : ''}`;
   charts.trend = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
@@ -1285,7 +1336,9 @@ function renderCharts() {
         backgroundColor: 'rgba(255, 93, 168, 0.15)',
         fill: true,
         tension: 0.35,
-        pointRadius: 2,
+        pointRadius: 3,
+        pointHitRadius: 10,
+        pointHoverRadius: 6,
         pointBackgroundColor: CHART_COLORS.accent2,
       }, {
         label: `${targets.day}-point target`,
@@ -1301,6 +1354,7 @@ function renderCharts() {
     options: baseChartOptions({
       maintainAspectRatio: false,
       interaction: { intersect: false, mode: 'index' },
+      ...(analytics.period === 'all' ? dailyPointInteraction(dates) : {}),
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -1352,7 +1406,87 @@ function renderCharts() {
     },
     options: baseChartOptions({ plugins: { legend: { display: false } } })
   });
+
+  renderCategoryHistoryChart();
 }
+
+function renderCategoryHistoryChart() {
+  const picker = document.getElementById('categoryHistorySelect');
+  if (!picker.options.length) {
+    CATEGORIES.forEach(category => {
+      const option = document.createElement('option');
+      option.value = category.id;
+      option.textContent = `${category.icon} ${category.label}`;
+      picker.appendChild(option);
+    });
+  }
+  if (!CATEGORIES.some(category => category.id === analyticsCategoryId)) analyticsCategoryId = CATEGORIES[0].id;
+  picker.value = analyticsCategoryId;
+
+  const category = catById(analyticsCategoryId);
+  const { labels, data, dates } = allTimeCategoryDailySeries(analyticsCategoryId);
+  const categoryTasks = log.filter(task => task.category === analyticsCategoryId);
+  const activeDays = data.filter(points => points > 0).length;
+  const zeroDays = data.length - activeDays;
+  const totalPoints = data.reduce((sum, points) => sum + points, 0);
+  const lastTask = categoryTasks.reduce((latest, task) => !latest || task.completedAt > latest.completedAt ? task : latest, null);
+  const lastDone = lastTask
+    ? new Date(lastTask.completedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : 'Never';
+
+  document.getElementById('categoryHistorySummary').innerHTML = `
+    <div><strong>${totalPoints}</strong><span>all-time points</span></div>
+    <div><strong>${activeDays}</strong><span>active days</span></div>
+    <div><strong>${zeroDays}</strong><span>zero-point days</span></div>
+    <div><strong>${lastDone}</strong><span>last activity</span></div>
+  `;
+  document.getElementById('categoryHistoryStage').style.width = `${Math.max(680, labels.length * 38)}px`;
+
+  charts.categoryHistory?.destroy();
+  charts.categoryHistory = new Chart(document.getElementById('categoryHistoryChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: `${category.icon} ${category.label}`,
+        data,
+        borderColor: category.color,
+        backgroundColor: `${category.color}24`,
+        fill: true,
+        tension: 0.28,
+        pointRadius: 3,
+        pointHitRadius: 10,
+        pointHoverRadius: 6,
+        pointBackgroundColor: category.color,
+      }]
+    },
+    options: baseChartOptions({
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      ...dailyPointInteraction(dates, analyticsCategoryId),
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: item => `${item.raw} point${item.raw === 1 ? '' : 's'}` } }
+      },
+      scales: {
+        x: {
+          ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, maxRotation: 50, minRotation: 40 },
+          grid: { color: CHART_COLORS.grid }
+        },
+        y: {
+          ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, precision: 0 },
+          grid: { color: CHART_COLORS.grid },
+          beginAtZero: true
+        }
+      }
+    })
+  });
+}
+
+document.getElementById('categoryHistorySelect').addEventListener('change', event => {
+  analyticsCategoryId = event.target.value;
+  renderCategoryHistoryChart();
+});
 
 function renderCategoryInsights() {
   document.querySelectorAll('#analyticsPeriod .seg-btn').forEach(button => {
@@ -1666,6 +1800,7 @@ function renderAnalytics() {
 function renderLog() {
   const body = document.getElementById('logBody');
   const categoryFilter = document.getElementById('logCategoryFilter');
+  const dateFilter = document.getElementById('logDateFilter');
 
   if (categoryFilter.options.length === 1) {
     CATEGORIES.forEach(category => {
@@ -1677,20 +1812,28 @@ function renderLog() {
   }
 
   categoryFilter.value = logCategoryFilter;
-  const visibleTasks = logCategoryFilter === 'all'
-    ? log
-    : log.filter(task => task.category === logCategoryFilter);
+  dateFilter.value = logDateFilter;
+  const visibleTasks = log.filter(task =>
+    (logCategoryFilter === 'all' || task.category === logCategoryFilter) &&
+    (!logDateFilter || localDateKey(new Date(task.completedAt)) === logDateFilter)
+  );
 
   body.innerHTML = '';
   const countText = `${visibleTasks.length} completed task${visibleTasks.length === 1 ? '' : 's'}`;
-  document.getElementById('logCount').textContent = logCategoryFilter === 'all'
-    ? countText
-    : `${countText} in ${catById(logCategoryFilter).label}`;
+  const filterDescription = [];
+  if (logCategoryFilter !== 'all') filterDescription.push(catById(logCategoryFilter).label);
+  if (logDateFilter) {
+    const [year, month, day] = logDateFilter.split('-').map(Number);
+    filterDescription.push(new Date(year, month - 1, day).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }));
+  }
+  document.getElementById('logCount').textContent = filterDescription.length
+    ? `${countText} · ${filterDescription.join(' · ')}`
+    : countText;
 
   if (visibleTasks.length === 0) {
-    const emptyMessage = logCategoryFilter === 'all'
-      ? 'No finished tasks yet — complete one from the Board.'
-      : `No finished tasks in ${catById(logCategoryFilter).label} yet.`;
+    const emptyMessage = filterDescription.length
+      ? 'No finished tasks match these filters.'
+      : 'No finished tasks yet — complete one from the Board.';
     body.innerHTML = `<tr class="empty-row"><td colspan="7">${emptyMessage}</td></tr>`;
     return;
   }
@@ -1735,6 +1878,17 @@ function deleteFinishedTask(id, completedAt) {
 
 document.getElementById('logCategoryFilter').addEventListener('change', event => {
   logCategoryFilter = event.target.value;
+  renderLog();
+});
+
+document.getElementById('logDateFilter').addEventListener('change', event => {
+  logDateFilter = event.target.value;
+  renderLog();
+});
+
+document.getElementById('clearLogFilters').addEventListener('click', () => {
+  logCategoryFilter = 'all';
+  logDateFilter = '';
   renderLog();
 });
 

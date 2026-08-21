@@ -186,6 +186,26 @@
       </div>
     </div>
 
+    <section class="category-history-card" aria-labelledby="categoryHistoryTitle">
+      <div class="category-history-head">
+        <div>
+          <h3 id="categoryHistoryTitle">Category Reality Check</h3>
+          <p class="hint">Every calendar day since your first log. Zeroes stay visible so neglect cannot hide.</p>
+        </div>
+        <label class="category-history-picker" for="categoryHistorySelect">
+          <span>Category</span>
+          <select id="categoryHistorySelect" class="log-filter" aria-label="Choose category history"></select>
+        </label>
+      </div>
+      <div class="category-history-summary" id="categoryHistorySummary"></div>
+      <div class="trend-chart-scroll">
+        <div class="category-history-stage" id="categoryHistoryStage">
+          <canvas id="categoryHistoryChart"></canvas>
+        </div>
+      </div>
+      <p class="chart-drill-hint">Click a dot to open that day’s finished tasks in the Log.</p>
+    </section>
+
     <section class="accountability-card" aria-labelledby="accountabilityTitle">
       <div class="section-head">
         <h3 id="accountabilityTitle">25-Point Accountability</h3>
@@ -231,6 +251,9 @@
         <select id="logCategoryFilter" class="log-filter" aria-label="Filter task log by category">
           <option value="all">All Categories</option>
         </select>
+        <label class="log-filter-label" for="logDateFilter">Date</label>
+        <input id="logDateFilter" class="log-filter log-date-filter" type="date" aria-label="Filter task log by completion date">
+        <button class="btn ghost small" id="clearLogFilters" type="button">Clear filters</button>
       </div>
     </div>
     <div class="log-table-wrap">
