@@ -17,7 +17,7 @@ The deck explains the product story, the current experience, the implementation,
 
 - Keeps up to **five active tasks** on the board.
 - Lets you choose one active task as today's **Eat the Frog** priority; the selection persists for the local date and is marked complete when that task is finished.
-- Lets you add, edit, or remove a task with a category and an editable points value.
+- Lets you add, edit, or remove a task with a category, editable points value, and optional note for context or next steps.
 - Assigns active tasks to an Eisenhower priority quadrant and groups them in a Matrix tab: **Do now**, **Schedule**, **Delegate / simplify**, or **Eliminate**.
 - Starts a live timer on an individual task card.
 - Finishes a task with confetti, removes it from the active board, and records its start time, finish time, duration, category, and points.
@@ -80,8 +80,8 @@ Open [http://localhost:8791](http://localhost:8791) unless you changed `PORT`.
 
 The `app_state` table stores four JSON values:
 
-- `active`: up to five tasks on the board, including category, points, priority quadrant, and timer state
-- `log`: completed tasks with timing and points metadata
+- `active`: up to five tasks on the board, including category, points, priority quadrant, timer state, and an optional note
+- `log`: completed tasks with timing, points metadata, and the task note
 - `targets`: day, week, weekend, and month point goals
 - `frog`: the locally dated Eat the Frog choice and its completion state
 

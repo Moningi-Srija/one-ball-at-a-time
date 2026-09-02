@@ -476,6 +476,13 @@ function renderTaskCard(task, now, protectedSlot = null) {
     card.appendChild(badge);
     card.appendChild(title);
 
+    if (typeof task.note === 'string' && task.note.trim()) {
+      const notePreview = document.createElement('div');
+      notePreview.className = 'task-note-preview';
+      notePreview.textContent = `📝 ${task.note.trim()}`;
+      card.appendChild(notePreview);
+    }
+
     if (isBodySlot) {
       const motivation = document.createElement('div');
       motivation.className = 'body-slot-message';
@@ -655,6 +662,7 @@ function finishTask(id) {
   log.push({
     id: task.id,
     title: task.title,
+    note: task.note || '',
     category: task.category,
     points: task.points,
     startedAt: task.startedAt,
@@ -665,7 +673,7 @@ function finishTask(id) {
     frog = {
       ...frog,
       completed: true,
-      task: { title: task.title, category: task.category, points: task.points, completedAt }
+      task: { title: task.title, note: task.note || '', category: task.category, points: task.points, completedAt }
     };
     saveFrog();
   }
@@ -684,7 +692,7 @@ function setFrog(task) {
     date: localDateKey(),
     taskId: task.id,
     completed: false,
-    task: { title: task.title, category: task.category, points: task.points }
+    task: { title: task.title, note: task.note || '', category: task.category, points: task.points }
   };
   saveFrog();
   renderFrog();
@@ -715,6 +723,12 @@ function renderFrog() {
     detail.textContent = 'Choose it here, then get it done before the smaller tasks take over.';
   }
   copy.append(title, detail);
+  if (typeof todayFrog?.task?.note === 'string' && todayFrog.task.note.trim()) {
+    const taskNote = document.createElement('div');
+    taskNote.className = 'frog-task-note';
+    taskNote.textContent = `📝 ${todayFrog.task.note.trim()}`;
+    copy.appendChild(taskNote);
+  }
   card.appendChild(copy);
 
   if (todayFrog?.completed) {
@@ -855,7 +869,14 @@ function renderTodayProgress() {
     const meta = document.createElement('div');
     meta.className = 'today-task-meta';
     meta.textContent = `${cat.icon} ${cat.label} · ${task.points} pts · finished ${fmtDateTime(task.completedAt)}`;
-    details.append(title, meta);
+    details.appendChild(title);
+    if (typeof task.note === 'string' && task.note.trim()) {
+      const note = document.createElement('div');
+      note.className = 'today-task-note';
+      note.textContent = `📝 ${task.note.trim()}`;
+      details.appendChild(note);
+    }
+    details.appendChild(meta);
     item.append(dot, details);
     list.appendChild(item);
   });
@@ -879,6 +900,7 @@ setInterval(() => {
 
 const modalBackdrop = document.getElementById('modalBackdrop');
 const taskTitleInput = document.getElementById('taskTitle');
+const taskNoteInput = document.getElementById('taskNote');
 const taskCategorySelect = document.getElementById('taskCategory');
 const taskQuadrantSelect = document.getElementById('taskQuadrant');
 const taskPointsInput = document.getElementById('taskPoints');
@@ -923,6 +945,7 @@ function openAddModal(slotType = 'flexible') {
   modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : (forCareerSlot ? 'Add Your Quant Dev Task' : 'Add a Task');
   saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : (forCareerSlot ? 'Build My Escape Plan' : 'Add to Board');
   taskTitleInput.value = '';
+  taskNoteInput.value = '';
   taskTitleInput.placeholder = forBodySlot
     ? 'e.g. Walk outside for 30 minutes'
     : (forCareerSlot ? 'e.g. Solve 3 Codeforces problems' : 'e.g. LeetCode contest practice');
@@ -945,6 +968,7 @@ function openEditModal(id, source = 'active', completedAt = null) {
   modalTitle.textContent = source === 'log' ? 'Edit Finished Task' : 'Edit Task';
   saveTaskBtn.textContent = 'Save Changes';
   taskTitleInput.value = task.title;
+  taskNoteInput.value = typeof task.note === 'string' ? task.note : '';
   taskCategorySelect.value = task.category;
   taskCategorySelect.disabled = source === 'active' && Boolean(task.bodySlot || task.careerSlot);
   taskQuadrantSelect.value = task.quadrant || 'schedule';
@@ -962,6 +986,7 @@ function closeModal() {
   addingToProtectedSlot = null;
   taskCategorySelect.disabled = false;
   taskTitleInput.placeholder = 'e.g. LeetCode contest practice';
+  taskNoteInput.value = '';
   taskQuadrantLabel.style.display = '';
 }
 
@@ -971,6 +996,7 @@ modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) c
 document.getElementById('saveTask').addEventListener('click', () => {
   const title = taskTitleInput.value.trim();
   if (!title) { taskTitleInput.focus(); return; }
+  const note = taskNoteInput.value.trim().slice(0, 500);
   const points = pointsInQuarterSteps(taskPointsInput.value, catById(taskCategorySelect.value).points);
 
   if (editingTaskId) {
@@ -980,17 +1006,26 @@ document.getElementById('saveTask').addEventListener('click', () => {
       && (source !== 'log' || editingTaskCompletedAt === null || t.completedAt === editingTaskCompletedAt));
     if (task) {
       task.title = title;
+      task.note = note;
       task.category = taskCategorySelect.value;
       if (source === 'active') task.quadrant = taskQuadrantSelect.value;
       task.points = points;
-      if (source === 'active' && frog && frog.date === localDateKey() && frog.taskId === task.id) {
-        frog.task = { title: task.title, category: task.category, points: task.points };
-        saveFrog();
+      if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
+        const matchesFrogSnapshot = source === 'active' || frog.task?.completedAt === task.completedAt;
+        if (matchesFrogSnapshot) {
+          frog.task = { ...frog.task, title: task.title, note: task.note || '', category: task.category, points: task.points };
+          saveFrog();
+        }
       }
     }
     if (source === 'log') saveLog(); else saveActive();
     closeModal();
-    if (source === 'log') renderLog(); else renderBoard();
+    if (source === 'log') {
+      renderLog();
+    } else {
+      renderBoard();
+      renderMatrix();
+    }
     return;
   }
 
@@ -1001,6 +1036,7 @@ document.getElementById('saveTask').addEventListener('click', () => {
   active.push({
     id: uid(),
     title,
+    note,
     category: taskCategorySelect.value,
     quadrant: taskQuadrantSelect.value,
     points,
@@ -1046,7 +1082,16 @@ function renderMatrix() {
         const item = document.createElement('button');
         item.className = 'matrix-task';
         item.type = 'button';
-        item.textContent = task.title;
+        const itemTitle = document.createElement('span');
+        itemTitle.className = 'matrix-task-title';
+        itemTitle.textContent = task.title;
+        item.appendChild(itemTitle);
+        if (typeof task.note === 'string' && task.note.trim()) {
+          const itemNote = document.createElement('span');
+          itemNote.className = 'matrix-task-note';
+          itemNote.textContent = `📝 ${task.note.trim()}`;
+          item.appendChild(itemNote);
+        }
         item.title = 'Edit this task’s priority';
         item.addEventListener('click', () => openEditModal(task.id));
         cell.appendChild(item);
@@ -1842,7 +1887,7 @@ function renderLog() {
     const cat = catById(t.category);
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${t.title}</td>
+      <td></td>
       <td><span class="cat-badge" style="background:${cat.color}; padding:4px 11px; border-radius:999px; font-size:11px; font-weight:700;">${cat.icon} ${cat.label}</span></td>
       <td>${t.points}</td>
       <td>${fmtDateTime(t.startedAt)}</td>
@@ -1850,6 +1895,17 @@ function renderLog() {
       <td>${fmtDuration(t.duration)}</td>
       <td></td>
     `;
+    const taskCell = row.firstElementChild;
+    const taskTitle = document.createElement('div');
+    taskTitle.className = 'log-task-title';
+    taskTitle.textContent = t.title;
+    taskCell.appendChild(taskTitle);
+    if (typeof t.note === 'string' && t.note.trim()) {
+      const taskNote = document.createElement('div');
+      taskNote.className = 'log-task-note';
+      taskNote.textContent = `📝 ${t.note.trim()}`;
+      taskCell.appendChild(taskNote);
+    }
     const editCell = row.lastElementChild;
     editCell.className = 'log-actions';
     const editButton = document.createElement('button');
