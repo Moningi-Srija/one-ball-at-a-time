@@ -1,13 +1,15 @@
 :root {
-  --bg: #170d13;
-  --bg-alt: #0e080d;
-  --panel: #2a1722;
-  --panel-soft: #341c29;
-  --panel-hi: #3c2130;
-  --border: #4d2536;
-  --border-strong: #7a3652;
-  --text: #f7e9ee;
-  --text-dim: #b98ba0;
+  --bg: #061827;
+  --bg-alt: #0b2a3f;
+  --panel: #102b3d;
+  --panel-soft: #15364a;
+  --panel-hi: #1b4257;
+  --border: #4d8098;
+  --border-strong: #67a2b9;
+  --text: #f2fbff;
+  --text-dim: #abc9d5;
+  --ice: #7edcff;
+  --ice-soft: #dff7ff;
   --accent: #ff5da8;
   --accent-2: #e3b23c;
   --accent-3: #c9a0e8;
@@ -36,9 +38,9 @@ body::before {
   inset: -15%;
   z-index: -2;
   background:
-    radial-gradient(circle at 18% 15%, rgba(255, 93, 168, 0.16), transparent 42%),
-    radial-gradient(circle at 82% 12%, rgba(227, 178, 60, 0.12), transparent 40%),
-    radial-gradient(circle at 50% 92%, rgba(201, 160, 232, 0.14), transparent 45%),
+    radial-gradient(circle at 18% 15%, rgba(105, 218, 255, 0.24), transparent 42%),
+    radial-gradient(circle at 82% 12%, rgba(160, 196, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 50% 92%, rgba(255, 93, 168, 0.11), transparent 45%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
   pointer-events: none;
 }
@@ -48,7 +50,7 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: radial-gradient(circle at 10px 10px, rgba(227, 178, 60, 0.07) 1.4px, transparent 1.5px) 0 0/28px 28px;
+  background: radial-gradient(circle at 10px 10px, rgba(188, 235, 255, 0.11) 1.4px, transparent 1.5px) 0 0/28px 28px;
   pointer-events: none;
 }
 
@@ -124,6 +126,21 @@ body::after {
 .topbar h1 .bow { -webkit-text-fill-color: var(--accent); color: var(--accent); background: none; font-size: 32px; vertical-align: middle; filter: drop-shadow(0 0 8px rgba(255, 93, 168, 0.6)); }
 .subtitle { margin: 4px 0 0; color: var(--text-dim); font-size: 14px; font-style: italic; font-family: var(--serif); }
 .subtitle.philosophy { font-size: 12.5px; max-width: 480px; opacity: 0.85; margin-top: 6px; }
+.life-mantra {
+  max-width: 590px;
+  margin: 10px 0 0;
+  padding: 10px 13px;
+  border-left: 3px solid var(--ice);
+  border-radius: 0 10px 10px 0;
+  background: linear-gradient(90deg, rgba(126, 220, 255, 0.13), rgba(201, 160, 232, 0.05));
+  color: var(--ice-soft);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  font-style: italic;
+  line-height: 1.55;
+  box-shadow: inset 0 0 0 1px rgba(183, 234, 255, 0.08), 0 0 24px rgba(126, 220, 255, 0.06);
+}
+.life-mantra strong { color: var(--accent-2); white-space: nowrap; }
 
 .tabs { display: flex; gap: 8px; flex-wrap: wrap; }
 .tab-btn {
@@ -165,8 +182,8 @@ body::after {
 /* ---------- Carpe Diem ---------- */
 
 .carpe-diem-banner {
-  background: linear-gradient(135deg, #1a0006, #2b0000 60%, #1a0006);
-  border: 1.5px solid #7a1f1f;
+  background: linear-gradient(135deg, #071b2a, #0f3448 60%, #071b2a);
+  border: 1.5px solid #2f718f;
   border-radius: 14px;
   padding: 20px 26px;
   margin-bottom: 22px;
@@ -185,7 +202,7 @@ body::after {
 }
 .cd-text {
   font-size: 13.5px;
-  color: #f0d3d3;
+  color: #cfeaf5;
   line-height: 1.65;
   max-width: 680px;
   margin: 0 auto;
@@ -254,7 +271,7 @@ body::after {
   font-size: 11px;
   padding: 4px 11px;
   border-radius: 999px;
-  color: #170d13;
+  color: #07151f;
   font-weight: 700;
   letter-spacing: 0.01em;
 }
@@ -281,7 +298,7 @@ body::after {
 /* ---------- Today's progress ---------- */
 
 .frog-section { margin-bottom: 32px; }
-.frog-card { background: linear-gradient(135deg, #3c2130, var(--panel-soft)); border: 1.5px solid var(--accent-2); border-radius: var(--radius); padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 18px; box-shadow: 0 10px 28px rgba(227, 178, 60, 0.13); }
+.frog-card { background: linear-gradient(135deg, var(--panel-hi), var(--panel-soft)); border: 1.5px solid var(--accent-2); border-radius: var(--radius); padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 18px; box-shadow: 0 10px 28px rgba(227, 178, 60, 0.13); }
 .frog-card.is-eaten { border-color: var(--good); box-shadow: 0 10px 28px rgba(70, 217, 166, 0.13); }
 .frog-copy { min-width: 0; }
 .frog-task-title { font-family: var(--serif); font-size: 19px; font-weight: 700; color: var(--text); }
@@ -291,7 +308,7 @@ body::after {
   max-width: 620px;
   margin-top: 7px;
   overflow: hidden;
-  color: #d7b8c6;
+  color: #c3dce7;
   font-size: 11.5px;
   line-height: 1.45;
   overflow-wrap: anywhere;
@@ -336,7 +353,7 @@ body::after {
   display: -webkit-box;
   margin-top: 3px;
   overflow: hidden;
-  color: #d7b8c6;
+  color: #c3dce7;
   font-size: 11px;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -648,8 +665,8 @@ body::after {
   display: flex;
   flex-direction: column;
   padding: 24px;
-  background: linear-gradient(160deg, #321b27, #1b1017);
-  box-shadow: 0 26px 80px rgba(0,0,0,.72), 0 0 0 9999px rgba(10,4,8,.82);
+  background: linear-gradient(160deg, var(--panel-hi), #071925);
+  box-shadow: 0 26px 80px rgba(0,0,0,.72), 0 0 0 9999px rgba(3,16,26,.86);
 }
 .trend-chart-card.is-expanded .trend-chart-scroll { flex: 1; }
 .trend-chart-card.is-expanded .trend-chart-stage { height: calc(100vh - 125px); }
@@ -809,9 +826,9 @@ body.chart-expanded-open { overflow: hidden; }
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at 18% 15%, rgba(255, 93, 168, 0.16), transparent 42%),
-    radial-gradient(circle at 82% 12%, rgba(227, 178, 60, 0.12), transparent 40%),
-    radial-gradient(circle at 50% 92%, rgba(201, 160, 232, 0.14), transparent 45%),
+    radial-gradient(circle at 18% 15%, rgba(105, 218, 255, 0.24), transparent 42%),
+    radial-gradient(circle at 82% 12%, rgba(160, 196, 255, 0.18), transparent 40%),
+    radial-gradient(circle at 50% 92%, rgba(255, 93, 168, 0.11), transparent 45%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-alt) 100%);
 }
 .login-screen.open { display: flex; }
@@ -856,7 +873,7 @@ body.chart-expanded-open { overflow: hidden; }
 .modal-backdrop {
   display: none;
   position: fixed; inset: 0;
-  background: rgba(8, 4, 7, 0.7);
+  background: rgba(3, 16, 26, 0.76);
   backdrop-filter: blur(3px);
   align-items: center; justify-content: center;
   z-index: 50;
@@ -946,4 +963,5 @@ body.chart-expanded-open { overflow: hidden; }
   .today-progress-layout { grid-template-columns: 1fr; }
   .today-area-row { grid-template-columns: minmax(100px, 1fr) 8px auto; gap: 8px; }
   .topbar h1 { font-size: 30px; }
+  .life-mantra { max-width: none; padding: 9px 11px; font-size: 11.5px; }
 }

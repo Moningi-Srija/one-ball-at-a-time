@@ -1173,7 +1173,7 @@ function renderCategoryBreakdown() {
 
 // ---------- Analytics ----------
 
-const CHART_COLORS = { text: '#b98ba0', grid: 'rgba(185, 139, 160, 0.12)', accent: '#ff5da8', accent2: '#e3b23c', accent3: '#c9a0e8' };
+const CHART_COLORS = { text: '#abc9d5', grid: 'rgba(171, 201, 213, 0.14)', accent: '#ff5da8', accent2: '#e3b23c', accent3: '#c9a0e8' };
 let charts = {};
 const analytics = { period: 'week' };
 let analyticsCategoryId = 'glow_up';
@@ -1431,8 +1431,8 @@ function renderCharts() {
       labels: catEntries.length ? catEntries.map(e => `${e.c.icon} ${e.c.label}`) : ['No data yet'],
       datasets: [{
         data: catEntries.length ? catEntries.map(e => e.val) : [1],
-        backgroundColor: catEntries.length ? catEntries.map(e => e.c.color) : ['#4d2536'],
-        borderColor: '#170d13',
+        backgroundColor: catEntries.length ? catEntries.map(e => e.c.color) : ['#4d8098'],
+        borderColor: '#0b2333',
         borderWidth: 2,
       }]
     },
