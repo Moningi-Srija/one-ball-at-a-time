@@ -1,3 +1,6 @@
+const DEMO_MODE = window.location.pathname.replace(/\/+$/, '') === '/demo';
+const DEMO_STORAGE_KEY = 'one-ball-at-a-time-demo-v1';
+
 // ---------- Data ----------
 
 const CATEGORIES = [
@@ -15,6 +18,20 @@ const CATEGORIES = [
   { id: 'other',          label: 'Plot Twist',             icon: '✨', desc: 'Anything that doesn\'t fit elsewhere.',                                                   points: 3,  color: '#9a8f99' },
 ];
 
+if (DEMO_MODE) {
+  const demoCategoryCopy = {
+    boardroom_brain: {
+      label: 'Strategy Mode',
+      desc: 'Deep work, deliberate learning, decisions and preparation that build real capability.'
+    },
+    empire_building: {
+      label: 'Future Builder',
+      desc: 'Skills, portfolio work, applications and projects that move your biggest goal forward.'
+    }
+  };
+  CATEGORIES.forEach(category => Object.assign(category, demoCategoryCopy[category.id] || {}));
+}
+
 const catById = id => CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
 
 const BODY_SLOT_MESSAGES = [
@@ -27,6 +44,13 @@ const BODY_SLOT_MESSAGES = [
   'Walk, stretch, dance, lift — choose something that makes you feel alive.'
 ];
 
+const DEMO_BODY_SLOT_MESSAGES = [
+  'Protect your energy with one honest block of movement today.',
+  'Walk, stretch, dance or lift — choose something that makes you feel alive.',
+  'Fresh air and movement count. Your body is one of your protected promises.',
+  'No perfect workout needed. Give yourself 30 useful minutes.'
+];
+
 const CAREER_SLOT_MESSAGES = [
   'Your quant-dev life will be built in sessions like this one. Put in the work.',
   'Dream job, dream lifestyle, respect and self-satisfaction — earn one piece today.',
@@ -36,6 +60,39 @@ const CAREER_SLOT_MESSAGES = [
   'Your current role pays today. This slot builds the career you actually want.',
   'No zero days on the quant-dev escape plan. Choose the next concrete step.'
 ];
+
+const DEMO_CAREER_SLOT_MESSAGES = [
+  'Skills, portfolio, applications or interview prep — make one concrete move.',
+  'Your future changes through focused sessions like this one.',
+  'Protect time for the goal that can change what comes next.',
+  'One serious move today is more useful than a perfect plan for someday.'
+];
+
+const CAREER_SLOT_COPY = DEMO_MODE ? {
+  label: '🔒 Your Future-Building Slot',
+  emptyTitle: 'Choose your next future-building move',
+  cta: '+ Add a task for your biggest goal',
+  modalTitle: 'Add Your Future-Building Task',
+  saveLabel: 'Protect This Goal',
+  placeholder: 'e.g. Prepare for an interview',
+  fresh: 'Fresh promise · added just now',
+  underDay: hours => `Your future-building task is waiting · added ${hours}h ago`,
+  oneDay: hours => `Your big goal has waited since yesterday · ${hours}h more`,
+  severalDays: (days, hours) => `Your protected goal is waiting · added ${days}d ${hours}h ago`,
+  longWait: (days, hours) => `Make one concrete move · waiting ${days}d ${hours}h`
+} : {
+  label: '🔒 Your Quant Dev Slot',
+  emptyTitle: 'Choose your next quant-dev move',
+  cta: '+ Add job-switch preparation',
+  modalTitle: 'Add Your Quant Dev Task',
+  saveLabel: 'Build My Escape Plan',
+  placeholder: 'e.g. Solve 3 Codeforces problems',
+  fresh: 'Fresh career move · added just now',
+  underDay: hours => `Quant goal waiting · added ${hours}h ago`,
+  oneDay: hours => `Your dream role has waited since yesterday · ${hours}h more`,
+  severalDays: (days, hours) => `Job-switch prep waiting · added ${days}d ${hours}h ago`,
+  longWait: (days, hours) => `ASAP needs action · waiting ${days}d ${hours}h`
+};
 
 const EISENHOWER_QUADRANTS = [
   { id: 'do', label: 'Do now', sublabel: 'Urgent + important', hint: 'Your frog belongs here.', color: '#ff6f9c' },
@@ -115,16 +172,158 @@ function handleSaveError(err) {
   }
 }
 
-function saveActive() { apiPut('/api/active', active).catch(handleSaveError); }
-function saveLog() { apiPut('/api/log', log).catch(handleSaveError); }
-function saveTargets() { apiPut('/api/targets', targets).catch(handleSaveError); }
-function saveFrog() { apiPut('/api/frog', frog).catch(handleSaveError); }
+function demoTimestamp(daysAgo, hour, minute = 0) {
+  const value = new Date();
+  value.setDate(value.getDate() - daysAgo);
+  value.setHours(hour, minute, 0, 0);
+  return value.getTime();
+}
+
+function demoRecentTimestamp(minutesAgo) {
+  const now = Date.now();
+  const start = new Date();
+  start.setHours(0, 1, 0, 0);
+  return Math.min(now, Math.max(start.getTime(), now - minutesAgo * 60000));
+}
+
+function createDemoState() {
+  const frogTask = {
+    id: 'demo-frog',
+    title: 'Send the proposal you have been avoiding',
+    note: 'Draft the opening, then finish it in one focused pass.',
+    category: 'boardroom_brain',
+    quadrant: 'do',
+    points: 8,
+    bodySlot: false,
+    careerSlot: false,
+    createdAt: Date.now() - 90 * 60000,
+    startedAt: null
+  };
+  const completed = [
+    ['demo-log-1', 'Took a 30-minute walk', 'glow_up', 4, demoRecentTimestamp(75), 30],
+    ['demo-log-2', 'Finished the awkward email', 'boardroom_brain', 6, demoRecentTimestamp(150), 24],
+    ['demo-log-3', 'Updated the portfolio homepage', 'empire_building', 8, demoTimestamp(1, 18, 20), 55],
+    ['demo-log-4', 'Planned a weekend adventure', 'main_character', 4, demoTimestamp(2, 20, 10), 18],
+    ['demo-log-5', 'Reviewed the monthly budget', 'money_moves', 8, demoTimestamp(4, 19, 5), 35],
+    ['demo-log-6', 'Reset the desk and room', 'clean_slate', 2, demoTimestamp(6, 10, 30), 28],
+    ['demo-log-7', 'Wrote one page of a personal project', 'creator_mode', 5, demoTimestamp(8, 21, 15), 42],
+    ['demo-log-8', 'Practised a difficult skill', 'empire_building', 7, demoTimestamp(11, 17, 40), 50]
+  ].map(([id, title, category, points, completedAt, minutes]) => ({
+    id,
+    title,
+    note: '',
+    category,
+    points,
+    startedAt: completedAt - minutes * 60000,
+    completedAt,
+    duration: minutes * 60000
+  }));
+
+  return {
+    active: [
+      frogTask,
+      {
+        id: 'demo-plan',
+        title: 'Plan one thing that makes this week exciting',
+        note: 'Choose a real plan, not another item to research forever.',
+        category: 'main_character',
+        quadrant: 'schedule',
+        points: 4,
+        bodySlot: false,
+        careerSlot: false,
+        createdAt: Date.now() - 45 * 60000,
+        startedAt: null
+      },
+      {
+        id: 'demo-body',
+        title: 'Move outside for 30 minutes',
+        note: 'Walk, stretch or run — fresh air counts.',
+        category: 'glow_up',
+        quadrant: 'schedule',
+        points: 4,
+        bodySlot: true,
+        careerSlot: false,
+        createdAt: Date.now() - 3 * 3600000,
+        startedAt: null
+      },
+      {
+        id: 'demo-future',
+        title: 'Spend 45 minutes on your biggest goal',
+        note: 'Pick the smallest concrete deliverable and finish it.',
+        category: 'empire_building',
+        quadrant: 'schedule',
+        points: 9,
+        bodySlot: false,
+        careerSlot: true,
+        createdAt: Date.now() - 5 * 3600000,
+        startedAt: null
+      }
+    ],
+    log: completed,
+    targets: { ...DEFAULT_TARGETS },
+    frog: {
+      date: localDateKey(),
+      taskId: frogTask.id,
+      completed: false,
+      task: {
+        title: frogTask.title,
+        note: frogTask.note,
+        category: frogTask.category,
+        points: frogTask.points
+      }
+    }
+  };
+}
+
+function persistDemoState() {
+  try {
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 1, active, log, targets, frog }));
+  } catch (err) {
+    console.error(err);
+    showToast("Demo changes couldn't be saved in this browser.");
+  }
+}
+
+function saveActive() {
+  if (DEMO_MODE) return persistDemoState();
+  apiPut('/api/active', active).catch(handleSaveError);
+}
+function saveLog() {
+  if (DEMO_MODE) return persistDemoState();
+  apiPut('/api/log', log).catch(handleSaveError);
+}
+function saveTargets() {
+  if (DEMO_MODE) return persistDemoState();
+  apiPut('/api/targets', targets).catch(handleSaveError);
+}
+function saveFrog() {
+  if (DEMO_MODE) return persistDemoState();
+  apiPut('/api/frog', frog).catch(handleSaveError);
+}
 
 async function loadState() {
-  const state = await apiGet('/api/state');
-  active = state.active || [];
-  log = state.log || [];
-  targets = state.targets || DEFAULT_TARGETS;
+  let state;
+  if (DEMO_MODE) {
+    try {
+      state = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || 'null');
+    } catch (err) {
+      console.warn('Ignoring invalid demo data.', err);
+    }
+    if (!state || !Array.isArray(state.active) || !Array.isArray(state.log)) {
+      state = createDemoState();
+      active = state.active;
+      log = state.log;
+      targets = state.targets;
+      frog = state.frog;
+      persistDemoState();
+      return;
+    }
+  } else {
+    state = await apiGet('/api/state');
+  }
+  active = Array.isArray(state.active) ? state.active : [];
+  log = Array.isArray(state.log) ? state.log : [];
+  targets = { ...DEFAULT_TARGETS, ...(state.targets || {}) };
   frog = state.frog || null;
 }
 
@@ -460,7 +659,7 @@ function renderTaskCard(task, now, protectedSlot = null) {
     } else if (isCareerSlot) {
       const slotLabel = document.createElement('div');
       slotLabel.className = 'career-slot-label';
-      slotLabel.textContent = '🔒 Your Quant Dev Slot';
+      slotLabel.textContent = CAREER_SLOT_COPY.label;
       card.appendChild(slotLabel);
     }
 
@@ -590,23 +789,25 @@ function renderCareerSlot(task, now) {
   slot.type = 'button';
   slot.className = 'career-slot-empty';
   slot.innerHTML = `
-    <span class="career-slot-label">🔒 Your Quant Dev Slot</span>
-    <strong>Choose your next quant-dev move</strong>
+    <span class="career-slot-label">${CAREER_SLOT_COPY.label}</span>
+    <strong>${CAREER_SLOT_COPY.emptyTitle}</strong>
     <span class="career-slot-message">${careerMessageForToday()}</span>
-    <span class="career-slot-cta">+ Add job-switch preparation</span>
+    <span class="career-slot-cta">${CAREER_SLOT_COPY.cta}</span>
   `;
   slot.addEventListener('click', () => openAddModal('career'));
   return slot;
 }
 
 function bodyMessageForToday() {
-  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0)) % BODY_SLOT_MESSAGES.length;
-  return BODY_SLOT_MESSAGES[messageIndex];
+  const pool = DEMO_MODE ? DEMO_BODY_SLOT_MESSAGES : BODY_SLOT_MESSAGES;
+  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0)) % pool.length;
+  return pool[messageIndex];
 }
 
 function careerMessageForToday() {
-  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0) + 3) % CAREER_SLOT_MESSAGES.length;
-  return CAREER_SLOT_MESSAGES[messageIndex];
+  const pool = DEMO_MODE ? DEMO_CAREER_SLOT_MESSAGES : CAREER_SLOT_MESSAGES;
+  const messageIndex = Math.abs(localDateKey().split('').reduce((total, char) => total + char.charCodeAt(0), 0) + 3) % pool.length;
+  return pool[messageIndex];
 }
 
 function bodyWaitingCopy(createdAt) {
@@ -623,16 +824,16 @@ function bodyWaitingCopy(createdAt) {
 }
 
 function careerWaitingCopy(createdAt) {
-  if (!createdAt) return 'Your switch starts with one focused session.';
+  if (!createdAt) return DEMO_MODE ? 'Your future starts with one focused session.' : 'Your switch starts with one focused session.';
   const elapsed = Math.max(0, Date.now() - createdAt);
   const hours = Math.floor(elapsed / 3600000);
-  if (hours < 1) return 'Fresh career move · added just now';
-  if (hours < 24) return `Quant goal waiting · added ${hours}h ago`;
+  if (hours < 1) return CAREER_SLOT_COPY.fresh;
+  if (hours < 24) return CAREER_SLOT_COPY.underDay(hours);
   const days = Math.floor(hours / 24);
   const leftoverHours = hours % 24;
-  if (days === 1) return `Your dream role has waited since yesterday · ${leftoverHours}h more`;
-  if (days < 4) return `Job-switch prep waiting · added ${days}d ${leftoverHours}h ago`;
-  return `ASAP needs action · waiting ${days}d ${leftoverHours}h`;
+  if (days === 1) return CAREER_SLOT_COPY.oneDay(leftoverHours);
+  if (days < 4) return CAREER_SLOT_COPY.severalDays(days, leftoverHours);
+  return CAREER_SLOT_COPY.longWait(days, leftoverHours);
 }
 
 function startTask(id) {
@@ -942,13 +1143,13 @@ function openAddModal(slotType = 'flexible') {
   editingTaskSource = 'active';
   addingToProtectedSlot = forBodySlot ? 'body' : (forCareerSlot ? 'career' : null);
   taskQuadrantLabel.style.display = '';
-  modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : (forCareerSlot ? 'Add Your Quant Dev Task' : 'Add a Task');
-  saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : (forCareerSlot ? 'Build My Escape Plan' : 'Add to Board');
+  modalTitle.textContent = forBodySlot ? 'Add Your Body Task' : (forCareerSlot ? CAREER_SLOT_COPY.modalTitle : 'Add a Task');
+  saveTaskBtn.textContent = forBodySlot ? 'Protect This Promise' : (forCareerSlot ? CAREER_SLOT_COPY.saveLabel : 'Add to Board');
   taskTitleInput.value = '';
   taskNoteInput.value = '';
   taskTitleInput.placeholder = forBodySlot
     ? 'e.g. Walk outside for 30 minutes'
-    : (forCareerSlot ? 'e.g. Solve 3 Codeforces problems' : 'e.g. LeetCode contest practice');
+    : (forCareerSlot ? CAREER_SLOT_COPY.placeholder : (DEMO_MODE ? 'e.g. Finish the first draft' : 'e.g. LeetCode contest practice'));
   taskCategorySelect.value = forBodySlot ? 'glow_up' : (forCareerSlot ? 'empire_building' : CATEGORIES[0].id);
   taskCategorySelect.disabled = forBodySlot || forCareerSlot;
   taskQuadrantSelect.value = 'schedule';
@@ -1992,50 +2193,6 @@ function renderTargets() {
   });
 }
 
-// ---------- Daily Muse ----------
-
-const MUSES = [
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_power.jpg', line: "Confidence is an outfit you put on before you leave the house. Wear it like you mean it — one thing, fully.", mood: 'high' },
-  { name: 'Elle Woods', img: 'assets/muses/elle_power.jpg', line: "What, like it's hard? Underestimated is just an opening move — focus on the one case in front of you.", mood: 'high' },
-  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_1.png', line: "You don't need permission to walk up to the microphone. Just walk up and speak.", mood: 'high' },
-  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_2.png', line: "Every campaign starts with someone underestimated deciding to run anyway.", mood: 'high' },
-  { name: 'Elle Woods', img: 'assets/muses/elle_campaign_3.png', line: "She didn't wait to be taken seriously. She kept talking until they had no choice.", mood: 'high' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_pink_dress.jpg', line: "Bold color is a decision, not an accident. Make yours today.", mood: 'high' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_sailor.jpg', line: "Dressed like this, you don't walk into a room — you arrive.", mood: 'high' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_soft.jpg', line: "Even an off day looks put-together if you decide it does. Pick the one thing and finish it.", mood: 'mid' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_pearls.webp', line: "Some days call for pearls and a genuine smile — that's enough polish for anyone.", mood: 'mid' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_museum.jpg', line: "Even a museum can't out-dazzle someone who knows exactly who she is.", mood: 'mid' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_floral_street.jpg', line: "Ordinary errands, extraordinary outfit. Same principle applies to ordinary tasks.", mood: 'mid' },
-  { name: 'Serena van der Woodsen', img: 'assets/muses/serena.jpg', line: "Effortless isn't lazy. It's the confidence of someone who already decided what mattered today.", mood: 'mid' },
-  { name: 'Serena van der Woodsen', img: 'assets/muses/serena_shopping.jpg', line: "A good day looks like this — easy smile, errands done, nothing forced.", mood: 'mid' },
-  { name: 'Elle Woods', img: 'assets/muses/elle_soft.jpg', line: "Still showing up, still taking notes. That's half the case won already.", mood: 'low' },
-  { name: 'Blair Waldorf', img: 'assets/muses/blair_tweed_smile.jpg', line: "A real smile still counts on the days you don't feel like giving one.", mood: 'low' },
-  { name: 'Krishna', img: 'assets/muses/krishna.png', line: "Perform your one duty fully, without grasping at the rest. That is the whole teaching of the Gita.", mood: 'low' },
-];
-
-function computeMoodTier() {
-  if (log.length === 0) return 'low';
-  const weekPts = pointsInRange('week', 0);
-  const weekTarget = targets.week || 1;
-  const ratio = weekPts / weekTarget;
-  const streaks = computeStreaks();
-  if (ratio >= 0.75 || streaks.current >= 3) return 'high';
-  if (ratio >= 0.35) return 'mid';
-  return 'low';
-}
-
-function renderMuse() {
-  const tier = computeMoodTier();
-  const pool = MUSES.filter(m => m.mood === tier);
-  const start = new Date(new Date().getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((startOfDay(new Date()) - start) / 86400000);
-  const muse = pool[dayOfYear % pool.length];
-  document.getElementById('museImg').src = muse.img;
-  document.getElementById('museImg').alt = muse.name;
-  document.getElementById('museName').textContent = muse.name;
-  document.getElementById('museLine').textContent = muse.line;
-}
-
 // ---------- Auth + Init ----------
 
 const loginScreen = document.getElementById('loginScreen');
@@ -2044,6 +2201,24 @@ const pinInput = document.getElementById('pinInput');
 const pinError = document.getElementById('pinError');
 const pinForm = document.getElementById('pinForm');
 const sessionNotice = document.getElementById('sessionNotice');
+const demoBanner = document.getElementById('demoBanner');
+const resetDemoButton = document.getElementById('resetDemo');
+const activeBoardHint = document.getElementById('activeBoardHint');
+
+function configureDemoUi() {
+  if (!DEMO_MODE) return;
+  document.body.classList.add('demo-mode');
+  document.title = 'One Ball at a Time — Public Demo';
+  demoBanner.hidden = false;
+  activeBoardHint.textContent = 'Three priorities + two protected promises: your body and your future.';
+}
+
+resetDemoButton.addEventListener('click', () => {
+  if (!DEMO_MODE) return;
+  if (!window.confirm('Reset this browser demo to its original sample tasks?')) return;
+  localStorage.removeItem(DEMO_STORAGE_KEY);
+  window.location.reload();
+});
 
 function showLogin(message) {
   if (message) {
@@ -2071,6 +2246,13 @@ pinForm.addEventListener('submit', async e => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pin: pinInput.value }),
     });
+    if (res.status === 429) {
+      const payload = await res.json().catch(() => ({}));
+      const minutes = Math.max(1, Math.ceil((payload.retryAfter || 60) / 60));
+      pinError.textContent = `Too many tries. Wait ${minutes} ${minutes === 1 ? 'minute' : 'minutes'} and try again.`;
+      pinInput.value = '';
+      return;
+    }
     if (!res.ok) {
       pinError.textContent = 'Wrong PIN — try again.';
       pinInput.value = '';
@@ -2100,7 +2282,7 @@ async function startApp() {
   const activeChanged = migrateCategoryIds(active);
   const logChanged = migrateCategoryIds(log);
   let protectedSlotChanged = false;
-  if (!active.some(task => task.careerSlot)) {
+  if (!DEMO_MODE && !active.some(task => task.careerSlot)) {
     const existingQuantTask = active.find(task => !task.bodySlot && task.category === 'empire_building');
     if (existingQuantTask) {
       existingQuantTask.careerSlot = true;
@@ -2120,6 +2302,11 @@ async function startApp() {
 }
 
 async function boot() {
+  if (DEMO_MODE) {
+    configureDemoUi();
+    await startApp();
+    return;
+  }
   try {
     const { authed } = await fetch('/api/session').then(r => r.json());
     if (!authed) { showLogin(); return; }

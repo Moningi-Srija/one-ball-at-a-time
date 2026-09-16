@@ -7,8 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="sparkle-field" id="sparkleField"></div>
@@ -29,6 +29,17 @@
 </div>
 
 <div class="app" style="display:none;">
+
+  <aside class="demo-banner" id="demoBanner" hidden aria-label="Public demo information">
+    <div>
+      <strong>Public demo</strong>
+      <span>Your demo tasks stay in this browser and are never sent to Srija’s private task data.</span>
+    </div>
+    <div class="demo-banner-actions">
+      <button class="btn ghost small" id="resetDemo" type="button">Reset demo</button>
+      <a class="btn primary small demo-fork-link" href="https://github.com/Moningi-Srija/one-ball-at-a-time/fork" target="_blank" rel="noopener noreferrer">Fork your own ↗</a>
+    </div>
+  </aside>
 
   <header class="topbar">
     <div>
@@ -75,7 +86,7 @@
 
     <div class="section-head">
       <h2>Active Top 5</h2>
-      <span class="hint">Three priorities + two protected promises: your body and your quant-dev future.</span>
+      <span class="hint" id="activeBoardHint">Three priorities + two protected promises: your body and your quant-dev future.</span>
     </div>
     <div class="board-grid" id="board"></div>
   </section>
@@ -315,6 +326,6 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<script src="/app.js"></script>
 </body>
 </html>

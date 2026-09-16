@@ -1,15 +1,23 @@
 {
-  "name": "topfive",
+  "name": "one-ball-at-a-time",
   "version": "1.0.0",
-  "description": "",
+  "description": "A personal focus tracker for choosing, starting, and finishing what matters.",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "productivity",
+    "focus",
+    "task-tracker",
+    "eisenhower-matrix"
+  ],
+  "author": "Moningi Srija",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
   "type": "commonjs",
   "dependencies": {
     "connect-pg-simple": "^10.0.0",
