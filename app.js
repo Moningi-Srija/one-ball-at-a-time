@@ -1173,7 +1173,7 @@ function renderCategoryBreakdown() {
 
 // ---------- Analytics ----------
 
-const CHART_COLORS = { text: '#abc9d5', grid: 'rgba(171, 201, 213, 0.14)', accent: '#ff5da8', accent2: '#e3b23c', accent3: '#c9a0e8' };
+const CHART_COLORS = { text: '#7b5665', grid: 'rgba(207, 113, 147, 0.2)', accent: '#c0376a', accent2: '#98621f', accent3: '#99507f' };
 let charts = {};
 const analytics = { period: 'week' };
 let analyticsCategoryId = 'glow_up';
@@ -1431,8 +1431,8 @@ function renderCharts() {
       labels: catEntries.length ? catEntries.map(e => `${e.c.icon} ${e.c.label}`) : ['No data yet'],
       datasets: [{
         data: catEntries.length ? catEntries.map(e => e.val) : [1],
-        backgroundColor: catEntries.length ? catEntries.map(e => e.c.color) : ['#4d8098'],
-        borderColor: '#0b2333',
+        backgroundColor: catEntries.length ? catEntries.map(e => e.c.color) : ['#cf7193'],
+        borderColor: '#fffdfd',
         borderWidth: 2,
       }]
     },
@@ -2120,7 +2120,6 @@ async function startApp() {
 }
 
 async function boot() {
-  spawnSparkles();
   try {
     const { authed } = await fetch('/api/session').then(r => r.json());
     if (!authed) { showLogin(); return; }
