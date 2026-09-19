@@ -687,14 +687,19 @@ function renderTodayCountdown() {
   container.appendChild(card);
 }
 
-function createCountdownVisual(countdown, progress) {
+function createCountdownVisual(countdown, metrics) {
+  const progress = metrics.progress;
   if (countdown.style === 'court-grid') {
     const grid = document.createElement('div');
     grid.className = 'countdown-dot-grid';
-    const filled = Math.round(progress * 25);
-    for (let index = 0; index < 25; index += 1) {
+    const daysLeft = Math.max(1, Math.ceil(Math.max(0, metrics.remaining) / 86400000));
+    const columns = Math.min(14, Math.max(5, Math.ceil(Math.sqrt(daysLeft))));
+    grid.style.setProperty('--countdown-dot-columns', String(columns));
+    grid.setAttribute('aria-label', `${daysLeft} ${daysLeft === 1 ? 'dot' : 'dots'}, one for each day left`);
+    for (let index = 0; index < daysLeft; index += 1) {
       const dot = document.createElement('span');
-      dot.className = `countdown-dot${index < filled ? ' is-filled' : ''}`;
+      dot.className = 'countdown-dot';
+      dot.setAttribute('aria-hidden', 'true');
       grid.appendChild(dot);
     }
     return grid;
@@ -761,7 +766,7 @@ function renderCountdownCard(countdown, now) {
     card.appendChild(note);
   }
 
-  card.appendChild(createCountdownVisual(countdown, metrics.progress));
+  card.appendChild(createCountdownVisual(countdown, metrics));
 
   const time = document.createElement('strong');
   time.className = 'countdown-time';

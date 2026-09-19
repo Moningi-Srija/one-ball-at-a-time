@@ -1195,14 +1195,14 @@ body.chart-expanded-open { overflow: hidden; }
 }
 
 .countdown-dot-grid {
-  grid-template-columns: repeat(5, 16px);
-  gap: 10px;
-  max-width: 120px;
+  grid-template-columns: repeat(var(--countdown-dot-columns, 5), 14px);
+  gap: 8px;
+  max-width: min(100%, 300px);
 }
 
 .countdown-dot-grid .countdown-dot {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .countdown-dot {
