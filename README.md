@@ -27,6 +27,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
 - Lets you select a point on an all-time chart and jump to that day's log.
 - Installs as a standalone Progressive Web App from a supported phone or desktop browser.
+- Includes a personal Android wrapper and configurable Home Screen widget for today's score or a saved countdown.
 - Persists a private deployment in PostgreSQL and protects it with a server-side session.
 
 ## Choose how to use it
@@ -63,7 +64,33 @@ npm start
 
 Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its state and session tables on startup.
 
-To install it like an app, open **Countdowns** and use **Install app**. On iPhone, use Safari's Share menu and choose **Add to Home Screen**. The PWA is a full-screen version of the website; true iOS or Android Home Screen widgets require a separate native WidgetKit or AppWidget extension.
+To install it like an app, open **Countdowns** and use **Install app**. On iPhone, use Safari's Share menu and choose **Add to Home Screen**. The PWA is a full-screen version of the website; the repository also includes a native Android shell with a real Home Screen widget.
+
+## Android app and Home Screen widget
+
+The `android/` project opens the live private app at `https://one-ball-at-a-time.onrender.com/`, so it uses the same PostgreSQL-backed board rather than creating a second local copy. It supports Android 8.0 (API 26) and later.
+
+Build a personal debug APK with:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
+
+The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`. Install it through Android Studio or with `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+
+After installing:
+
+1. Open **One Ball at a Time** and sign in once.
+2. Long-press the Android Home Screen, choose **Widgets**, then choose **One Ball at a Time**.
+3. Pick today's score or one saved countdown, plus Pink notebook, Pink plaid, or Clean paper.
+4. Add multiple copies if you want today's score and several countdowns visible together. Long-press a placed widget and choose **Reconfigure** to change it.
+
+On Android 8.0–8.1, the launcher does not expose the newer Reconfigure action; remove and add that widget again to choose something different.
+
+The WebView bridge is restricted to the production origin. It copies only a small widget snapshot—aggregate points, daily target, completed count, day end, and countdown display fields—into private on-device storage. It never copies the PIN, session cookie, task names, task notes, or finished log. The widget refreshes immediately while the Android app is open; because it intentionally has no background login credential, server-side changes sync after the app is opened again.
+
+This project currently produces a personal debug APK. A public Play Store release still needs release signing, store assets/policy forms, and a multi-user authentication design if other people will use the hosted private mode.
 
 ## Deploy your fork
 

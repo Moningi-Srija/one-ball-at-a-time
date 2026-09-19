@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Today’s score or a countdown, right on your Home Screen</string>
+    <string name="widget_name">One Ball at a Time</string>
+    <string name="widget_preview_eyebrow">COUNTDOWN COURT</string>
+    <string name="widget_preview_emoji">🎯</string>
+    <string name="widget_preview_title">First Interview</string>
+    <string name="widget_preview_headline">69 days left</string>
+    <string name="widget_preview_target">Target · Thu, 26 Nov · 11:30 PM</string>
+    <string name="widget_preview_footer">Tap to open Countdown Court</string>
+    <string name="widget_config_open_app">Open app to sync</string>
+    <string name="widget_config_hide_title">Hide countdown title on my Home Screen</string>
+    <string name="widget_config_add">Put it on my Home Screen</string>
+</resources>

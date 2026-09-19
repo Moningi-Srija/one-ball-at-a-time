@@ -325,11 +325,13 @@ function saveActive() {
   apiPut('/api/active', active).catch(handleSaveError);
 }
 function saveLog() {
+  publishAndroidWidgetSnapshot();
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/log', log).catch(handleSaveError);
 }
 let countdownSaveQueue = Promise.resolve();
 function saveCountdowns() {
+  publishAndroidWidgetSnapshot();
   if (DEMO_MODE) return persistDemoState();
   const snapshot = countdowns.map(countdown => ({ ...countdown }));
   countdownSaveQueue = countdownSaveQueue
@@ -338,6 +340,7 @@ function saveCountdowns() {
   return countdownSaveQueue;
 }
 function saveTargets() {
+  publishAndroidWidgetSnapshot();
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/targets', targets).catch(handleSaveError);
 }
@@ -470,6 +473,75 @@ function timeLeftToday() {
   return hours > 0 ? `${hours}h ${mins}m left today` : `${mins}m left today`;
 }
 
+// The Android wrapper exposes this single, origin-scoped message endpoint. Keep
+// its payload deliberately small: widgets need the score and countdown display
+// fields, never task titles, notes, authentication data, or the finished log.
+function buildAndroidWidgetSnapshot(now = new Date()) {
+  const start = startOfDay(now).getTime();
+  const dayEndsAt = addDays(startOfDay(now), 1).getTime();
+  const todayTasks = log.filter(task => {
+    const completedAt = Number(task?.completedAt);
+    return Number.isFinite(completedAt) && completedAt >= start && completedAt < dayEndsAt;
+  });
+  const points = todayTasks.reduce((total, task) => {
+    const value = Number(task?.points);
+    return total + (Number.isFinite(value) ? value : 0);
+  }, 0);
+  const configuredTarget = Number(targets?.day);
+  let timeZone = 'UTC';
+  try {
+    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || timeZone;
+  } catch (error) {
+    console.warn('Could not resolve the device time zone for the Android widget.', error);
+  }
+
+  const allowedStyles = new Set(['ball-ring', 'court-grid', 'clean-bar']);
+  const safeCountdowns = countdowns.slice(0, MAX_COUNTDOWNS).flatMap(countdown => {
+    const id = typeof countdown?.id === 'string' ? countdown.id.trim().slice(0, 160) : '';
+    const title = typeof countdown?.title === 'string' ? countdown.title.trim().slice(0, 120) : '';
+    const startAt = Number(countdown?.startAt);
+    const targetAt = Number(countdown?.targetAt);
+    if (!id || !title || !Number.isFinite(startAt) || !Number.isFinite(targetAt) || targetAt <= startAt) return [];
+    const emoji = typeof countdown.emoji === 'string' ? countdown.emoji.trim().slice(0, 24) : '';
+    const color = typeof countdown.color === 'string' && /^#[0-9a-f]{6}$/i.test(countdown.color)
+      ? countdown.color
+      : '#c0376a';
+    return [{
+      id,
+      title,
+      emoji: emoji || '♡',
+      color,
+      style: allowedStyles.has(countdown.style) ? countdown.style : 'ball-ring',
+      startAt: Math.round(startAt),
+      targetAt: Math.round(targetAt)
+    }];
+  });
+
+  return {
+    generatedAt: Date.now(),
+    timeZone,
+    today: {
+      dateKey: localDateKey(now),
+      points: Math.round(points * 100) / 100,
+      target: Number.isFinite(configuredTarget) ? Math.max(0, configuredTarget) : DEFAULT_TARGETS.day,
+      completedCount: todayTasks.length,
+      dayEndsAt
+    },
+    countdowns: safeCountdowns
+  };
+}
+
+function publishAndroidWidgetSnapshot() {
+  const bridge = window.oneBallWidget;
+  if (!bridge || typeof bridge.postMessage !== 'function') return;
+  try {
+    bridge.postMessage(JSON.stringify(buildAndroidWidgetSnapshot()));
+  } catch (error) {
+    // A bridge failure must never interrupt the website's normal save flow.
+    console.warn('Could not refresh the Android Home Screen widget.', error);
+  }
+}
+
 // Monday-start week. offset is in units of the given period, relative to now
 // (0 = current day/week/weekend/month, -1 = previous, +1 = next, etc.)
 function mondayOf(d) {
@@ -572,6 +644,24 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'targets') renderTargets();
   });
 });
+
+function applyDeepLinkFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedTab = params.get('tab');
+  if (requestedTab !== 'board' && requestedTab !== 'countdowns') return;
+  const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
+  if (!tabButton) return;
+  tabButton.click();
+
+  if (requestedTab !== 'countdowns') return;
+  const requestedCountdownId = (params.get('countdown') || '').slice(0, 160);
+  if (!requestedCountdownId) return;
+  requestAnimationFrame(() => {
+    const card = [...document.querySelectorAll('.countdown-card')]
+      .find(item => item.dataset.countdownId === requestedCountdownId);
+    card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
 
 // ---------- Countdowns ----------
 
@@ -690,19 +780,31 @@ function renderTodayCountdown() {
 function createCountdownVisual(countdown, metrics) {
   const progress = metrics.progress;
   if (countdown.style === 'court-grid') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'countdown-court-visual';
     const grid = document.createElement('div');
     grid.className = 'countdown-dot-grid';
     const daysLeft = Math.max(1, Math.ceil(Math.max(0, metrics.remaining) / 86400000));
-    const columns = Math.min(14, Math.max(5, Math.ceil(Math.sqrt(daysLeft))));
+    const visibleDays = Math.min(daysLeft, 400);
+    const columns = Math.min(14, Math.max(5, Math.ceil(Math.sqrt(visibleDays))));
     grid.style.setProperty('--countdown-dot-columns', String(columns));
-    grid.setAttribute('aria-label', `${daysLeft} ${daysLeft === 1 ? 'dot' : 'dots'}, one for each day left`);
-    for (let index = 0; index < daysLeft; index += 1) {
+    wrapper.setAttribute('aria-label', `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left`);
+    grid.setAttribute('aria-hidden', 'true');
+    for (let index = 0; index < visibleDays; index += 1) {
       const dot = document.createElement('span');
       dot.className = 'countdown-dot';
       dot.setAttribute('aria-hidden', 'true');
       grid.appendChild(dot);
     }
-    return grid;
+    wrapper.appendChild(grid);
+    if (visibleDays < daysLeft) {
+      grid.classList.add('is-capped');
+      const note = document.createElement('span');
+      note.className = 'countdown-dot-overflow';
+      note.textContent = `${visibleDays} dots shown · ${daysLeft.toLocaleString()} days left`;
+      wrapper.appendChild(note);
+    }
+    return wrapper;
   }
 
   if (countdown.style === 'clean-bar') {
@@ -737,6 +839,7 @@ function createCountdownVisual(countdown, metrics) {
 function renderCountdownCard(countdown, now) {
   const metrics = countdownMetrics(countdown, now);
   const card = document.createElement('article');
+  card.dataset.countdownId = countdown.id;
   const styleClass = COUNTDOWN_STYLE_CLASS[countdown.style] || COUNTDOWN_STYLE_CLASS['ball-ring'];
   card.className = `countdown-card ${styleClass}${metrics.expired ? ' is-expired' : ''}`;
   card.style.setProperty('--countdown-color', countdown.color || '#c0376a');
@@ -2776,6 +2879,8 @@ async function startApp() {
 
   hideLogin();
   renderBoard();
+  applyDeepLinkFromQuery();
+  publishAndroidWidgetSnapshot();
 }
 
 async function boot() {
