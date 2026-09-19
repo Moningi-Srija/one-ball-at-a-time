@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#c0376a">
+<meta name="description" content="Plan five meaningful priorities, protect what matters, and live one fully used day at a time.">
+<meta name="application-name" content="One Ball at a Time">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="One Ball">
 <title>One Ball at a Time</title>
+<script src="/assets/manifest-loader.js"></script>
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/app-icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -13,7 +22,7 @@
 <body>
 <div class="sparkle-field" id="sparkleField"></div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <div class="login-screen" id="loginScreen">
   <form class="login-card" id="pinForm">
@@ -56,6 +65,7 @@
       </div>
       <nav class="tabs">
         <button class="tab-btn active" data-tab="board">Board</button>
+        <button class="tab-btn" data-tab="countdowns">Countdowns</button>
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn" data-tab="analytics">Analytics</button>
@@ -89,6 +99,68 @@
       <span class="hint" id="activeBoardHint">Three priorities + two protected promises: your body and your quant-dev future.</span>
     </div>
     <div class="board-grid" id="board"></div>
+  </section>
+
+  <!-- COUNTDOWNS -->
+  <section id="tab-countdowns" class="tab-panel countdowns-panel">
+    <div class="section-head countdowns-heading">
+      <div>
+        <p class="countdown-kicker">Make the days visible</p>
+        <h2>Countdowns</h2>
+        <p class="countdown-intro">A little urgency for the life you are excited to reach — without turning it into pressure.</p>
+      </div>
+      <button class="btn primary countdown-add-btn" id="addCountdown" type="button"><span aria-hidden="true">＋</span> Add countdown</button>
+    </div>
+
+    <section class="countdown-today-wrap" aria-labelledby="countdownTodayTitle">
+      <div class="countdown-section-label">
+        <div>
+          <span class="countdown-section-number">01</span>
+          <h3 id="countdownTodayTitle">Today, while it is still yours</h3>
+        </div>
+        <span class="countdown-hand-note">live · updates as the day moves</span>
+      </div>
+      <div id="countdownToday" class="countdown-today">
+        <article class="countdown-today-card is-loading" aria-label="Loading today’s countdown">
+          <div class="countdown-today-copy">
+            <p class="countdown-today-eyebrow">Your one-day countdown</p>
+            <strong class="countdown-today-value">Making today visible…</strong>
+            <p class="countdown-today-sub">Every hour is still a chance to put one ball in your hand.</p>
+          </div>
+          <div class="countdown-today-progress" aria-hidden="true">
+            <span class="countdown-today-progress-fill" style="width:0%"></span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="countdown-collection" aria-labelledby="countdownCollectionTitle">
+      <div class="countdown-section-label">
+        <div>
+          <span class="countdown-section-number">02</span>
+          <h3 id="countdownCollectionTitle">Things worth looking forward to</h3>
+        </div>
+        <span class="countdown-hand-note">ball ring · court grid · clean bar</span>
+      </div>
+      <div id="countdownGrid" class="countdown-grid">
+        <div class="countdown-empty">
+          <span class="countdown-empty-icon" aria-hidden="true">♡</span>
+          <strong>Your next chapter needs a date.</strong>
+          <p>Add a trip, deadline, exam, launch, birthday, or any moment you want to see getting closer.</p>
+        </div>
+      </div>
+    </section>
+
+    <aside class="install-app-card" aria-labelledby="installAppTitle">
+      <div class="install-app-mark" aria-hidden="true"><span>1</span></div>
+      <div class="install-app-copy">
+        <p class="countdown-kicker">Carry the board with you</p>
+        <h3 id="installAppTitle">Make One Ball feel like an app</h3>
+        <p>Put it on your phone’s Home Screen for a full-screen, one-tap version of your board and countdowns.</p>
+        <p class="install-help" id="installHelp" role="status" aria-live="polite"></p>
+      </div>
+      <button class="btn primary install-app-button" id="installApp" type="button">Install app</button>
+    </aside>
   </section>
 
   <!-- EISENHOWER MATRIX -->
@@ -322,6 +394,65 @@
     <div class="modal-actions">
       <button class="btn ghost" id="cancelTask">Cancel</button>
       <button class="btn primary" id="saveTask">Add to Board</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add / Edit Countdown Modal -->
+<div class="modal-backdrop" id="countdownModalBackdrop" aria-hidden="true">
+  <div class="modal countdown-modal" role="dialog" aria-modal="true" aria-labelledby="countdownModalTitle">
+    <div class="countdown-modal-heading">
+      <span class="countdown-modal-sticker" aria-hidden="true">save the date</span>
+      <h3 id="countdownModalTitle">Add a Countdown</h3>
+      <p>Give the future something beautiful and specific to pull you forward.</p>
+    </div>
+
+    <div class="countdown-modal-row countdown-modal-row-title">
+      <label class="countdown-emoji-field">Emoji
+        <input type="text" id="countdownEmoji" value="✨" maxlength="8" inputmode="text" aria-label="Countdown emoji">
+      </label>
+      <label>Title
+        <input type="text" id="countdownTitle" placeholder="e.g. Goa trip" maxlength="80" autocomplete="off">
+      </label>
+    </div>
+
+    <label>Note <span class="hint">(optional)</span>
+      <textarea id="countdownNote" rows="3" maxlength="300" placeholder="Why this moment matters to you…"></textarea>
+    </label>
+
+    <div class="countdown-modal-row">
+      <label>Colour
+        <select id="countdownColor">
+          <option value="#c0376a">Main-character pink</option>
+          <option value="#e66c9a">Strawberry milk</option>
+          <option value="#98621f">Golden hour</option>
+          <option value="#7540aa">Future-self lilac</option>
+          <option value="#367d5b">Fresh-start green</option>
+          <option value="#367da0">Clear-sky blue</option>
+        </select>
+      </label>
+      <label>Look
+        <select id="countdownStyle">
+          <option value="ball-ring">Ball Ring</option>
+          <option value="court-grid">Court Grid</option>
+          <option value="clean-bar">Clean Bar</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="countdown-modal-row">
+      <label>Starts
+        <input type="datetime-local" id="countdownStartAt">
+      </label>
+      <label>Target moment
+        <input type="datetime-local" id="countdownTargetAt" required>
+      </label>
+    </div>
+
+    <p class="countdown-time-note">Tip: use the real start date to see how far you have already travelled, not only how far is left.</p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelCountdown" type="button">Cancel</button>
+      <button class="btn primary" id="saveCountdown" type="button">Save countdown</button>
     </div>
   </div>
 </div>

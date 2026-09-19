@@ -17,6 +17,7 @@ async function init() {
   const defaults = {
     active: [],
     log: [],
+    countdowns: [],
     targets: { day: 25, week: 150, weekend: 50, month: 600 },
     frog: null,
   };

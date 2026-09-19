@@ -134,6 +134,7 @@ const DEFAULT_TARGETS = { day: 25, week: 150, weekend: 50, month: 600 };
 
 let active = [];   // up to 5 tasks on the board
 let log = [];      // finished tasks
+let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
 let frog = null;   // today's deliberately chosen hardest/most important task
 let logCategoryFilter = 'all';
@@ -260,6 +261,41 @@ function createDemoState() {
       }
     ],
     log: completed,
+    countdowns: [
+      {
+        id: 'demo-countdown-trip',
+        title: 'The trip you cannot stop thinking about',
+        note: 'Pack the version of you who actually lived the weeks before it.',
+        emoji: '🌴',
+        color: '#c0376a',
+        style: 'ball-ring',
+        startAt: Date.now() - 2 * 86400000,
+        targetAt: Date.now() + 28 * 86400000,
+        createdAt: Date.now()
+      },
+      {
+        id: 'demo-countdown-launch',
+        title: 'Portfolio launch',
+        note: 'A visible date turns someday into a plan.',
+        emoji: '🚀',
+        color: '#7540aa',
+        style: 'court-grid',
+        startAt: Date.now() - 4 * 86400000,
+        targetAt: Date.now() + 10 * 86400000,
+        createdAt: Date.now()
+      },
+      {
+        id: 'demo-countdown-weekend',
+        title: 'A proper weekend outside',
+        note: 'Freedom should feel like going somewhere.',
+        emoji: '☀️',
+        color: '#367d5b',
+        style: 'clean-bar',
+        startAt: Date.now() - 86400000,
+        targetAt: Date.now() + 2 * 86400000,
+        createdAt: Date.now()
+      }
+    ],
     targets: { ...DEFAULT_TARGETS },
     frog: {
       date: localDateKey(),
@@ -277,7 +313,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 1, active, log, targets, frog }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 2, active, log, countdowns, targets, frog }));
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
@@ -291,6 +327,15 @@ function saveActive() {
 function saveLog() {
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/log', log).catch(handleSaveError);
+}
+let countdownSaveQueue = Promise.resolve();
+function saveCountdowns() {
+  if (DEMO_MODE) return persistDemoState();
+  const snapshot = countdowns.map(countdown => ({ ...countdown }));
+  countdownSaveQueue = countdownSaveQueue
+    .then(() => apiPut('/api/countdowns', snapshot))
+    .catch(handleSaveError);
+  return countdownSaveQueue;
 }
 function saveTargets() {
   if (DEMO_MODE) return persistDemoState();
@@ -313,6 +358,7 @@ async function loadState() {
       state = createDemoState();
       active = state.active;
       log = state.log;
+      countdowns = state.countdowns;
       targets = state.targets;
       frog = state.frog;
       persistDemoState();
@@ -323,6 +369,7 @@ async function loadState() {
   }
   active = Array.isArray(state.active) ? state.active : [];
   log = Array.isArray(state.log) ? state.log : [];
+  countdowns = Array.isArray(state.countdowns) ? state.countdowns : [];
   targets = { ...DEFAULT_TARGETS, ...(state.targets || {}) };
   frog = state.frog || null;
 }
@@ -516,6 +563,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'board') renderBoard();
+    if (btn.dataset.tab === 'countdowns') renderCountdowns();
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
@@ -524,6 +572,430 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'targets') renderTargets();
   });
 });
+
+// ---------- Countdowns ----------
+
+const COUNTDOWN_STYLE_CLASS = {
+  'ball-ring': 'style-ring',
+  'court-grid': 'style-grid',
+  'clean-bar': 'style-bar'
+};
+
+const COUNTDOWN_STYLE_LABEL = {
+  'ball-ring': 'Ball Ring',
+  'court-grid': 'Court Grid',
+  'clean-bar': 'Clean Bar'
+};
+const MAX_COUNTDOWNS = 100;
+
+function clamp(value, minimum = 0, maximum = 1) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function countdownMetrics(countdown, now = Date.now()) {
+  const duration = Math.max(1, countdown.targetAt - countdown.startAt);
+  const progress = clamp((now - countdown.startAt) / duration);
+  const remaining = countdown.targetAt - now;
+  return {
+    progress,
+    remaining,
+    expired: remaining <= 0,
+    notStarted: now < countdown.startAt
+  };
+}
+
+function formatCountdownDistance(milliseconds, expired = false) {
+  const absolute = Math.max(0, Math.abs(milliseconds));
+  const minutes = Math.floor(absolute / 60000);
+  const hours = Math.floor(absolute / 3600000);
+  const days = Math.ceil(absolute / 86400000);
+  let amount;
+  if (absolute < 60000) amount = 'less than a minute';
+  else if (absolute < 3600000) amount = `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+  else if (absolute < 86400000) {
+    const leftoverMinutes = Math.floor((absolute % 3600000) / 60000);
+    amount = `${hours}h${leftoverMinutes ? ` ${leftoverMinutes}m` : ''}`;
+  } else {
+    amount = `${days} ${days === 1 ? 'day' : 'days'}`;
+  }
+  return expired ? `${amount} ago` : `${amount} left`;
+}
+
+function countdownTargetLabel(timestamp) {
+  return new Date(timestamp).toLocaleString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    year: new Date(timestamp).getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function renderTodayCountdown() {
+  const container = document.getElementById('countdownToday');
+  if (!container) return;
+  const now = new Date();
+  const start = startOfDay(now).getTime();
+  const end = addDays(startOfDay(now), 1).getTime();
+  const elapsed = clamp((now.getTime() - start) / (end - start));
+  const todayTasks = todayCompletedTasks();
+  const todayPoints = todayTasks.reduce((sum, task) => sum + Number(task.points || 0), 0);
+  const dailyTarget = Math.max(1, Number(targets.day) || DEFAULT_TARGETS.day);
+  const pointProgress = clamp(todayPoints / dailyTarget);
+  const remainingMinutes = Math.max(0, Math.ceil((end - now.getTime()) / 60000));
+  const remainingHours = Math.floor(remainingMinutes / 60);
+  const minutePart = remainingMinutes % 60;
+  const timeCopy = remainingHours > 0 ? `${remainingHours}h ${minutePart}m` : `${minutePart}m`;
+
+  container.innerHTML = '';
+  const card = document.createElement('article');
+  card.className = 'countdown-today-card';
+  card.setAttribute('aria-label', `${timeCopy} left today, ${todayPoints} of ${dailyTarget} points complete`);
+  card.innerHTML = `
+    <div class="countdown-today-main">
+      <div class="countdown-today-copy">
+        <p class="countdown-today-eyebrow">Still yours</p>
+        <strong class="countdown-today-value"></strong>
+        <p class="countdown-today-sub"></p>
+      </div>
+      <div class="countdown-today-stats"></div>
+    </div>
+    <div class="countdown-today-progress" aria-hidden="true"><span class="countdown-today-progress-fill"></span></div>
+  `;
+  card.querySelector('.countdown-today-value').textContent = `${timeCopy} left today`;
+  card.querySelector('.countdown-today-sub').textContent = todayPoints >= dailyTarget
+    ? 'Goal reached. The remaining hours are yours to enjoy or use beautifully.'
+    : `${Math.max(0, dailyTarget - todayPoints)} points between now and the day you said you wanted.`;
+  const stats = card.querySelector('.countdown-today-stats');
+  [
+    [`${todayPoints} / ${dailyTarget}`, 'points'],
+    [String(todayTasks.length), todayTasks.length === 1 ? 'task lived' : 'tasks lived'],
+    [`${Math.round(elapsed * 100)}%`, 'day elapsed']
+  ].forEach(([value, label]) => {
+    const stat = document.createElement('div');
+    stat.className = 'countdown-today-stat';
+    const strong = document.createElement('strong');
+    strong.textContent = value;
+    const span = document.createElement('span');
+    span.textContent = label;
+    stat.append(strong, span);
+    stats.appendChild(stat);
+  });
+  const fill = card.querySelector('.countdown-today-progress-fill');
+  fill.style.width = `${Math.round(pointProgress * 100)}%`;
+  container.appendChild(card);
+}
+
+function createCountdownVisual(countdown, progress) {
+  if (countdown.style === 'court-grid') {
+    const grid = document.createElement('div');
+    grid.className = 'countdown-dot-grid';
+    const filled = Math.round(progress * 25);
+    for (let index = 0; index < 25; index += 1) {
+      const dot = document.createElement('span');
+      dot.className = `countdown-dot${index < filled ? ' is-filled' : ''}`;
+      grid.appendChild(dot);
+    }
+    return grid;
+  }
+
+  if (countdown.style === 'clean-bar') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'countdown-bar-visual';
+    const percent = document.createElement('strong');
+    percent.textContent = `${Math.round(progress * 100)}% travelled`;
+    const track = document.createElement('div');
+    track.className = 'countdown-bar-track';
+    const fill = document.createElement('span');
+    fill.className = 'countdown-bar-fill';
+    fill.style.width = `${Math.round(progress * 100)}%`;
+    track.appendChild(fill);
+    wrapper.append(percent, track);
+    return wrapper;
+  }
+
+  const ring = document.createElement('div');
+  ring.className = 'countdown-ring';
+  ring.style.setProperty('--countdown-progress', `${Math.round(progress * 360)}deg`);
+  const inside = document.createElement('div');
+  inside.className = 'countdown-ring-inner';
+  const value = document.createElement('strong');
+  value.textContent = `${Math.round(progress * 100)}%`;
+  const label = document.createElement('span');
+  label.textContent = 'lived';
+  inside.append(value, label);
+  ring.appendChild(inside);
+  return ring;
+}
+
+function renderCountdownCard(countdown, now) {
+  const metrics = countdownMetrics(countdown, now);
+  const card = document.createElement('article');
+  const styleClass = COUNTDOWN_STYLE_CLASS[countdown.style] || COUNTDOWN_STYLE_CLASS['ball-ring'];
+  card.className = `countdown-card ${styleClass}${metrics.expired ? ' is-expired' : ''}`;
+  card.style.setProperty('--countdown-color', countdown.color || '#c0376a');
+  card.style.setProperty('--countdown-progress', `${Math.round(metrics.progress * 360)}deg`);
+
+  const header = document.createElement('div');
+  header.className = 'countdown-card-head';
+  const icon = document.createElement('span');
+  icon.className = 'countdown-card-icon';
+  icon.textContent = countdown.emoji || '♡';
+  const heading = document.createElement('div');
+  heading.className = 'countdown-card-heading';
+  const title = document.createElement('h4');
+  title.className = 'countdown-card-title';
+  title.textContent = countdown.title;
+  const styleLabel = document.createElement('span');
+  styleLabel.className = 'countdown-style-label';
+  styleLabel.textContent = COUNTDOWN_STYLE_LABEL[countdown.style] || 'Ball Ring';
+  heading.append(title, styleLabel);
+  header.append(icon, heading);
+  card.appendChild(header);
+
+  if (countdown.note) {
+    const note = document.createElement('p');
+    note.className = 'countdown-card-note';
+    note.textContent = countdown.note;
+    card.appendChild(note);
+  }
+
+  card.appendChild(createCountdownVisual(countdown, metrics.progress));
+
+  const time = document.createElement('strong');
+  time.className = 'countdown-time';
+  if (metrics.expired) time.textContent = `It happened · ${formatCountdownDistance(metrics.remaining, true)}`;
+  else if (metrics.notStarted) {
+    const untilStart = formatCountdownDistance(countdown.startAt - now).replace(/ left$/, '');
+    time.textContent = `Starts in ${untilStart}`;
+  }
+  else time.textContent = formatCountdownDistance(metrics.remaining);
+  const target = document.createElement('p');
+  target.className = 'countdown-target';
+  target.textContent = `Target · ${countdownTargetLabel(countdown.targetAt)}`;
+  card.append(time, target);
+
+  const actions = document.createElement('div');
+  actions.className = 'countdown-card-actions';
+  const edit = document.createElement('button');
+  edit.type = 'button';
+  edit.className = 'btn ghost small';
+  edit.textContent = 'Edit';
+  edit.addEventListener('click', () => openCountdownModal(countdown.id));
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'btn ghost small countdown-delete';
+  remove.textContent = 'Delete';
+  remove.addEventListener('click', () => deleteCountdown(countdown.id));
+  actions.append(edit, remove);
+  card.appendChild(actions);
+  return card;
+}
+
+function renderCountdowns() {
+  renderTodayCountdown();
+  const grid = document.getElementById('countdownGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!countdowns.length) {
+    const empty = document.createElement('div');
+    empty.className = 'countdown-empty';
+    empty.innerHTML = '<span class="countdown-empty-icon" aria-hidden="true">♡</span><strong>Your next chapter needs a date.</strong><p>Add a trip, deadline, exam, launch, birthday, or any moment you want to see getting closer.</p>';
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'btn primary small';
+    add.textContent = 'Add the first one';
+    add.addEventListener('click', () => openCountdownModal());
+    empty.appendChild(add);
+    grid.appendChild(empty);
+    return;
+  }
+
+  const now = Date.now();
+  [...countdowns]
+    .sort((a, b) => {
+      const aExpired = a.targetAt <= now;
+      const bExpired = b.targetAt <= now;
+      if (aExpired !== bExpired) return aExpired ? 1 : -1;
+      return aExpired ? b.targetAt - a.targetAt : a.targetAt - b.targetAt;
+    })
+    .forEach(countdown => grid.appendChild(renderCountdownCard(countdown, now)));
+}
+
+function toLocalDateTimeInput(timestamp) {
+  const date = new Date(timestamp);
+  const pad = value => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+let editingCountdownId = null;
+
+function openCountdownModal(id = null) {
+  const backdrop = document.getElementById('countdownModalBackdrop');
+  const existing = id ? countdowns.find(item => item.id === id) : null;
+  const now = Date.now();
+  editingCountdownId = existing ? existing.id : null;
+  document.getElementById('countdownModalTitle').textContent = existing ? 'Edit Countdown' : 'Add a Countdown';
+  document.getElementById('saveCountdown').textContent = existing ? 'Save changes' : 'Save countdown';
+  document.getElementById('countdownTitle').value = existing?.title || '';
+  document.getElementById('countdownNote').value = existing?.note || '';
+  document.getElementById('countdownEmoji').value = existing?.emoji || '✨';
+  document.getElementById('countdownColor').value = existing?.color || '#c0376a';
+  document.getElementById('countdownStyle').value = existing?.style || 'ball-ring';
+  document.getElementById('countdownStartAt').value = toLocalDateTimeInput(existing?.startAt || now);
+  document.getElementById('countdownTargetAt').value = toLocalDateTimeInput(existing?.targetAt || (now + 7 * 86400000));
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('countdownTitle').focus(), 50);
+}
+
+function closeCountdownModal() {
+  const backdrop = document.getElementById('countdownModalBackdrop');
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  editingCountdownId = null;
+}
+
+function saveCountdownFromModal() {
+  const titleInput = document.getElementById('countdownTitle');
+  const title = titleInput.value.trim().slice(0, 120);
+  const startAt = new Date(document.getElementById('countdownStartAt').value).getTime();
+  const targetAt = new Date(document.getElementById('countdownTargetAt').value).getTime();
+  if (!title) {
+    showToast('Give this countdown a name first.');
+    titleInput.focus();
+    return;
+  }
+  if (!Number.isFinite(startAt) || !Number.isFinite(targetAt)) {
+    showToast('Choose both a start and target date.');
+    return;
+  }
+  if (targetAt <= startAt) {
+    showToast('The target moment must be after the start.');
+    document.getElementById('countdownTargetAt').focus();
+    return;
+  }
+  const style = document.getElementById('countdownStyle').value;
+  const existing = editingCountdownId ? countdowns.find(item => item.id === editingCountdownId) : null;
+  if (!existing && countdowns.length >= MAX_COUNTDOWNS) {
+    showToast(`You can keep up to ${MAX_COUNTDOWNS} countdowns. Delete an old one before adding another.`);
+    return;
+  }
+  const record = {
+    id: existing?.id || uid(),
+    title,
+    note: document.getElementById('countdownNote').value.trim().slice(0, 500),
+    emoji: document.getElementById('countdownEmoji').value.trim().slice(0, 24) || '♡',
+    color: document.getElementById('countdownColor').value,
+    style: COUNTDOWN_STYLE_CLASS[style] ? style : 'ball-ring',
+    startAt,
+    targetAt,
+    createdAt: existing?.createdAt || Date.now()
+  };
+  if (existing) Object.assign(existing, record);
+  else countdowns.push(record);
+  saveCountdowns();
+  closeCountdownModal();
+  renderCountdowns();
+  showToast(existing ? 'Countdown updated.' : 'Countdown added — now it is real.');
+}
+
+function deleteCountdown(id) {
+  const countdown = countdowns.find(item => item.id === id);
+  if (!countdown || !window.confirm(`Delete the countdown for “${countdown.title}”?`)) return;
+  countdowns = countdowns.filter(item => item.id !== id);
+  saveCountdowns();
+  renderCountdowns();
+}
+
+document.getElementById('addCountdown').addEventListener('click', () => openCountdownModal());
+document.getElementById('cancelCountdown').addEventListener('click', closeCountdownModal);
+document.getElementById('saveCountdown').addEventListener('click', saveCountdownFromModal);
+document.getElementById('countdownModalBackdrop').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeCountdownModal();
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.getElementById('countdownModalBackdrop').classList.contains('open')) {
+    closeCountdownModal();
+  }
+});
+
+setInterval(() => {
+  const tab = document.getElementById('tab-countdowns');
+  const grid = document.getElementById('countdownGrid');
+  const modalOpen = document.getElementById('countdownModalBackdrop').classList.contains('open');
+  const keyboardFocusIsInsideGrid = grid.contains(document.activeElement);
+  if (tab.classList.contains('active') && !modalOpen && !keyboardFocusIsInsideGrid) renderCountdowns();
+}, 60 * 1000);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.getElementById('tab-countdowns').classList.contains('active')) renderCountdowns();
+});
+
+let deferredInstallPrompt = null;
+
+function isStandaloneApp() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function installFallbackMessage() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return isIOS
+    ? 'On iPhone: tap Share, then “Add to Home Screen”.'
+    : 'Open your browser menu and choose “Install app” or “Add to Home screen”.';
+}
+
+function updateInstallExperience() {
+  const button = document.getElementById('installApp');
+  const help = document.getElementById('installHelp');
+  if (!button || !help) return;
+  if (isStandaloneApp()) {
+    button.textContent = 'Installed ✓';
+    button.disabled = true;
+    help.textContent = 'You are already using the app version.';
+  } else if (deferredInstallPrompt) {
+    button.textContent = 'Install app';
+    button.disabled = false;
+    help.textContent = 'One tap, then it lives beside your other apps.';
+  } else {
+    button.textContent = 'How to install';
+    button.disabled = false;
+    help.textContent = installFallbackMessage();
+  }
+}
+
+window.addEventListener('beforeinstallprompt', event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallExperience();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  updateInstallExperience();
+  showToast('One Ball is on your Home Screen 🎀');
+});
+
+document.getElementById('installApp').addEventListener('click', async () => {
+  if (!deferredInstallPrompt) {
+    document.getElementById('installHelp').textContent = installFallbackMessage();
+    return;
+  }
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  updateInstallExperience();
+});
+
+function configurePwa() {
+  const manifest = document.getElementById('appManifest');
+  if (manifest && DEMO_MODE) manifest.href = '/demo-manifest.webmanifest';
+  updateInstallExperience();
+  if ('serviceWorker' in navigator && (window.isSecureContext || location.hostname === 'localhost')) {
+    navigator.serviceWorker.register('/sw.js').catch(error => console.warn('App installation is unavailable.', error));
+  }
+}
 
 // ---------- Board ----------
 
@@ -2316,5 +2788,6 @@ async function boot() {
   }
 }
 
+configurePwa();
 boot();
 setInterval(renderDayClock, 1000);

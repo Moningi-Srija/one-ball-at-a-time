@@ -6,6 +6,7 @@ const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const db = require('./db');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
+const { validateCountdowns } = require('./countdown-validation');
 
 const app = express();
 const PORT = process.env.PORT || 8791;
@@ -158,6 +159,21 @@ app.put('/api/frog', requireAuth, async (req, res) => {
   }
 });
 
+app.put('/api/countdowns', requireAuth, async (req, res) => {
+  const result = validateCountdowns(req.body);
+  if (!result.ok) {
+    return res.status(400).json({ error: 'invalid_countdowns', message: result.error });
+  }
+
+  try {
+    await db.setState('countdowns', result.value);
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'failed to save countdowns' });
+  }
+});
+
 const sendIndex = (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -167,6 +183,22 @@ app.get(['/', '/index.html', '/demo'], sendIndex);
 app.get('/demo/', (req, res) => res.redirect(308, '/demo'));
 app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css')));
 app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
+app.get('/manifest.webmanifest', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'manifest.webmanifest'));
+});
+app.get('/demo-manifest.webmanifest', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'demo-manifest.webmanifest'));
+});
+app.get('/offline.html', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'offline.html'));
+});
+app.get('/sw.js', (req, res) => {
+  res.set('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'sw.js'));
+});
 app.use('/assets', express.static(path.join(__dirname, 'assets'), { dotfiles: 'deny', index: false }));
 
 db.init()

@@ -1,0 +1,26 @@
+{
+  "name": "One Ball at a Time — Demo",
+  "short_name": "One Ball Demo",
+  "description": "Try the One Ball at a Time productivity system with private, browser-only demo data.",
+  "id": "/demo",
+  "start_url": "/demo",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fffafc",
+  "theme_color": "#c0376a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/assets/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/assets/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
