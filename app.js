@@ -381,11 +381,13 @@ async function loadState() {
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
+const MAX_TASK_POINTS = 100;
+
 function pointsInQuarterSteps(value, fallback) {
   const parsed = Number.parseFloat(value);
   if (!Number.isFinite(parsed)) return fallback;
   const rounded = Math.round(parsed * 4) / 4;
-  return Math.min(20, Math.max(0.25, rounded));
+  return Math.min(MAX_TASK_POINTS, Math.max(0.25, rounded));
 }
 
 const CONFETTI_COLORS = ['#ff5da8', '#e3b23c', '#c9a0e8', '#46d9a6', '#ffffff'];
