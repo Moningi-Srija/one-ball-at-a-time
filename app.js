@@ -130,6 +130,14 @@ function migrateCategoryIds(list) {
 
 const DEFAULT_TARGETS = { day: 25, week: 150, weekend: 50, month: 600 };
 
+const EXPENSE_CATEGORIES = [
+  { id: 'food', label: 'Food', icon: '🍜', color: '#e66c9a' },
+  { id: 'clothes', label: 'Clothes', icon: '👗', color: '#99507f' },
+  { id: 'transport', label: 'Transport', icon: '🚕', color: '#4f9fbd' },
+  { id: 'trips', label: 'Trips', icon: '✈️', color: '#a66b2b' },
+];
+const expenseCategoryById = id => EXPENSE_CATEGORIES.find(category => category.id === id) || EXPENSE_CATEGORIES[0];
+
 // ---------- Storage (API-backed) ----------
 
 let active = [];   // up to 5 tasks on the board
@@ -137,24 +145,32 @@ let log = [];      // finished tasks
 let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
 let frog = null;   // today's deliberately chosen hardest/most important task
+let expenses = []; // normalized expense records; PostgreSQL-backed outside the public demo
+let expenseLoadError = '';
 let logCategoryFilter = 'all';
 let logDateFilter = '';
 
-async function apiGet(path) {
-  const res = await fetch(path);
-  if (!res.ok) { const err = new Error('request failed'); err.status = res.status; throw err; }
-  return res.json();
+async function apiRequest(path, { method = 'GET', body } = {}) {
+  const options = { method, headers: {} };
+  if (body !== undefined) {
+    options.headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(body);
+  }
+  const res = await fetch(path, options);
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(payload.message || payload.error || 'request failed');
+    err.status = res.status;
+    err.payload = payload;
+    throw err;
+  }
+  return payload;
 }
 
-async function apiPut(path, body) {
-  const res = await fetch(path, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) { const err = new Error('request failed'); err.status = res.status; throw err; }
-  return res.json();
-}
+const apiGet = path => apiRequest(path);
+const apiPut = (path, body) => apiRequest(path, { method: 'PUT', body });
+const apiPost = (path, body) => apiRequest(path, { method: 'POST', body });
+const apiDelete = path => apiRequest(path, { method: 'DELETE' });
 
 let toastTimer = null;
 function showToast(msg) {
@@ -185,6 +201,33 @@ function demoRecentTimestamp(minutesAgo) {
   const start = new Date();
   start.setHours(0, 1, 0, 0);
   return Math.min(now, Math.max(start.getTime(), now - minutesAgo * 60000));
+}
+
+function createDemoExpenses() {
+  const samples = [
+    ['demo-expense-1', 240, 0, 'food', 'Lunch and coffee'],
+    ['demo-expense-2', 85, 0, 'transport', 'Metro and auto'],
+    ['demo-expense-3', 699, 1, 'clothes', 'A top I had saved'],
+    ['demo-expense-4', 320, 2, 'food', 'Dinner with friends'],
+    ['demo-expense-5', 180, 3, 'transport', 'Cab home'],
+    ['demo-expense-6', 1250, 5, 'trips', 'Weekend stay deposit'],
+    ['demo-expense-7', 145, 7, 'food', 'Office lunch'],
+    ['demo-expense-8', 899, 12, 'clothes', 'Walking shoes'],
+    ['demo-expense-9', 560, 20, 'trips', 'Train tickets'],
+    ['demo-expense-10', 110, 34, 'transport', 'Airport bus'],
+  ];
+  return samples.map(([id, amount, daysAgo, category, note], index) => {
+    const createdAt = new Date(Date.now() - (daysAgo * 86400000) - index * 60000).toISOString();
+    return {
+      id,
+      amount,
+      date: localDateKey(addDays(new Date(), -daysAgo)),
+      category,
+      note,
+      createdAt,
+      updatedAt: createdAt,
+    };
+  });
 }
 
 function createDemoState() {
@@ -297,6 +340,7 @@ function createDemoState() {
       }
     ],
     targets: { ...DEFAULT_TARGETS },
+    expenses: createDemoExpenses(),
     frog: {
       date: localDateKey(),
       taskId: frogTask.id,
@@ -313,7 +357,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 2, active, log, countdowns, targets, frog }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 3, active, log, countdowns, targets, frog, expenses }));
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
@@ -351,6 +395,7 @@ function saveFrog() {
 
 async function loadState() {
   let state;
+  let expensePayload;
   if (DEMO_MODE) {
     try {
       state = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || 'null');
@@ -364,17 +409,34 @@ async function loadState() {
       countdowns = state.countdowns;
       targets = state.targets;
       frog = state.frog;
+      expenses = state.expenses;
       persistDemoState();
       return;
     }
   } else {
     state = await apiGet('/api/state');
+    try {
+      expensePayload = await apiGet('/api/expenses');
+      expenseLoadError = '';
+    } catch (error) {
+      if (error.status === 401) throw error;
+      console.error('Could not load expenses.', error);
+      expenseLoadError = 'Your tasks are safe, but expenses could not be loaded. Retry before logging a new one.';
+      expensePayload = { expenses: [] };
+    }
   }
   active = Array.isArray(state.active) ? state.active : [];
   log = Array.isArray(state.log) ? state.log : [];
   countdowns = Array.isArray(state.countdowns) ? state.countdowns : [];
   targets = { ...DEFAULT_TARGETS, ...(state.targets || {}) };
   frog = state.frog || null;
+  if (DEMO_MODE) {
+    const hadExpenses = Array.isArray(state.expenses);
+    expenses = hadExpenses ? state.expenses : createDemoExpenses();
+    if (!hadExpenses) persistDemoState();
+  } else {
+    expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
+  }
 }
 
 // ---------- Helpers ----------
@@ -641,6 +703,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
+    if (btn.dataset.tab === 'expenses') renderExpenses();
     if (btn.dataset.tab === 'log') renderLog();
     if (btn.dataset.tab === 'guide') renderGuide();
     if (btn.dataset.tab === 'targets') renderTargets();
@@ -650,7 +713,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (requestedTab !== 'board' && requestedTab !== 'countdowns') return;
+  if (!['board', 'countdowns', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
@@ -2622,6 +2685,630 @@ function renderAnalytics() {
   renderDailyAccountability();
   renderHeatmap();
 }
+
+// ---------- Expenses ----------
+
+const INR_FORMATTER = new Intl.NumberFormat('en-IN', {
+  style: 'currency',
+  currency: 'INR',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const expenseView = { period: 'day', offset: 0, category: 'all' };
+let expenseTrendChart = null;
+let expenseCategoryChart = null;
+let editingExpenseId = null;
+let expenseReturnFocus = null;
+
+function dateKeyToLocalDate(key) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''));
+  if (!match) return null;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  if (date.getFullYear() !== Number(match[1])
+    || date.getMonth() !== Number(match[2]) - 1
+    || date.getDate() !== Number(match[3])) return null;
+  return date;
+}
+
+function expensePaise(expense) {
+  const amount = Number(expense?.amount);
+  return Number.isFinite(amount) ? Math.max(0, Math.round(amount * 100)) : 0;
+}
+
+function formatExpenseMoney(paise) {
+  return INR_FORMATTER.format(Math.max(0, Number(paise) || 0) / 100);
+}
+
+function expenseDateRange() {
+  if (expenseView.period === 'all') {
+    const validDates = expenses.map(expense => expense.date).filter(dateKeyToLocalDate).sort();
+    const first = dateKeyToLocalDate(validDates[0]) || startOfDay(new Date());
+    const lastRecorded = dateKeyToLocalDate(validDates[validDates.length - 1]) || first;
+    const last = lastRecorded > startOfDay(new Date()) ? lastRecorded : startOfDay(new Date());
+    return [startOfDay(first), addDays(startOfDay(last), 1)];
+  }
+  const [start, end] = getRange(expenseView.period, expenseView.offset);
+  return [new Date(start), new Date(end)];
+}
+
+function expenseEntriesInPeriod() {
+  const [start, end] = expenseDateRange();
+  const startKey = localDateKey(start);
+  const endKey = localDateKey(end);
+  return expenses.filter(expense => expense.date >= startKey && expense.date < endKey);
+}
+
+function eachDateInRange(start, end) {
+  const dates = [];
+  for (let day = startOfDay(start); day < end; day = addDays(day, 1)) {
+    dates.push(new Date(day));
+  }
+  return dates;
+}
+
+function calendarDayCount(start, end) {
+  const startUtc = Date.UTC(start.getFullYear(), start.getMonth(), start.getDate());
+  const endUtc = Date.UTC(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.max(0, Math.round((endUtc - startUtc) / 86400000));
+}
+
+function expensePeriodCopy() {
+  if (expenseView.period === 'all') {
+    const [start] = expenseDateRange();
+    const hasExpenses = expenses.length > 0;
+    return {
+      label: hasExpenses
+        ? `All spending since ${start.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
+        : 'All recorded time',
+      sublabel: hasExpenses ? 'your complete expense history' : 'ready for your first expense',
+    };
+  }
+  return {
+    label: rangeLabel(expenseView.period, expenseView.offset),
+    sublabel: rangeSubLabel(expenseView.period, expenseView.offset),
+  };
+}
+
+function expenseMeasuredDayCount() {
+  const [start, rangeEnd] = expenseDateRange();
+  let end = rangeEnd;
+  if (expenseView.period !== 'all' && expenseView.offset === 0) {
+    const tomorrow = addDays(startOfDay(new Date()), 1);
+    if (tomorrow < end) end = tomorrow;
+  }
+  return Math.max(1, calendarDayCount(start, end));
+}
+
+function formatExpenseDay(key) {
+  const date = dateKeyToLocalDate(key);
+  if (!date) return key;
+  const todayKey = localDateKey();
+  const yesterdayKey = localDateKey(addDays(new Date(), -1));
+  const prefix = key === todayKey ? 'Today · ' : (key === yesterdayKey ? 'Yesterday · ' : '');
+  return prefix + date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function expenseCategoryTotals(entries) {
+  const totals = Object.fromEntries(EXPENSE_CATEGORIES.map(category => [category.id, 0]));
+  entries.forEach(expense => {
+    if (Object.hasOwn(totals, expense.category)) totals[expense.category] += expensePaise(expense);
+  });
+  return totals;
+}
+
+function renderExpenseSummary(entries) {
+  const container = document.getElementById('expenseSummary');
+  container.innerHTML = '';
+  const total = entries.reduce((sum, expense) => sum + expensePaise(expense), 0);
+  const dayCount = expenseMeasuredDayCount();
+  const categoryTotals = expenseCategoryTotals(entries);
+  const topCategory = [...EXPENSE_CATEGORIES]
+    .sort((a, b) => categoryTotals[b.id] - categoryTotals[a.id])[0];
+  const topTotal = topCategory ? categoryTotals[topCategory.id] : 0;
+  const cards = [
+    { label: 'Spent in this view', value: formatExpenseMoney(total), note: expensePeriodCopy().sublabel, stamp: '₹' },
+    { label: 'Average per day', value: formatExpenseMoney(Math.round(total / dayCount)), note: `across ${dayCount} ${dayCount === 1 ? 'day' : 'days'}`, stamp: '÷' },
+    { label: 'Expenses logged', value: String(entries.length), note: entries.length === 1 ? 'one money decision recorded' : 'money decisions recorded', stamp: '#' },
+    {
+      label: 'Biggest category',
+      value: topTotal ? `${topCategory.icon} ${topCategory.label}` : '—',
+      note: topTotal ? formatExpenseMoney(topTotal) : 'nothing spent in this view',
+      stamp: topTotal ? topCategory.icon : '♡',
+    },
+  ];
+  cards.forEach(data => {
+    const card = document.createElement('article');
+    card.className = 'expense-summary-card';
+    card.dataset.stamp = data.stamp;
+    const label = document.createElement('div');
+    label.className = 'expense-summary-label';
+    label.textContent = data.label;
+    const value = document.createElement('div');
+    value.className = 'expense-summary-value';
+    value.textContent = data.value;
+    const note = document.createElement('div');
+    note.className = 'expense-summary-note';
+    note.textContent = data.note;
+    card.append(label, value, note);
+    container.appendChild(card);
+  });
+}
+
+function destroyExpenseCharts() {
+  if (expenseTrendChart) expenseTrendChart.destroy();
+  if (expenseCategoryChart) expenseCategoryChart.destroy();
+  expenseTrendChart = null;
+  expenseCategoryChart = null;
+}
+
+function renderExpenseCharts(entries) {
+  destroyExpenseCharts();
+  const [start, end] = expenseDateRange();
+  const spanDays = calendarDayCount(start, end);
+  const useMonthlySeries = expenseView.period === 'all' && spanDays > 370;
+  let seriesDates;
+  let seriesKeys;
+  let seriesPaise;
+
+  if (useMonthlySeries) {
+    seriesDates = [];
+    for (let month = new Date(start.getFullYear(), start.getMonth(), 1); month < end; month = new Date(month.getFullYear(), month.getMonth() + 1, 1)) {
+      seriesDates.push(new Date(month));
+    }
+    const totalsByMonth = new Map();
+    entries.forEach(expense => {
+      const key = String(expense.date).slice(0, 7);
+      totalsByMonth.set(key, (totalsByMonth.get(key) || 0) + expensePaise(expense));
+    });
+    seriesKeys = seriesDates.map(date => localDateKey(date).slice(0, 7));
+    seriesPaise = seriesKeys.map(key => totalsByMonth.get(key) || 0);
+  } else {
+    seriesDates = eachDateInRange(start, end);
+    const totalsByDay = new Map();
+    entries.forEach(expense => totalsByDay.set(
+      expense.date,
+      (totalsByDay.get(expense.date) || 0) + expensePaise(expense)
+    ));
+    seriesKeys = seriesDates.map(localDateKey);
+    seriesPaise = seriesKeys.map(key => totalsByDay.get(key) || 0);
+  }
+
+  const chartStage = document.getElementById('expenseChartStage');
+  chartStage.style.width = `${Math.max(520, Math.min(16000, seriesDates.length * (useMonthlySeries ? 58 : 31)))}px`;
+  document.getElementById('expenseTrendTitle').textContent = useMonthlySeries ? 'Spending by month' : 'Spending by day';
+  document.getElementById('expenseTrendHint').textContent = `${seriesDates.length} ${useMonthlySeries ? (seriesDates.length === 1 ? 'month' : 'months') : (seriesDates.length === 1 ? 'day' : 'days')} · click a bar to inspect the ${useMonthlySeries ? 'month' : 'day'}`;
+
+  if (typeof Chart !== 'undefined') {
+    const trendContext = document.getElementById('expenseTrendChart').getContext('2d');
+    expenseTrendChart = new Chart(trendContext, {
+      type: 'bar',
+      data: {
+        labels: seriesDates.map(date => date.toLocaleDateString(undefined, useMonthlySeries
+          ? { month: 'short', year: '2-digit' }
+          : (seriesDates.length > 35
+            ? { month: 'short', day: 'numeric' }
+            : { weekday: seriesDates.length <= 7 ? 'short' : undefined, month: 'short', day: 'numeric' }))),
+        datasets: [{
+          label: 'Spent',
+          data: seriesPaise.map(value => value / 100),
+          backgroundColor: '#e66c9a',
+          hoverBackgroundColor: '#c0376a',
+          borderColor: '#b84d76',
+          borderWidth: 1,
+          borderRadius: 5,
+          minBarLength: 0,
+        }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        onClick: (_event, elements) => {
+          const point = elements[0];
+          if (!point) return;
+          const key = seriesKeys[point.index];
+          const picked = dateKeyToLocalDate(useMonthlySeries ? `${key}-01` : key);
+          if (!picked) return;
+          expenseView.period = useMonthlySeries ? 'month' : 'day';
+          expenseView.offset = offsetFromDate(expenseView.period, picked);
+          renderExpenses();
+          document.getElementById('expenseLedgerTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: context => formatExpenseMoney(Math.round(Number(context.raw || 0) * 100)) },
+          },
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#7b5665', maxRotation: 55, minRotation: seriesDates.length > 14 ? 45 : 0 } },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(184, 77, 118, .12)' },
+            ticks: { color: '#7b5665', callback: value => `₹${Number(value).toLocaleString('en-IN')}` },
+          },
+        },
+      },
+    });
+
+    const categoryTotals = expenseCategoryTotals(entries);
+    const total = Object.values(categoryTotals).reduce((sum, value) => sum + value, 0);
+    const categoryContext = document.getElementById('expenseCategoryChart').getContext('2d');
+    expenseCategoryChart = new Chart(categoryContext, {
+      type: 'doughnut',
+      data: total ? {
+        labels: EXPENSE_CATEGORIES.map(category => category.label),
+        datasets: [{
+          data: EXPENSE_CATEGORIES.map(category => categoryTotals[category.id] / 100),
+          backgroundColor: EXPENSE_CATEGORIES.map(category => category.color),
+          borderColor: '#fffdfd',
+          borderWidth: 3,
+        }],
+      } : {
+        labels: ['No spending'],
+        datasets: [{ data: [1], backgroundColor: ['#f2dbe4'], borderWidth: 0 }],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: total ? {
+            callbacks: { label: context => `${context.label}: ${formatExpenseMoney(Math.round(Number(context.raw || 0) * 100))}` },
+          } : { enabled: false },
+        },
+      },
+    });
+  }
+
+  renderExpenseCategoryBreakdown(entries);
+}
+
+function renderExpenseCategoryBreakdown(entries) {
+  const container = document.getElementById('expenseCategoryBreakdown');
+  container.innerHTML = '';
+  const totals = expenseCategoryTotals(entries);
+  const grandTotal = Object.values(totals).reduce((sum, value) => sum + value, 0);
+  const max = Math.max(1, ...Object.values(totals));
+  [...EXPENSE_CATEGORIES]
+    .sort((a, b) => totals[b.id] - totals[a.id])
+    .forEach(category => {
+      const row = document.createElement('div');
+      row.className = 'expense-category-row';
+      const name = document.createElement('div');
+      name.className = 'expense-category-name';
+      name.textContent = `${category.icon} ${category.label}`;
+      const track = document.createElement('div');
+      track.className = 'expense-category-track';
+      const fill = document.createElement('div');
+      fill.className = 'expense-category-fill';
+      fill.style.width = `${(totals[category.id] / max) * 100}%`;
+      fill.style.background = category.color;
+      track.appendChild(fill);
+      const value = document.createElement('div');
+      value.className = 'expense-category-value';
+      const share = grandTotal ? Math.round((totals[category.id] / grandTotal) * 100) : 0;
+      value.textContent = `${formatExpenseMoney(totals[category.id])} · ${share}%`;
+      row.append(name, track, value);
+      container.appendChild(row);
+    });
+}
+
+function renderExpenseLedger(entries) {
+  const ledger = document.getElementById('expenseLedger');
+  const categoryFilter = document.getElementById('expenseCategoryFilter');
+  categoryFilter.value = expenseView.category;
+  const visible = entries
+    .filter(expense => expenseView.category === 'all' || expense.category === expenseView.category)
+    .sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+  const visibleTotal = visible.reduce((sum, expense) => sum + expensePaise(expense), 0);
+  document.getElementById('expenseLedgerCount').textContent = `${visible.length} ${visible.length === 1 ? 'entry' : 'entries'} · ${formatExpenseMoney(visibleTotal)} visible`;
+  ledger.innerHTML = '';
+  if (!visible.length) {
+    const empty = document.createElement('div');
+    empty.className = 'expense-ledger-empty';
+    empty.textContent = expenses.length
+      ? 'Nothing matches this view yet.'
+      : 'Nothing logged yet. Add your first expense to make your money visible.';
+    ledger.appendChild(empty);
+    return;
+  }
+
+  const grouped = new Map();
+  visible.forEach(expense => {
+    if (!grouped.has(expense.date)) grouped.set(expense.date, []);
+    grouped.get(expense.date).push(expense);
+  });
+  grouped.forEach((dayEntries, date) => {
+    const group = document.createElement('section');
+    group.className = 'expense-day-group';
+    const head = document.createElement('div');
+    head.className = 'expense-day-head';
+    const dayLabel = document.createElement('strong');
+    dayLabel.textContent = formatExpenseDay(date);
+    const dayTotal = document.createElement('span');
+    dayTotal.className = 'expense-day-total';
+    dayTotal.textContent = formatExpenseMoney(dayEntries.reduce((sum, expense) => sum + expensePaise(expense), 0));
+    head.append(dayLabel, dayTotal);
+    group.appendChild(head);
+
+    dayEntries.forEach(expense => {
+      const category = expenseCategoryById(expense.category);
+      const row = document.createElement('article');
+      row.className = 'expense-entry';
+      const main = document.createElement('div');
+      main.className = 'expense-entry-main';
+      const categoryLine = document.createElement('div');
+      categoryLine.className = 'expense-entry-category';
+      const dot = document.createElement('span');
+      dot.className = 'expense-entry-dot';
+      dot.style.background = category.color;
+      const categoryName = document.createElement('span');
+      categoryName.textContent = `${category.icon} ${category.label}`;
+      categoryLine.append(dot, categoryName);
+      const note = document.createElement('div');
+      note.className = 'expense-entry-note';
+      note.textContent = expense.note || 'No note added';
+      main.append(categoryLine, note);
+      const amount = document.createElement('div');
+      amount.className = 'expense-entry-amount';
+      amount.textContent = formatExpenseMoney(expensePaise(expense));
+      const actions = document.createElement('div');
+      actions.className = 'expense-entry-actions';
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn ghost small';
+      edit.textContent = 'Edit';
+      edit.dataset.editExpenseId = String(expense.id);
+      edit.setAttribute('aria-label', `Edit ${category.label} expense of ${amount.textContent} on ${date}`);
+      edit.addEventListener('click', () => openExpenseModal(expense.id));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn danger-ghost small';
+      remove.textContent = 'Delete';
+      remove.setAttribute('aria-label', `Delete ${category.label} expense of ${amount.textContent} on ${date}`);
+      remove.addEventListener('click', () => deleteExpense(expense.id));
+      actions.append(edit, remove);
+      row.append(main, amount, actions);
+      group.appendChild(row);
+    });
+    ledger.appendChild(group);
+  });
+}
+
+function renderExpenses() {
+  const loadStatus = document.getElementById('expenseLoadStatus');
+  loadStatus.hidden = !expenseLoadError;
+  document.getElementById('expenseLoadMessage').textContent = expenseLoadError;
+  document.getElementById('addExpense').disabled = Boolean(expenseLoadError);
+  document.querySelectorAll('#expensePeriod .seg-btn').forEach(button => {
+    button.classList.toggle('active', button.dataset.expensePeriod === expenseView.period);
+  });
+  const allTime = expenseView.period === 'all';
+  const nav = document.getElementById('expenseDateNav');
+  const actions = document.getElementById('expenseDateActions');
+  nav.classList.toggle('is-all-time', allTime);
+  actions.classList.toggle('is-all-time', allTime);
+  const copy = expensePeriodCopy();
+  document.getElementById('expenseRangeLabel').textContent = copy.label;
+  document.getElementById('expenseRangeSub').textContent = copy.sublabel;
+  document.getElementById('expenseNext').disabled = allTime || expenseView.offset >= 0;
+  document.getElementById('expenseJumpToday').disabled = expenseView.offset === 0;
+  const [start] = expenseDateRange();
+  document.getElementById('expenseJumpDate').value = allTime ? '' : localDateKey(start);
+  const entries = expenseEntriesInPeriod();
+  renderExpenseSummary(entries);
+  renderExpenseCharts(entries);
+  renderExpenseLedger(entries);
+}
+
+const expenseModalBackdrop = document.getElementById('expenseModalBackdrop');
+const expenseForm = document.getElementById('expenseForm');
+const expenseAmountInput = document.getElementById('expenseAmount');
+const expenseDateInput = document.getElementById('expenseDate');
+const expenseCategoryInput = document.getElementById('expenseCategory');
+const expenseNoteInput = document.getElementById('expenseNote');
+const expenseFormError = document.getElementById('expenseFormError');
+const saveExpenseButton = document.getElementById('saveExpense');
+
+function openExpenseModal(id = null) {
+  const expense = id ? expenses.find(item => item.id === id) : null;
+  editingExpenseId = expense?.id || null;
+  expenseReturnFocus = document.activeElement;
+  document.getElementById('expenseModalTitle').textContent = expense ? 'Edit Expense' : 'Add an Expense';
+  saveExpenseButton.textContent = expense ? 'Save changes' : 'Save expense';
+  saveExpenseButton.disabled = false;
+  expenseFormError.textContent = '';
+  expenseAmountInput.value = expense ? (expensePaise(expense) / 100).toFixed(2).replace(/\.00$/, '') : '';
+  const selectedDay = expenseView.period === 'day' ? localDateKey(expenseDateRange()[0]) : localDateKey();
+  expenseDateInput.value = expense?.date || selectedDay;
+  expenseDateInput.max = localDateKey();
+  expenseCategoryInput.value = expense?.category || 'food';
+  expenseNoteInput.value = expense?.note || '';
+  expenseModalBackdrop.classList.add('open');
+  expenseModalBackdrop.setAttribute('aria-hidden', 'false');
+  setTimeout(() => expenseAmountInput.focus(), 50);
+}
+
+function closeExpenseModal({ restoreFocus = true } = {}) {
+  if (saveExpenseButton.disabled) return;
+  expenseModalBackdrop.classList.remove('open');
+  expenseModalBackdrop.setAttribute('aria-hidden', 'true');
+  editingExpenseId = null;
+  expenseFormError.textContent = '';
+  if (restoreFocus && expenseReturnFocus instanceof HTMLElement) expenseReturnFocus.focus();
+  expenseReturnFocus = null;
+}
+
+function validateExpenseDraft() {
+  const rawAmount = expenseAmountInput.value.trim();
+  if (!/^(?:0|[1-9]\d{0,9})(?:\.\d{1,2})?$/.test(rawAmount)) {
+    return { error: 'Enter a valid amount with no more than two decimal places.' };
+  }
+  const amount = Number(rawAmount);
+  if (!Number.isFinite(amount) || amount < 0.01 || amount > 9999999999.99) {
+    return { error: 'Amount must be between ₹0.01 and ₹9,99,99,99,999.99.' };
+  }
+  if (!dateKeyToLocalDate(expenseDateInput.value)) return { error: 'Choose a valid spending date.' };
+  if (!EXPENSE_CATEGORIES.some(category => category.id === expenseCategoryInput.value)) return { error: 'Choose a valid category.' };
+  return {
+    value: {
+      amount,
+      date: expenseDateInput.value,
+      category: expenseCategoryInput.value,
+      note: expenseNoteInput.value.trim().slice(0, 500),
+    },
+  };
+}
+
+async function saveExpenseDraft(event) {
+  event.preventDefault();
+  const result = validateExpenseDraft();
+  if (result.error) {
+    expenseFormError.textContent = result.error;
+    return;
+  }
+  const wasEditing = Boolean(editingExpenseId);
+  const id = editingExpenseId;
+  saveExpenseButton.disabled = true;
+  saveExpenseButton.textContent = 'Saving…';
+  expenseFormError.textContent = '';
+  try {
+    let saved;
+    if (DEMO_MODE) {
+      const now = new Date().toISOString();
+      const existing = id ? expenses.find(item => item.id === id) : null;
+      saved = {
+        id: existing?.id || uid(),
+        ...result.value,
+        createdAt: existing?.createdAt || now,
+        updatedAt: now,
+      };
+      if (existing) expenses = expenses.map(item => item.id === id ? saved : item);
+      else expenses.push(saved);
+      persistDemoState();
+    } else {
+      const response = wasEditing
+        ? await apiPut(`/api/expenses/${encodeURIComponent(id)}`, result.value)
+        : await apiPost('/api/expenses', result.value);
+      saved = response.expense;
+      if (wasEditing) expenses = expenses.map(item => item.id === id ? saved : item);
+      else expenses.push(saved);
+    }
+    saveExpenseButton.disabled = false;
+    closeExpenseModal({ restoreFocus: false });
+    renderExpenses();
+    const focusTarget = wasEditing
+      ? [...document.querySelectorAll('[data-edit-expense-id]')].find(button => button.dataset.editExpenseId === String(id))
+      : document.getElementById('addExpense');
+    focusTarget?.focus({ preventScroll: true });
+    showToast(wasEditing ? 'Expense updated.' : 'Expense logged.');
+  } catch (error) {
+    saveExpenseButton.disabled = false;
+    saveExpenseButton.textContent = wasEditing ? 'Save changes' : 'Save expense';
+    expenseFormError.textContent = error.status === 401
+      ? 'Your session expired. Log in again, then press Save once more.'
+      : (error.message || 'Could not save this expense. Try again.');
+    if (error.status === 401) showLogin('Your session expired. Log back in to save this expense.');
+  }
+}
+
+async function deleteExpense(id) {
+  const expense = expenses.find(item => item.id === id);
+  if (!expense) return;
+  const category = expenseCategoryById(expense.category);
+  if (!window.confirm(`Delete ${formatExpenseMoney(expensePaise(expense))} for ${category.label} on ${expense.date}?`)) return;
+  try {
+    if (!DEMO_MODE) await apiDelete(`/api/expenses/${encodeURIComponent(id)}`);
+    expenses = expenses.filter(item => item.id !== id);
+    if (DEMO_MODE) persistDemoState();
+    renderExpenses();
+    showToast('Expense deleted.');
+  } catch (error) {
+    handleSaveError(error);
+  }
+}
+
+document.getElementById('addExpense').addEventListener('click', () => openExpenseModal());
+document.getElementById('retryExpenses').addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = 'Retrying…';
+  try {
+    const payload = await apiGet('/api/expenses');
+    expenses = Array.isArray(payload.expenses) ? payload.expenses : [];
+    expenseLoadError = '';
+    renderExpenses();
+    showToast('Expenses loaded.');
+  } catch (error) {
+    if (error.status === 401) {
+      showLogin('Your session expired. Log back in to load expenses.');
+    } else {
+      expenseLoadError = 'Expenses still could not be loaded. Your tasks remain available; check the connection and retry.';
+      renderExpenses();
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Retry';
+  }
+});
+document.getElementById('cancelExpense').addEventListener('click', () => closeExpenseModal());
+expenseModalBackdrop.addEventListener('click', event => {
+  if (event.target === expenseModalBackdrop) closeExpenseModal();
+});
+expenseForm.addEventListener('submit', saveExpenseDraft);
+document.addEventListener('keydown', event => {
+  if (!expenseModalBackdrop.classList.contains('open')) return;
+  if (event.key === 'Escape' && !saveExpenseButton.disabled) {
+    closeExpenseModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = [...expenseForm.querySelectorAll('input, select, textarea, button:not([disabled])')]
+    .filter(element => !element.hidden);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+document.querySelectorAll('#expensePeriod .seg-btn').forEach(button => {
+  button.addEventListener('click', () => {
+    expenseView.period = button.dataset.expensePeriod;
+    expenseView.offset = 0;
+    renderExpenses();
+  });
+});
+document.getElementById('expensePrev').addEventListener('click', () => {
+  if (expenseView.period === 'all') return;
+  expenseView.offset -= 1;
+  renderExpenses();
+});
+document.getElementById('expenseNext').addEventListener('click', () => {
+  if (expenseView.period === 'all' || expenseView.offset >= 0) return;
+  expenseView.offset += 1;
+  renderExpenses();
+});
+document.getElementById('expenseJumpToday').addEventListener('click', () => {
+  expenseView.offset = 0;
+  renderExpenses();
+});
+document.getElementById('expenseJumpDate').addEventListener('change', event => {
+  const picked = dateKeyToLocalDate(event.target.value);
+  if (!picked || expenseView.period === 'all') return;
+  expenseView.offset = offsetFromDate(expenseView.period, picked);
+  renderExpenses();
+});
+document.getElementById('expenseCategoryFilter').addEventListener('change', event => {
+  expenseView.category = event.target.value;
+  renderExpenseLedger(expenseEntriesInPeriod());
+});
 
 // ---------- Log ----------
 

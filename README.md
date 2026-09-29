@@ -8,10 +8,10 @@
 
 [Open the no-login public demo](https://one-ball-at-a-time.onrender.com/demo)
 
-The demo keeps its task state separate from the owner's private task state:
+The demo keeps its task and expense state separate from the owner's private data:
 
-- its task data is never sent to the app's private state API;
-- its sample tasks and every change you make stay in your browser's `localStorage`;
+- its task and expense data are never sent to the app's private APIs;
+- its sample data and every change you make stay in your browser's `localStorage`;
 - **Reset demo** restores the original sample board;
 - the public copy uses generic protected body and future-building slots.
 
@@ -25,6 +25,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
+- Includes a PostgreSQL-backed expense tracker with exact paise storage, editable daily entries, Food/Clothes/Transport/Trips categories, and Day/Week/Month/All Time analysis.
 - Lets you select a point on an all-time chart and jump to that day's log.
 - Installs as a standalone Progressive Web App from a supported phone or desktop browser.
 - Includes a personal Android wrapper and configurable Home Screen widget for today's score or a saved countdown.
@@ -62,7 +63,7 @@ Create a PostgreSQL database, then replace the sample values in `.env`. Start th
 npm start
 ```
 
-Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its state and session tables on startup.
+Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its state, expense, migration, and session tables on startup.
 
 To install it like an app, open **Countdowns** and use **Install app**. On iPhone, use Safari's Share menu and choose **Add to Home Screen**. The PWA is a full-screen version of the website; the repository also includes a native Android shell with a real Home Screen widget.
 
@@ -123,7 +124,7 @@ Keep private or personally identifying copy out of the demo constants and sample
 
 ## Data and privacy model
 
-The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
+The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
 
 The login throttle is intentionally simple and in-memory. It is per server instance and resets when the service restarts; use an edge/platform rate limiter as well if you expect meaningful public traffic.
 
@@ -135,7 +136,7 @@ The demo does not call those private task-state API routes. It uses the browser 
 npm test
 ```
 
-The current automated tests cover countdown validation, timing-safe PIN comparison, and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
+The current automated tests cover countdown and expense validation, parameterized expense persistence, timing-safe PIN comparison, and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
 
 ## Product notes
 

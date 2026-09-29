@@ -42,7 +42,7 @@
   <aside class="demo-banner" id="demoBanner" hidden aria-label="Public demo information">
     <div>
       <strong>Public demo</strong>
-      <span>Your demo tasks stay in this browser and are never sent to Srija’s private task data.</span>
+      <span>Everything you add in this demo stays in this browser and never touches Srija’s private data.</span>
     </div>
     <div class="demo-banner-actions">
       <button class="btn ghost small" id="resetDemo" type="button">Reset demo</button>
@@ -69,6 +69,7 @@
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn" data-tab="analytics">Analytics</button>
+        <button class="tab-btn" data-tab="expenses">Expenses</button>
         <button class="tab-btn" data-tab="log">Log</button>
         <button class="tab-btn" data-tab="guide">Points Guide</button>
         <button class="tab-btn" data-tab="targets">Targets</button>
@@ -325,6 +326,97 @@
     </div>
   </section>
 
+  <!-- EXPENSES -->
+  <section id="tab-expenses" class="tab-panel expenses-panel">
+    <div class="section-head expense-heading">
+      <div>
+        <p class="expense-kicker">Money reality, without the guilt</p>
+        <h2>Expense Tracker</h2>
+        <p class="expense-intro">Log every spend, see where it went, and make your money visible day by day.</p>
+      </div>
+      <button class="btn primary" id="addExpense" type="button">＋ Add expense</button>
+    </div>
+
+    <div class="expense-period" id="expensePeriod" aria-label="Expense analysis period">
+      <button class="seg-btn active" data-expense-period="day" type="button">Day</button>
+      <button class="seg-btn" data-expense-period="week" type="button">Week</button>
+      <button class="seg-btn" data-expense-period="month" type="button">Month</button>
+      <button class="seg-btn" data-expense-period="all" type="button">All Time</button>
+    </div>
+
+    <div class="expense-load-status" id="expenseLoadStatus" role="status" hidden>
+      <span id="expenseLoadMessage"></span>
+      <button class="btn ghost small" id="retryExpenses" type="button">Retry</button>
+    </div>
+
+    <div class="expense-date-nav" id="expenseDateNav">
+      <button class="nav-arrow" id="expensePrev" type="button" aria-label="Previous expense period">&#8249;</button>
+      <div class="date-nav-center">
+        <div class="date-range-label" id="expenseRangeLabel"></div>
+        <div class="date-nav-sub" id="expenseRangeSub"></div>
+      </div>
+      <button class="nav-arrow" id="expenseNext" type="button" aria-label="Next expense period">&#8250;</button>
+    </div>
+
+    <div class="expense-date-actions" id="expenseDateActions">
+      <button class="link-btn" id="expenseJumpToday" type="button">Jump to current</button>
+      <input type="date" id="expenseJumpDate" class="date-picker" aria-label="Jump to an expense date">
+    </div>
+
+    <div class="expense-summary-grid" id="expenseSummary" aria-live="polite"></div>
+
+    <div class="expense-analysis-grid">
+      <section class="expense-paper-card expense-trend-card" aria-labelledby="expenseTrendTitle">
+        <div class="expense-card-head">
+          <div>
+            <p class="expense-card-number">01</p>
+            <h3 id="expenseTrendTitle">Spending by day</h3>
+          </div>
+          <span class="hint" id="expenseTrendHint"></span>
+        </div>
+        <div class="expense-chart-scroll">
+          <div class="expense-chart-stage" id="expenseChartStage">
+            <canvas id="expenseTrendChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="expense-paper-card expense-category-card" aria-labelledby="expenseCategoryTitle">
+        <div class="expense-card-head">
+          <div>
+            <p class="expense-card-number">02</p>
+            <h3 id="expenseCategoryTitle">Where it went</h3>
+          </div>
+        </div>
+        <div class="expense-category-layout">
+          <div class="expense-doughnut-wrap"><canvas id="expenseCategoryChart"></canvas></div>
+          <div id="expenseCategoryBreakdown" class="expense-category-breakdown"></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="expense-ledger-card" aria-labelledby="expenseLedgerTitle">
+      <div class="expense-ledger-head">
+        <div>
+          <p class="expense-card-number">03</p>
+          <h3 id="expenseLedgerTitle">Expense log</h3>
+          <p class="hint" id="expenseLedgerCount"></p>
+        </div>
+        <label class="expense-filter-label" for="expenseCategoryFilter">
+          <span>Category</span>
+          <select id="expenseCategoryFilter" class="log-filter" aria-label="Filter expenses by category">
+            <option value="all">All categories</option>
+            <option value="food">🍜 Food</option>
+            <option value="clothes">👗 Clothes</option>
+            <option value="transport">🚕 Transport</option>
+            <option value="trips">✈️ Trips</option>
+          </select>
+        </label>
+      </div>
+      <div id="expenseLedger" class="expense-ledger"></div>
+    </section>
+  </section>
+
   <!-- LOG -->
   <section id="tab-log" class="tab-panel">
     <div class="section-head">
@@ -370,6 +462,41 @@
 
   <footer class="xoxo">one ball, always.</footer>
 
+</div>
+
+<!-- Add / Edit Expense Modal -->
+<div class="modal-backdrop" id="expenseModalBackdrop" aria-hidden="true">
+  <form class="modal expense-modal" id="expenseForm" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+    <div class="expense-modal-heading">
+      <span class="expense-receipt-sticker" aria-hidden="true">receipt</span>
+      <h3 id="expenseModalTitle">Add an Expense</h3>
+      <p>One honest entry now means no mystery at the end of the month.</p>
+    </div>
+    <div class="expense-modal-row">
+      <label>Amount (₹)
+        <input type="number" id="expenseAmount" min="0.01" max="9999999999.99" step="0.01" inputmode="decimal" placeholder="0.00" required>
+      </label>
+      <label>Date
+        <input type="date" id="expenseDate" required>
+      </label>
+    </div>
+    <label>Category
+      <select id="expenseCategory" required>
+        <option value="food">🍜 Food</option>
+        <option value="clothes">👗 Clothes</option>
+        <option value="transport">🚕 Transport</option>
+        <option value="trips">✈️ Trips</option>
+      </select>
+    </label>
+    <label>What was it? <span class="hint">(optional)</span>
+      <textarea id="expenseNote" rows="3" maxlength="500" placeholder="e.g. Lunch with friends, metro to office…"></textarea>
+    </label>
+    <p class="expense-form-error" id="expenseFormError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelExpense" type="button">Cancel</button>
+      <button class="btn primary" id="saveExpense" type="submit">Save expense</button>
+    </div>
+  </form>
 </div>
 
 <!-- Add / Edit Task Modal -->

@@ -7,6 +7,7 @@ const pgSession = require('connect-pg-simple')(session);
 const db = require('./db');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
 const { validateCountdowns } = require('./countdown-validation');
+const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
 
 const app = express();
 const PORT = process.env.PORT || 8791;
@@ -171,6 +172,70 @@ app.put('/api/countdowns', requireAuth, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'failed to save countdowns' });
+  }
+});
+
+function sendExpenseValidationError(res, result, code = 'invalid_expense') {
+  return res.status(400).json({
+    error: code,
+    field: result.field,
+    message: result.error,
+  });
+}
+
+app.get('/api/expenses', requireAuth, async (req, res) => {
+  const result = validateExpenseFilters(req.query);
+  if (!result.ok) return sendExpenseValidationError(res, result, 'invalid_expense_filters');
+
+  try {
+    const expenses = await db.listExpenses(result.value);
+    res.json({ expenses });
+  } catch (error) {
+    console.error('Failed to load expenses:', error);
+    res.status(500).json({ error: 'failed_to_load_expenses' });
+  }
+});
+
+app.post('/api/expenses', requireAuth, async (req, res) => {
+  const result = validateExpense(req.body);
+  if (!result.ok) return sendExpenseValidationError(res, result);
+
+  try {
+    const expense = await db.createExpense(result.value);
+    res.status(201).json({ expense });
+  } catch (error) {
+    console.error('Failed to create expense:', error);
+    res.status(500).json({ error: 'failed_to_create_expense' });
+  }
+});
+
+app.put('/api/expenses/:id', requireAuth, async (req, res) => {
+  const id = validateExpenseId(req.params.id);
+  if (!id.ok) return sendExpenseValidationError(res, id, 'invalid_expense_id');
+  const result = validateExpense(req.body);
+  if (!result.ok) return sendExpenseValidationError(res, result);
+
+  try {
+    const expense = await db.updateExpense(id.value, result.value);
+    if (!expense) return res.status(404).json({ error: 'expense_not_found' });
+    res.json({ expense });
+  } catch (error) {
+    console.error('Failed to update expense:', error);
+    res.status(500).json({ error: 'failed_to_update_expense' });
+  }
+});
+
+app.delete('/api/expenses/:id', requireAuth, async (req, res) => {
+  const id = validateExpenseId(req.params.id);
+  if (!id.ok) return sendExpenseValidationError(res, id, 'invalid_expense_id');
+
+  try {
+    const deleted = await db.deleteExpense(id.value);
+    if (!deleted) return res.status(404).json({ error: 'expense_not_found' });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Failed to delete expense:', error);
+    res.status(500).json({ error: 'failed_to_delete_expense' });
   }
 });
 
