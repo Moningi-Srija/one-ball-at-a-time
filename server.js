@@ -8,6 +8,14 @@ const db = require('./db');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
 const { validateCountdowns } = require('./countdown-validation');
 const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
+const {
+  validateEmptyAction,
+  validateFocusFilters,
+  validateFocusFinish,
+  validateFocusId,
+  validateFocusStart,
+  validateFocusUpdate,
+} = require('./focus-validation');
 
 const app = express();
 const PORT = process.env.PORT || 8791;
@@ -236,6 +244,140 @@ app.delete('/api/expenses/:id', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Failed to delete expense:', error);
     res.status(500).json({ error: 'failed_to_delete_expense' });
+  }
+});
+
+function sendFocusValidationError(res, result, code = 'invalid_focus_session') {
+  return res.status(400).json({
+    error: code,
+    field: result.field,
+    message: result.error,
+  });
+}
+
+function sendFocusDatabaseError(res, error, fallbackCode) {
+  if (error instanceof db.FocusSessionError) {
+    if (error.code === 'session_not_found') {
+      return res.status(404).json({ error: 'focus_session_not_found' });
+    }
+    return res.status(409).json({ error: error.code, message: error.message });
+  }
+  console.error(`Focus session error (${fallbackCode}):`, error);
+  return res.status(500).json({ error: fallbackCode });
+}
+
+app.get('/api/focus-sessions', requireAuth, async (req, res) => {
+  const result = validateFocusFilters(req.query);
+  if (!result.ok) return sendFocusValidationError(res, result, 'invalid_focus_session_filters');
+
+  try {
+    const sessions = await db.listFocusSessions(result.value);
+    return res.json({ sessions });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_load_focus_sessions');
+  }
+});
+
+app.get('/api/focus-sessions/active', requireAuth, async (req, res) => {
+  try {
+    const activeSession = await db.getActiveFocusSession();
+    return res.json({ session: activeSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_load_active_focus_session');
+  }
+});
+
+app.post('/api/focus-sessions/start', requireAuth, async (req, res) => {
+  const result = validateFocusStart(req.body);
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.createFocusSession(result.value);
+    return res.status(201).json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_start_focus_session');
+  }
+});
+
+app.put('/api/focus-sessions/:id', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+  const result = validateFocusUpdate(req.body);
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.updateFocusSession(id.value, result.value);
+    return res.json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_update_focus_session');
+  }
+});
+
+app.post('/api/focus-sessions/:id/pause', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+  const result = validateEmptyAction(req.body, 'pause');
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.transitionFocusSession(id.value, 'pause');
+    return res.json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_pause_focus_session');
+  }
+});
+
+app.post('/api/focus-sessions/:id/resume', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+  const result = validateEmptyAction(req.body, 'resume');
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.transitionFocusSession(id.value, 'resume');
+    return res.json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_resume_focus_session');
+  }
+});
+
+app.post('/api/focus-sessions/:id/finish', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+  const result = validateFocusFinish(req.body);
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.transitionFocusSession(id.value, 'finish', result.value);
+    return res.json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_finish_focus_session');
+  }
+});
+
+app.post('/api/focus-sessions/:id/cancel', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+  const result = validateEmptyAction(req.body, 'cancel');
+  if (!result.ok) return sendFocusValidationError(res, result);
+
+  try {
+    const focusSession = await db.transitionFocusSession(id.value, 'cancel');
+    return res.json({ session: focusSession });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_cancel_focus_session');
+  }
+});
+
+app.delete('/api/focus-sessions/:id', requireAuth, async (req, res) => {
+  const id = validateFocusId(req.params.id);
+  if (!id.ok) return sendFocusValidationError(res, id, 'invalid_focus_session_id');
+
+  try {
+    await db.deleteFocusSession(id.value);
+    return res.json({ ok: true });
+  } catch (error) {
+    return sendFocusDatabaseError(res, error, 'failed_to_delete_focus_session');
   }
 });
 

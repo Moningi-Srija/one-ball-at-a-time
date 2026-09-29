@@ -138,6 +138,12 @@ const EXPENSE_CATEGORIES = [
 ];
 const expenseCategoryById = id => EXPENSE_CATEGORIES.find(category => category.id === id) || EXPENSE_CATEGORIES[0];
 
+const FOCUS_LEVELS = {
+  distracted: { label: 'Distracted, but showed up', icon: '🌱' },
+  steady: { label: 'Steady', icon: '🌤' },
+  deep: { label: 'Deep focus', icon: '✨' },
+};
+
 // ---------- Storage (API-backed) ----------
 
 let active = [];   // up to 5 tasks on the board
@@ -147,6 +153,9 @@ let targets = DEFAULT_TARGETS;
 let frog = null;   // today's deliberately chosen hardest/most important task
 let expenses = []; // normalized expense records; PostgreSQL-backed outside the public demo
 let expenseLoadError = '';
+let focusSessions = []; // finished/cancelled focus records; PostgreSQL-backed outside the public demo
+let activeFocusSession = null;
+let focusLoadError = '';
 let logCategoryFilter = 'all';
 let logDateFilter = '';
 
@@ -226,6 +235,43 @@ function createDemoExpenses() {
       note,
       createdAt,
       updatedAt: createdAt,
+    };
+  });
+}
+
+function createDemoFocusSessions() {
+  const samples = [
+    ['demo-focus-1', 0, 52, 'empire_building', 'Practised one difficult interview problem', 'deep'],
+    ['demo-focus-2', 0, 24, 'boardroom_brain', 'Read the ticket and wrote down the flow', 'steady'],
+    ['demo-focus-3', 1, 45, 'empire_building', 'C++ revision without changing the plan', 'steady'],
+    ['demo-focus-4', 2, 18, 'office_grind', 'Cleared the smallest important work block', 'distracted'],
+    ['demo-focus-5', 4, 61, 'creator_mode', 'Worked on a personal project', 'deep'],
+    ['demo-focus-6', 6, 31, 'empire_building', 'Systems notes and one concrete question', null],
+    ['demo-focus-7', 9, 42, 'boardroom_brain', 'Prepared before the discussion', 'steady'],
+    ['demo-focus-8', 13, 27, '', '', null],
+  ];
+  return samples.map(([id, daysAgo, minutes, category, label, focusLevel], index) => {
+    const start = new Date();
+    start.setDate(start.getDate() - daysAgo);
+    start.setHours(9 + (index % 5) * 2, 10 + index, 0, 0);
+    const end = new Date(start.getTime() + minutes * 60000);
+    return {
+      id,
+      status: 'finished',
+      label,
+      category,
+      note: '',
+      focusLevel,
+      mode: index % 3 === 0 ? 'stopwatch' : 'countdown',
+      plannedSeconds: index % 3 === 0 ? null : (minutes >= 45 ? 50 : 25) * 60,
+      date: localDateKey(start),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      elapsedSeconds: minutes * 60,
+      startedAt: start.toISOString(),
+      runningSince: null,
+      endedAt: end.toISOString(),
+      createdAt: start.toISOString(),
+      updatedAt: end.toISOString(),
     };
   });
 }
@@ -341,6 +387,8 @@ function createDemoState() {
     ],
     targets: { ...DEFAULT_TARGETS },
     expenses: createDemoExpenses(),
+    focusSessions: createDemoFocusSessions(),
+    activeFocusSession: null,
     frog: {
       date: localDateKey(),
       taskId: frogTask.id,
@@ -357,7 +405,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 3, active, log, countdowns, targets, frog, expenses }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 4, active, log, countdowns, targets, frog, expenses, focusSessions, activeFocusSession }));
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
@@ -396,6 +444,7 @@ function saveFrog() {
 async function loadState() {
   let state;
   let expensePayload;
+  let focusPayload;
   if (DEMO_MODE) {
     try {
       state = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || 'null');
@@ -410,6 +459,8 @@ async function loadState() {
       targets = state.targets;
       frog = state.frog;
       expenses = state.expenses;
+      focusSessions = state.focusSessions;
+      activeFocusSession = state.activeFocusSession;
       persistDemoState();
       return;
     }
@@ -424,6 +475,15 @@ async function loadState() {
       expenseLoadError = 'Your tasks are safe, but expenses could not be loaded. Retry before logging a new one.';
       expensePayload = { expenses: [] };
     }
+    try {
+      focusPayload = await apiGet('/api/focus-sessions');
+      focusLoadError = '';
+    } catch (error) {
+      if (error.status === 401) throw error;
+      console.error('Could not load focus sessions.', error);
+      focusLoadError = 'Your tasks are safe, but focus sessions could not be loaded. Check the connection and retry.';
+      focusPayload = { sessions: [] };
+    }
   }
   active = Array.isArray(state.active) ? state.active : [];
   log = Array.isArray(state.log) ? state.log : [];
@@ -433,9 +493,26 @@ async function loadState() {
   if (DEMO_MODE) {
     const hadExpenses = Array.isArray(state.expenses);
     expenses = hadExpenses ? state.expenses : createDemoExpenses();
-    if (!hadExpenses) persistDemoState();
+    const hadFocusSessions = Array.isArray(state.focusSessions);
+    focusSessions = hadFocusSessions ? state.focusSessions : createDemoFocusSessions();
+    activeFocusSession = state.activeFocusSession || null;
+    if (activeFocusSession?.status === 'running') {
+      const lastRunningAt = Date.parse(activeFocusSession.runningSince || activeFocusSession.startedAt);
+      if (Number.isFinite(lastRunningAt)) {
+        activeFocusSession.elapsedSeconds = Math.max(0, Number(activeFocusSession.elapsedSeconds) || 0)
+          + Math.max(0, Math.floor((Date.now() - lastRunningAt) / 1000));
+        activeFocusSession.runningSince = new Date().toISOString();
+      }
+    }
+    activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
+    if (!hadExpenses || !hadFocusSessions) persistDemoState();
   } else {
     expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
+    const loadedFocusSessions = Array.isArray(focusPayload?.sessions) ? focusPayload.sessions : [];
+    activeFocusSession = loadedFocusSessions.find(session => session.status === 'running' || session.status === 'paused') || null;
+    focusSessions = loadedFocusSessions.filter(session => session.status !== 'running' && session.status !== 'paused');
+    activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
+    focusSessions = focusSessions.map(syncFocusSession);
   }
 }
 
@@ -702,18 +779,20 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'countdowns') renderCountdowns();
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
+    if (btn.dataset.tab === 'focus') renderFocus();
     if (btn.dataset.tab === 'analytics') renderAnalytics();
     if (btn.dataset.tab === 'expenses') renderExpenses();
     if (btn.dataset.tab === 'log') renderLog();
     if (btn.dataset.tab === 'guide') renderGuide();
     if (btn.dataset.tab === 'targets') renderTargets();
+    updateFocusMiniTimer();
   });
 });
 
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (!['board', 'countdowns', 'expenses'].includes(requestedTab)) return;
+  if (!['board', 'countdowns', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
@@ -2017,6 +2096,1078 @@ function renderCategoryBreakdown() {
   });
 }
 
+// ---------- Focus Sessions ----------
+
+const focusView = { period: 'week', offset: 0, category: 'all' };
+const focusDraft = { mode: 'countdown', plannedMinutes: 25, label: '', category: '', note: '' };
+let focusTrendChart = null;
+let focusCategoryChart = null;
+let focusSneakChart = null;
+let editingFocusId = null;
+let focusActionPending = false;
+let focusReturnElement = null;
+
+function syncFocusSession(session) {
+  return session ? { ...session, _syncedAt: Date.now() } : null;
+}
+
+function focusElapsedSeconds(session, now = Date.now()) {
+  if (!session) return 0;
+  const saved = Math.max(0, Number(session.elapsedSeconds) || 0);
+  if (session.status !== 'running') return Math.floor(saved);
+  const syncedAt = Number(session._syncedAt) || now;
+  return Math.floor(saved + Math.max(0, now - syncedAt) / 1000);
+}
+
+function formatFocusClock(seconds) {
+  const value = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  const secs = value % 60;
+  const pad = number => String(number).padStart(2, '0');
+  return hours > 0 ? `${pad(hours)}:${pad(minutes)}:${pad(secs)}` : `${pad(minutes)}:${pad(secs)}`;
+}
+
+function formatFocusHuman(seconds, { precise = false } = {}) {
+  const value = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (value < 60) return precise && value > 0 ? `${value}s` : (value > 0 ? '<1m' : '0m');
+  const hours = Math.floor(value / 3600);
+  const minutes = Math.floor((value % 3600) / 60);
+  if (!hours) return `${minutes}m`;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function focusCategoryMeta(categoryId) {
+  if (!categoryId) return { id: '', label: 'No tag', icon: '○', color: '#b98a9d' };
+  const known = CATEGORIES.find(category => category.id === categoryId);
+  return known || { id: categoryId, label: categoryId, icon: '•', color: '#99507f' };
+}
+
+function populateFocusCategorySelect(select, { includeAll = false, includeNone = true } = {}) {
+  const selected = select.value;
+  select.innerHTML = '';
+  if (includeAll) {
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = 'All tags';
+    select.appendChild(allOption);
+  }
+  if (includeNone) {
+    const noneOption = document.createElement('option');
+    noneOption.value = includeAll ? 'none' : '';
+    noneOption.textContent = '○ No tag — just start';
+    select.appendChild(noneOption);
+  }
+  CATEGORIES.forEach(category => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = `${category.icon} ${category.label}`;
+    select.appendChild(option);
+  });
+  if ([...select.options].some(option => option.value === selected)) select.value = selected;
+}
+
+function activeFocusDisplay(session, now = Date.now()) {
+  const elapsed = focusElapsedSeconds(session, now);
+  const planned = Number(session?.plannedSeconds) || 0;
+  if (session?.mode === 'countdown' && planned > 0) {
+    const remaining = planned - elapsed;
+    return {
+      elapsed,
+      value: formatFocusClock(Math.max(0, remaining)),
+      label: remaining > 0 ? (session.status === 'paused' ? 'Countdown paused' : 'Time remaining') : 'Goal reached',
+      caption: remaining > 0
+        ? `${formatFocusHuman(elapsed, { precise: true })} focused · ${formatFocusHuman(planned)} intention`
+        : `${formatFocusHuman(elapsed, { precise: true })} focused · finish when you leave the room`,
+      progress: Math.min(1, elapsed / planned),
+      reached: remaining <= 0,
+    };
+  }
+  return {
+    elapsed,
+    value: formatFocusClock(elapsed),
+    label: session?.status === 'paused' ? 'Stopwatch paused' : 'Time protected',
+    caption: 'No target to perform for. Stay for the next honest minute.',
+    progress: 0,
+    reached: false,
+  };
+}
+
+function renderFocusRoom() {
+  const room = document.getElementById('focusRoom');
+  room.innerHTML = '';
+
+  if (!activeFocusSession) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'focus-room-inner';
+    wrapper.innerHTML = `
+      <div class="focus-timer-column">
+        <div class="focus-timer-ring" id="focusIdleRing">
+          <div class="focus-timer-face">
+            <span class="focus-timer-state" id="focusIdleState">COUNTDOWN</span>
+            <time class="focus-timer-value" id="focusIdleTime" aria-live="off">25:00</time>
+            <span class="focus-timer-caption" id="focusIdleCaption">an intention, not a test</span>
+          </div>
+        </div>
+        <p>Enter the room first. You can discover the perfect next step after you begin.</p>
+      </div>
+      <form class="focus-setup" id="focusStartForm">
+        <div>
+          <h3>What can you begin imperfectly?</h3>
+          <p>The title and tag are optional. Starting is the only required field.</p>
+        </div>
+        <div class="focus-mode-row" aria-label="Timer mode">
+          <button class="focus-mode-btn" data-focus-mode="stopwatch" type="button">Stopwatch</button>
+          <button class="focus-mode-btn" data-focus-mode="countdown" type="button">Countdown</button>
+        </div>
+        <div class="focus-preset-row" id="focusPresetRow" aria-label="Countdown length">
+          <button class="focus-preset-btn" data-focus-minutes="10" type="button">10m</button>
+          <button class="focus-preset-btn" data-focus-minutes="25" type="button">25m</button>
+          <button class="focus-preset-btn" data-focus-minutes="50" type="button">50m</button>
+          <button class="focus-preset-btn" data-focus-minutes="90" type="button">90m</button>
+        </div>
+        <div class="focus-fields">
+          <label>What are you working on? <span class="hint">(optional)</span>
+            <input id="focusStartLabel" type="text" maxlength="120" list="focusTaskSuggestions" placeholder="e.g. Read the ticket and make one note">
+            <datalist id="focusTaskSuggestions"></datalist>
+          </label>
+          <label>Tag <span class="hint">(optional)</span>
+            <select id="focusStartCategory"></select>
+          </label>
+        </div>
+        <label>One-line intention <span class="hint">(optional)</span>
+          <textarea id="focusStartNote" rows="2" maxlength="1000" placeholder="What would make this session enough?"></textarea>
+        </label>
+        <button class="btn primary focus-start-button" id="startFocusSession" type="submit">Start focus session</button>
+        <span class="focus-start-hint">Even ten honest minutes become part of your history.</span>
+      </form>
+    `;
+    room.appendChild(wrapper);
+
+    const labelInput = document.getElementById('focusStartLabel');
+    const categoryInput = document.getElementById('focusStartCategory');
+    const noteInput = document.getElementById('focusStartNote');
+    labelInput.value = focusDraft.label;
+    noteInput.value = focusDraft.note;
+    populateFocusCategorySelect(categoryInput);
+    categoryInput.value = focusDraft.category;
+    active.forEach(task => {
+      const option = document.createElement('option');
+      option.value = task.title;
+      document.getElementById('focusTaskSuggestions').appendChild(option);
+    });
+    labelInput.addEventListener('input', () => { focusDraft.label = labelInput.value; });
+    categoryInput.addEventListener('change', () => { focusDraft.category = categoryInput.value; });
+    noteInput.addEventListener('input', () => { focusDraft.note = noteInput.value; });
+
+    const refreshDraftControls = () => {
+      document.querySelectorAll('[data-focus-mode]').forEach(button => {
+        const activeMode = button.dataset.focusMode === focusDraft.mode;
+        button.classList.toggle('active', activeMode);
+        button.setAttribute('aria-pressed', String(activeMode));
+      });
+      document.querySelectorAll('[data-focus-minutes]').forEach(button => {
+        const activePreset = Number(button.dataset.focusMinutes) === focusDraft.plannedMinutes && focusDraft.mode === 'countdown';
+        button.classList.toggle('active', activePreset);
+        button.setAttribute('aria-pressed', String(activePreset));
+      });
+      document.getElementById('focusPresetRow').hidden = focusDraft.mode !== 'countdown';
+      document.getElementById('focusIdleState').textContent = focusDraft.mode === 'countdown' ? 'COUNTDOWN' : 'STOPWATCH';
+      document.getElementById('focusIdleTime').textContent = focusDraft.mode === 'countdown' ? `${String(focusDraft.plannedMinutes).padStart(2, '0')}:00` : '00:00';
+      document.getElementById('focusIdleCaption').textContent = focusDraft.mode === 'countdown' ? 'an intention, not a test' : 'stay as long as the work needs';
+    };
+    document.querySelectorAll('[data-focus-mode]').forEach(button => button.addEventListener('click', () => {
+      focusDraft.mode = button.dataset.focusMode;
+      refreshDraftControls();
+    }));
+    document.querySelectorAll('[data-focus-minutes]').forEach(button => button.addEventListener('click', () => {
+      focusDraft.mode = 'countdown';
+      focusDraft.plannedMinutes = Number(button.dataset.focusMinutes);
+      refreshDraftControls();
+    }));
+    refreshDraftControls();
+    document.getElementById('startFocusSession').disabled = Boolean(focusLoadError);
+    document.getElementById('focusStartForm').addEventListener('submit', startFocusSession);
+    return;
+  }
+
+  const category = focusCategoryMeta(activeFocusSession.category);
+  const display = activeFocusDisplay(activeFocusSession);
+  const wrapper = document.createElement('div');
+  wrapper.className = 'focus-room-inner';
+  wrapper.innerHTML = `
+    <div class="focus-timer-column">
+      <div class="focus-timer-ring" id="activeFocusRing" style="--focus-progress:${display.progress * 360}deg">
+        <div class="focus-timer-face">
+          <span class="focus-timer-state" id="activeFocusTimerState"></span>
+          <time class="focus-timer-value" id="activeFocusTime" role="timer" aria-live="off"></time>
+          <span class="focus-timer-caption" id="activeFocusCaption"></span>
+        </div>
+      </div>
+      <p id="activeFocusGentleLine">The session can be imperfect. Staying with it is already the work.</p>
+    </div>
+    <div class="focus-active-copy">
+      <div class="focus-active-meta">
+        <span class="focus-status-pill ${activeFocusSession.status === 'paused' ? 'is-paused' : 'is-running'}" id="activeFocusStatus"></span>
+        <span class="focus-active-tag"></span>
+      </div>
+      <h3 id="activeFocusLabel"></h3>
+      <p id="activeFocusStarted"></p>
+      <div class="focus-active-note" id="activeFocusNote" hidden></div>
+      <div class="focus-goal-message" id="activeFocusGoal"></div>
+      <div class="focus-controls">
+        <button class="btn ghost" id="toggleFocusSession" type="button"></button>
+        <button class="btn primary" id="finishFocusSession" type="button">Finish & save</button>
+        <button class="btn danger-ghost" id="cancelFocusSession" type="button">Discard</button>
+      </div>
+    </div>
+  `;
+  room.appendChild(wrapper);
+  wrapper.querySelector('.focus-active-tag').textContent = `${category.icon} ${category.label}`;
+  document.getElementById('activeFocusLabel').textContent = activeFocusSession.label?.trim() || 'An honest focus session';
+  document.getElementById('activeFocusStarted').textContent = `Started ${new Date(activeFocusSession.startedAt).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`;
+  const note = activeFocusSession.note?.trim();
+  if (note) {
+    const noteElement = document.getElementById('activeFocusNote');
+    noteElement.hidden = false;
+    noteElement.textContent = note;
+  }
+  document.getElementById('toggleFocusSession').addEventListener('click', () => runFocusAction(activeFocusSession.status === 'paused' ? 'resume' : 'pause'));
+  document.getElementById('finishFocusSession').addEventListener('click', openFocusFinishModal);
+  document.getElementById('cancelFocusSession').addEventListener('click', cancelActiveFocusSession);
+  updateActiveFocusDisplay();
+}
+
+function updateActiveFocusDisplay() {
+  if (!activeFocusSession) {
+    updateFocusMiniTimer();
+    return;
+  }
+  const display = activeFocusDisplay(activeFocusSession);
+  const state = document.getElementById('activeFocusTimerState');
+  const value = document.getElementById('activeFocusTime');
+  const caption = document.getElementById('activeFocusCaption');
+  const ring = document.getElementById('activeFocusRing');
+  const status = document.getElementById('activeFocusStatus');
+  const toggle = document.getElementById('toggleFocusSession');
+  const goal = document.getElementById('activeFocusGoal');
+  if (state) state.textContent = display.label;
+  if (value) value.textContent = display.value;
+  if (caption) caption.textContent = display.caption;
+  if (ring) {
+    ring.style.setProperty('--focus-progress', `${display.progress * 360}deg`);
+    if (activeFocusSession.mode === 'countdown' && Number(activeFocusSession.plannedSeconds) > 0) {
+      ring.setAttribute('role', 'progressbar');
+      ring.setAttribute('aria-label', 'Focus countdown progress');
+      ring.setAttribute('aria-valuemin', '0');
+      ring.setAttribute('aria-valuemax', String(activeFocusSession.plannedSeconds));
+      ring.setAttribute('aria-valuenow', String(Math.min(display.elapsed, Number(activeFocusSession.plannedSeconds))));
+    } else {
+      ring.removeAttribute('role');
+      ring.removeAttribute('aria-label');
+      ring.removeAttribute('aria-valuemin');
+      ring.removeAttribute('aria-valuemax');
+      ring.removeAttribute('aria-valuenow');
+    }
+  }
+  if (status) status.textContent = activeFocusSession.status === 'paused' ? 'Ⅱ Paused' : '● In the room';
+  if (toggle) toggle.textContent = activeFocusSession.status === 'paused' ? 'Resume' : 'Pause';
+  if (goal) goal.textContent = display.reached ? 'You reached the intention. Finish now or keep going—the extra time will still be recorded.' : '';
+  updateFocusMiniTimer();
+}
+
+function updateFocusMiniTimer() {
+  const mini = document.getElementById('focusMiniTimer');
+  if (!mini) return;
+  const focusTabOpen = document.getElementById('tab-focus')?.classList.contains('active');
+  const visible = Boolean(activeFocusSession) && !focusTabOpen;
+  mini.hidden = !visible;
+  mini.setAttribute('aria-hidden', visible ? 'false' : 'true');
+  if (!visible) return;
+  const display = activeFocusDisplay(activeFocusSession);
+  document.getElementById('focusMiniTime').textContent = display.value;
+  const toggle = document.getElementById('focusMiniToggle');
+  toggle.textContent = activeFocusSession.status === 'paused' ? 'Resume' : 'Pause';
+  toggle.disabled = focusActionPending;
+}
+
+async function startFocusSession(event) {
+  event.preventDefault();
+  if (focusActionPending || focusLoadError) return;
+  focusDraft.label = document.getElementById('focusStartLabel').value.trim().slice(0, 120);
+  focusDraft.category = document.getElementById('focusStartCategory').value;
+  focusDraft.note = document.getElementById('focusStartNote').value.trim().slice(0, 1000);
+  const timeZone = (() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+    catch (_) { return 'UTC'; }
+  })();
+  const draft = {
+    date: localDateKey(),
+    timeZone,
+    label: focusDraft.label,
+    category: focusDraft.category,
+    note: focusDraft.note,
+    mode: focusDraft.mode,
+    plannedSeconds: focusDraft.mode === 'countdown' ? focusDraft.plannedMinutes * 60 : null,
+  };
+  const button = document.getElementById('startFocusSession');
+  focusActionPending = true;
+  button.disabled = true;
+  button.textContent = 'Entering the room…';
+  try {
+    let session;
+    if (DEMO_MODE) {
+      const now = new Date().toISOString();
+      session = {
+        id: uid(),
+        status: 'running',
+        ...draft,
+        focusLevel: null,
+        elapsedSeconds: 0,
+        startedAt: now,
+        runningSince: now,
+        endedAt: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+    } else {
+      const response = await apiPost('/api/focus-sessions/start', draft);
+      session = response.session;
+    }
+    activeFocusSession = syncFocusSession(session);
+    focusDraft.label = '';
+    focusDraft.note = '';
+    if (DEMO_MODE) persistDemoState();
+    renderFocusRoom();
+    showToast('Focus session started. You are in the room.');
+  } catch (error) {
+    if (error.status === 409) {
+      await refreshActiveFocusSession();
+      showToast('A focus session is already active. I brought it back.');
+    } else if (error.status === 401) {
+      showLogin('Your session expired. Log back in, then start the focus session again.');
+    } else {
+      button.disabled = false;
+      button.textContent = 'Start focus session';
+      showToast(error.message || 'Could not start the session. Check the connection and try again.');
+    }
+  } finally {
+    focusActionPending = false;
+    updateActiveFocusDisplay();
+  }
+}
+
+async function runFocusAction(action, body) {
+  if (!activeFocusSession || focusActionPending) return null;
+  const sessionId = activeFocusSession.id;
+  focusActionPending = true;
+  document.querySelectorAll('#focusRoom button, #focusMiniTimer button').forEach(button => { button.disabled = true; });
+  try {
+    let session;
+    if (DEMO_MODE) {
+      const now = new Date().toISOString();
+      const elapsed = focusElapsedSeconds(activeFocusSession);
+      session = { ...activeFocusSession, elapsedSeconds: elapsed, updatedAt: now };
+      if (action === 'pause') {
+        session.status = 'paused';
+        session.runningSince = null;
+      } else if (action === 'resume') {
+        session.status = 'running';
+        session.runningSince = now;
+      } else if (action === 'finish') {
+        session.status = 'finished';
+        session.runningSince = null;
+        session.endedAt = now;
+        session.note = typeof body?.note === 'string' ? body.note : session.note;
+        session.focusLevel = body?.focusLevel || null;
+      } else if (action === 'cancel') {
+        session.status = 'cancelled';
+        session.runningSince = null;
+        session.endedAt = now;
+      }
+    } else {
+      const response = await apiPost(`/api/focus-sessions/${encodeURIComponent(sessionId)}/${action}`, body);
+      session = response.session;
+    }
+
+    if (action === 'finish' || action === 'cancel') {
+      focusSessions = [syncFocusSession(session), ...focusSessions.filter(item => String(item.id) !== String(session.id))];
+      activeFocusSession = null;
+    } else {
+      activeFocusSession = syncFocusSession(session);
+    }
+    if (DEMO_MODE) persistDemoState();
+    renderFocusRoom();
+    renderFocusHistory();
+    return session;
+  } catch (error) {
+    if (error.status === 401) showLogin('Your session expired. Log back in to continue this focus session.');
+    else showToast(error.message || 'That focus update did not save. Check the connection and retry.');
+    return null;
+  } finally {
+    focusActionPending = false;
+    document.querySelectorAll('#focusRoom button, #focusMiniTimer button').forEach(button => { button.disabled = false; });
+    updateActiveFocusDisplay();
+  }
+}
+
+async function cancelActiveFocusSession() {
+  if (!activeFocusSession) return;
+  if (!window.confirm('Discard this active focus session? Its minutes will not be included in your focus analytics.')) return;
+  const cancelled = await runFocusAction('cancel');
+  if (cancelled) showToast('Session discarded. You can begin again without guilt.');
+}
+
+function openFocusFinishModal() {
+  if (!activeFocusSession || focusActionPending) return;
+  focusReturnElement = document.activeElement;
+  document.getElementById('focusFinishLevel').value = activeFocusSession.focusLevel || '';
+  document.getElementById('focusFinishNote').value = activeFocusSession.note || '';
+  document.getElementById('focusFinishError').textContent = '';
+  document.getElementById('confirmFocusFinish').disabled = false;
+  const backdrop = document.getElementById('focusFinishBackdrop');
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('focusFinishLevel').focus(), 40);
+}
+
+function closeFocusFinishModal({ restoreFocus = true } = {}) {
+  if (focusActionPending) return;
+  const backdrop = document.getElementById('focusFinishBackdrop');
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.getElementById('focusFinishError').textContent = '';
+  if (restoreFocus && focusReturnElement instanceof HTMLElement) focusReturnElement.focus();
+  focusReturnElement = null;
+}
+
+async function finishFocusSession(event) {
+  event.preventDefault();
+  if (!activeFocusSession || focusActionPending) return;
+  const button = document.getElementById('confirmFocusFinish');
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  const level = document.getElementById('focusFinishLevel').value;
+  const body = {
+    focusLevel: level || null,
+    note: document.getElementById('focusFinishNote').value.trim().slice(0, 1000),
+  };
+  const saved = await runFocusAction('finish', body);
+  button.disabled = false;
+  button.textContent = 'Save session';
+  if (!saved) {
+    document.getElementById('focusFinishError').textContent = 'The session is still safe and active. Check the connection, then try Save again.';
+    return;
+  }
+  closeFocusFinishModal({ restoreFocus: false });
+  renderFocusSneak();
+  showToast(`${formatFocusHuman(saved.elapsedSeconds, { precise: true })} of focus saved. Imperfect action still counts.`);
+}
+
+async function refreshActiveFocusSession() {
+  if (DEMO_MODE || focusLoadError) return;
+  try {
+    const response = await apiGet('/api/focus-sessions/active');
+    const session = response.session || null;
+    if (session) {
+      activeFocusSession = syncFocusSession(session);
+    } else if (activeFocusSession) {
+      const all = await apiGet('/api/focus-sessions');
+      const rows = Array.isArray(all.sessions) ? all.sessions.map(syncFocusSession) : [];
+      focusSessions = rows.filter(item => item.status !== 'running' && item.status !== 'paused');
+      activeFocusSession = rows.find(item => item.status === 'running' || item.status === 'paused') || null;
+    }
+    renderFocusRoom();
+    if (document.getElementById('tab-focus').classList.contains('active')) renderFocusHistory();
+  } catch (error) {
+    if (error.status === 401) showLogin('Your session expired. Log back in to reconnect the focus timer.');
+  }
+}
+
+function focusSessionDateKey(session) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(session?.date || '')) return session.date;
+  const instant = Date.parse(session?.endedAt || session?.startedAt);
+  return Number.isFinite(instant) ? localDateKey(new Date(instant)) : localDateKey();
+}
+
+function focusPeriodRange() {
+  if (focusView.period === 'all') return [-Infinity, Infinity];
+  return getRange(focusView.period, focusView.offset);
+}
+
+function finishedFocusSessions() {
+  return focusSessions.filter(session => session.status === 'finished');
+}
+
+function focusSessionsInPeriod({ includeCategoryFilter = false } = {}) {
+  const [start, end] = focusPeriodRange();
+  return finishedFocusSessions().filter(session => {
+    const date = dateKeyToLocalDate(focusSessionDateKey(session));
+    const timestamp = date?.getTime();
+    if (!Number.isFinite(timestamp) || timestamp < start || timestamp >= end) return false;
+    if (!includeCategoryFilter || focusView.category === 'all') return true;
+    if (focusView.category === 'none') return !session.category;
+    return session.category === focusView.category;
+  });
+}
+
+function focusPeriodCopy() {
+  if (focusView.period === 'all') {
+    const finished = finishedFocusSessions();
+    const earliest = finished.length
+      ? finished.reduce((min, session) => focusSessionDateKey(session) < min ? focusSessionDateKey(session) : min, focusSessionDateKey(finished[0]))
+      : localDateKey();
+    const earliestDate = dateKeyToLocalDate(earliest);
+    return {
+      label: 'All recorded focus',
+      sublabel: finished.length
+        ? `since ${earliestDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : 'ready for your first honest session',
+    };
+  }
+  return {
+    label: rangeLabel(focusView.period, focusView.offset),
+    sublabel: rangeSubLabel(focusView.period, focusView.offset),
+  };
+}
+
+function focusDailySeries(entries) {
+  let start;
+  let end;
+  if (focusView.period === 'all') {
+    const finished = finishedFocusSessions();
+    start = finished.length
+      ? dateKeyToLocalDate(finished.reduce((min, session) => focusSessionDateKey(session) < min ? focusSessionDateKey(session) : min, focusSessionDateKey(finished[0])))
+      : startOfDay(new Date());
+    end = addDays(startOfDay(new Date()), 1);
+  } else {
+    const range = focusPeriodRange();
+    start = new Date(range[0]);
+    end = new Date(range[1]);
+  }
+  const secondsByDate = new Map();
+  entries.forEach(session => {
+    const key = focusSessionDateKey(session);
+    secondsByDate.set(key, (secondsByDate.get(key) || 0) + Math.max(0, Number(session.elapsedSeconds) || 0));
+  });
+  const labels = [];
+  const seconds = [];
+  const dates = [];
+  for (let day = new Date(start); day < end; day = addDays(day, 1)) {
+    dates.push(new Date(day));
+    labels.push(day.toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      ...(focusView.period === 'all' && day.getFullYear() !== new Date().getFullYear() ? { year: '2-digit' } : {}),
+    }));
+    seconds.push(secondsByDate.get(localDateKey(day)) || 0);
+  }
+  return { labels, seconds, dates };
+}
+
+function renderFocusSummary(entries) {
+  const total = entries.reduce((sum, session) => sum + Math.max(0, Number(session.elapsedSeconds) || 0), 0);
+  const average = entries.length ? Math.round(total / entries.length) : 0;
+  const longest = entries.reduce((max, session) => Math.max(max, Number(session.elapsedSeconds) || 0), 0);
+  const activeDays = new Set(entries.map(focusSessionDateKey)).size;
+  const cards = [
+    { label: 'Focus time', value: formatFocusHuman(total), note: 'actual time you protected' },
+    { label: 'Sessions', value: String(entries.length), note: entries.length === 1 ? 'one honest start' : 'honest starts recorded' },
+    { label: 'Average session', value: formatFocusHuman(average), note: 'no minimum required' },
+    { label: 'Longest session', value: formatFocusHuman(longest), note: `${activeDays} active day${activeDays === 1 ? '' : 's'}` },
+  ];
+  document.getElementById('focusSummary').innerHTML = cards.map(card => `
+    <article class="focus-summary-card">
+      <div class="focus-summary-label">${card.label}</div>
+      <div class="focus-summary-value">${card.value}</div>
+      <div class="focus-summary-note">${card.note}</div>
+    </article>
+  `).join('');
+}
+
+function renderFocusCharts(entries) {
+  focusTrendChart?.destroy();
+  focusCategoryChart?.destroy();
+  focusTrendChart = null;
+  focusCategoryChart = null;
+  const trendCanvas = document.getElementById('focusTrendChart');
+  const categoryCanvas = document.getElementById('focusCategoryChart');
+  trendCanvas.hidden = false;
+  categoryCanvas.hidden = false;
+  document.querySelectorAll('.focus-empty-chart').forEach(element => element.remove());
+  const { labels, seconds } = focusDailySeries(entries);
+  const minutes = seconds.map(value => Math.round(value / 6) / 10);
+  document.getElementById('focusChartStage').style.width = `${Math.max(620, labels.length * 42)}px`;
+  document.getElementById('focusTrendHint').textContent = `${labels.length} day${labels.length === 1 ? '' : 's'} · zeroes stay visible`;
+
+  const categoryTotals = new Map();
+  entries.forEach(session => {
+    const key = session.category || '';
+    categoryTotals.set(key, (categoryTotals.get(key) || 0) + Math.max(0, Number(session.elapsedSeconds) || 0));
+  });
+  const categoryEntries = [...categoryTotals.entries()]
+    .map(([id, secondsValue]) => ({ meta: focusCategoryMeta(id), seconds: secondsValue }))
+    .sort((a, b) => b.seconds - a.seconds);
+  const maxCategory = Math.max(1, ...categoryEntries.map(entry => entry.seconds));
+  const breakdown = document.getElementById('focusCategoryBreakdown');
+  breakdown.innerHTML = '';
+  if (!categoryEntries.length) {
+    const empty = document.createElement('div');
+    empty.className = 'category-insight-empty';
+    empty.textContent = 'Your first session will start this picture.';
+    breakdown.appendChild(empty);
+  } else {
+    categoryEntries.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'focus-category-row';
+      const name = document.createElement('span');
+      name.className = 'focus-category-name';
+      name.textContent = `${entry.meta.icon} ${entry.meta.label}`;
+      const track = document.createElement('span');
+      track.className = 'focus-category-track';
+      const fill = document.createElement('span');
+      fill.className = 'focus-category-fill';
+      fill.style.width = `${(entry.seconds / maxCategory) * 100}%`;
+      fill.style.background = entry.meta.color;
+      track.appendChild(fill);
+      const value = document.createElement('span');
+      value.className = 'focus-category-value';
+      value.textContent = formatFocusHuman(entry.seconds);
+      row.append(name, track, value);
+      breakdown.appendChild(row);
+    });
+  }
+
+  if (typeof Chart === 'undefined') {
+    trendCanvas.hidden = true;
+    categoryCanvas.hidden = true;
+    const trendEmpty = document.createElement('div');
+    trendEmpty.className = 'focus-empty-chart';
+    trendEmpty.textContent = `${formatFocusHuman(seconds.reduce((sum, value) => sum + value, 0))} recorded in this period.`;
+    trendCanvas.parentElement.appendChild(trendEmpty);
+    return;
+  }
+
+  focusTrendChart = new Chart(trendCanvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Focus minutes',
+        data: minutes,
+        backgroundColor: minutes.map(value => value > 0 ? '#c0376a' : '#f1d7e0'),
+        borderColor: '#b84d76',
+        borderWidth: 1,
+        borderRadius: 7,
+        maxBarThickness: 34,
+      }],
+    },
+    options: baseChartOptions({
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: item => `${item.raw} focused minute${item.raw === 1 ? '' : 's'}` } },
+      },
+      scales: {
+        x: { ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, maxRotation: 45, minRotation: labels.length > 12 ? 35 : 0 }, grid: { color: CHART_COLORS.grid } },
+        y: { ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 10 }, callback: value => `${value}m` }, grid: { color: CHART_COLORS.grid }, beginAtZero: true },
+      },
+    }),
+  });
+
+  focusCategoryChart = new Chart(categoryCanvas, {
+    type: 'doughnut',
+    data: {
+      labels: categoryEntries.length ? categoryEntries.map(entry => `${entry.meta.icon} ${entry.meta.label}`) : ['No sessions yet'],
+      datasets: [{
+        data: categoryEntries.length ? categoryEntries.map(entry => Math.round(entry.seconds / 6) / 10) : [1],
+        backgroundColor: categoryEntries.length ? categoryEntries.map(entry => entry.meta.color) : ['#f1d7e0'],
+        borderColor: '#fffdfd',
+        borderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.label}: ${item.raw}m` } } },
+    },
+  });
+}
+
+function focusClockTime(iso) {
+  const timestamp = Date.parse(iso);
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+    : '—';
+}
+
+function renderFocusLog() {
+  const filter = document.getElementById('focusCategoryFilter');
+  if (filter.options.length <= 2) populateFocusCategorySelect(filter, { includeAll: true });
+  filter.value = focusView.category;
+  const entries = [...focusSessionsInPeriod({ includeCategoryFilter: true })]
+    .sort((a, b) => Date.parse(b.endedAt || b.startedAt) - Date.parse(a.endedAt || a.startedAt));
+  document.getElementById('focusLogCount').textContent = `${entries.length} saved session${entries.length === 1 ? '' : 's'}`;
+  const logElement = document.getElementById('focusLog');
+  logElement.innerHTML = '';
+  if (!entries.length) {
+    const empty = document.createElement('div');
+    empty.className = 'focus-log-empty';
+    empty.textContent = focusView.category === 'all'
+      ? 'No proof yet in this period. Start with ten honest minutes.'
+      : 'No sessions match this tag in the selected period.';
+    logElement.appendChild(empty);
+    return;
+  }
+  const groups = new Map();
+  entries.forEach(session => {
+    const key = focusSessionDateKey(session);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(session);
+  });
+  groups.forEach((sessions, key) => {
+    const day = document.createElement('section');
+    day.className = 'focus-day-group';
+    const head = document.createElement('div');
+    head.className = 'focus-day-head';
+    const date = dateKeyToLocalDate(key);
+    const dateLabel = document.createElement('strong');
+    dateLabel.textContent = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const total = document.createElement('span');
+    total.className = 'focus-day-total';
+    const daySeconds = sessions.reduce((sum, session) => sum + (Number(session.elapsedSeconds) || 0), 0);
+    total.textContent = `${formatFocusHuman(daySeconds)} · ${sessions.length} session${sessions.length === 1 ? '' : 's'}`;
+    head.append(dateLabel, total);
+    day.appendChild(head);
+    sessions.forEach(session => {
+      const category = focusCategoryMeta(session.category);
+      const row = document.createElement('article');
+      row.className = 'focus-entry';
+      const main = document.createElement('div');
+      main.className = 'focus-entry-main';
+      const title = document.createElement('div');
+      title.className = 'focus-entry-title';
+      title.textContent = session.label?.trim() || 'Untitled focus session';
+      const details = document.createElement('div');
+      details.className = 'focus-entry-detail';
+      const level = session.focusLevel && FOCUS_LEVELS[session.focusLevel];
+      const planned = Number(session.plannedSeconds) || 0;
+      [
+        `${category.icon} ${category.label}`,
+        `${focusClockTime(session.startedAt)}–${focusClockTime(session.endedAt)}`,
+        planned ? `${formatFocusHuman(planned)} intention` : 'stopwatch',
+        level ? `${level.icon} ${level.label}` : '',
+      ].filter(Boolean).forEach(textValue => {
+        const span = document.createElement('span');
+        span.textContent = textValue;
+        details.appendChild(span);
+      });
+      if (session.note?.trim()) {
+        const note = document.createElement('div');
+        note.className = 'focus-entry-detail';
+        note.textContent = `📝 ${session.note.trim()}`;
+        main.append(title, details, note);
+      } else {
+        main.append(title, details);
+      }
+      const duration = document.createElement('div');
+      duration.className = 'focus-entry-duration';
+      duration.textContent = formatFocusHuman(session.elapsedSeconds, { precise: true });
+      const actions = document.createElement('div');
+      actions.className = 'focus-entry-actions';
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn ghost small';
+      edit.textContent = 'Edit';
+      edit.addEventListener('click', () => openFocusEditModal(session.id));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'btn danger-ghost small';
+      remove.textContent = 'Delete';
+      remove.addEventListener('click', () => deleteFocusSession(session.id));
+      actions.append(edit, remove);
+      row.append(main, duration, actions);
+      day.appendChild(row);
+    });
+    logElement.appendChild(day);
+  });
+}
+
+function renderFocusHistory() {
+  const allTime = focusView.period === 'all';
+  document.querySelectorAll('#focusPeriod .seg-btn').forEach(button => {
+    const selected = button.dataset.focusPeriod === focusView.period;
+    button.classList.toggle('active', selected);
+    button.setAttribute('aria-pressed', String(selected));
+  });
+  const nav = document.getElementById('focusDateNav');
+  const actions = document.getElementById('focusDateActions');
+  nav.classList.toggle('is-all-time', allTime);
+  actions.classList.toggle('is-all-time', allTime);
+  const copy = focusPeriodCopy();
+  document.getElementById('focusRangeLabel').textContent = copy.label;
+  document.getElementById('focusRangeSub').textContent = copy.sublabel;
+  document.getElementById('focusNext').disabled = allTime || focusView.offset >= 0;
+  document.getElementById('focusJumpToday').disabled = focusView.offset === 0;
+  const [start] = focusPeriodRange();
+  document.getElementById('focusJumpDate').value = allTime || !Number.isFinite(start) ? '' : localDateKey(new Date(start));
+  const entries = focusSessionsInPeriod();
+  renderFocusSummary(entries);
+  renderFocusCharts(entries);
+  renderFocusLog();
+}
+
+function renderFocus() {
+  const status = document.getElementById('focusLoadStatus');
+  status.hidden = !focusLoadError;
+  document.getElementById('focusLoadMessage').textContent = focusLoadError;
+  renderFocusRoom();
+  renderFocusHistory();
+}
+
+function openFocusEditModal(id) {
+  const session = focusSessions.find(item => String(item.id) === String(id) && item.status === 'finished');
+  if (!session) return;
+  editingFocusId = session.id;
+  focusReturnElement = document.activeElement;
+  document.getElementById('focusEditLabel').value = session.label || '';
+  const category = document.getElementById('focusEditCategory');
+  populateFocusCategorySelect(category);
+  category.value = session.category || '';
+  document.getElementById('focusEditLevel').value = session.focusLevel || '';
+  document.getElementById('focusEditNote').value = session.note || '';
+  document.getElementById('focusEditError').textContent = '';
+  document.getElementById('saveFocusEdit').disabled = false;
+  const backdrop = document.getElementById('focusEditBackdrop');
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('focusEditLabel').focus(), 40);
+}
+
+function closeFocusEditModal({ restoreFocus = true } = {}) {
+  if (focusActionPending) return;
+  document.getElementById('focusEditBackdrop').classList.remove('open');
+  document.getElementById('focusEditBackdrop').setAttribute('aria-hidden', 'true');
+  document.getElementById('focusEditError').textContent = '';
+  editingFocusId = null;
+  if (restoreFocus && focusReturnElement instanceof HTMLElement) focusReturnElement.focus();
+  focusReturnElement = null;
+}
+
+async function saveFocusEdit(event) {
+  event.preventDefault();
+  const session = focusSessions.find(item => String(item.id) === String(editingFocusId));
+  if (!session || focusActionPending) return;
+  const draft = {
+    label: document.getElementById('focusEditLabel').value.trim().slice(0, 120),
+    category: document.getElementById('focusEditCategory').value,
+    note: document.getElementById('focusEditNote').value.trim().slice(0, 1000),
+    date: focusSessionDateKey(session),
+    timeZone: session.timeZone || (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+      catch (_) { return 'UTC'; }
+    })(),
+    focusLevel: document.getElementById('focusEditLevel').value || null,
+  };
+  const button = document.getElementById('saveFocusEdit');
+  focusActionPending = true;
+  button.disabled = true;
+  button.textContent = 'Saving…';
+  try {
+    let saved;
+    if (DEMO_MODE) {
+      saved = syncFocusSession({ ...session, ...draft, updatedAt: new Date().toISOString() });
+    } else {
+      const response = await apiPut(`/api/focus-sessions/${encodeURIComponent(session.id)}`, draft);
+      saved = syncFocusSession(response.session);
+    }
+    focusSessions = focusSessions.map(item => String(item.id) === String(session.id) ? saved : item);
+    if (DEMO_MODE) persistDemoState();
+    focusActionPending = false;
+    closeFocusEditModal({ restoreFocus: false });
+    renderFocusHistory();
+    renderFocusSneak();
+    showToast('Focus session updated.');
+  } catch (error) {
+    document.getElementById('focusEditError').textContent = error.status === 401
+      ? 'Your session expired. Log back in, then save this edit again.'
+      : (error.message || 'Could not update this session. Try again.');
+    if (error.status === 401) showLogin('Your session expired. Log back in to edit this focus session.');
+  } finally {
+    focusActionPending = false;
+    button.disabled = false;
+    button.textContent = 'Save changes';
+  }
+}
+
+async function deleteFocusSession(id) {
+  const session = focusSessions.find(item => String(item.id) === String(id));
+  if (!session) return;
+  const label = session.label?.trim() || 'this focus session';
+  if (!window.confirm(`Delete “${label}” and its ${formatFocusHuman(session.elapsedSeconds, { precise: true })} from your focus history?`)) return;
+  try {
+    if (!DEMO_MODE) await apiDelete(`/api/focus-sessions/${encodeURIComponent(session.id)}`);
+    focusSessions = focusSessions.filter(item => String(item.id) !== String(session.id));
+    if (DEMO_MODE) persistDemoState();
+    renderFocusHistory();
+    renderFocusSneak();
+    showToast('Focus session deleted.');
+  } catch (error) {
+    handleSaveError(error);
+  }
+}
+
+function focusSecondsForRange(start, end) {
+  return finishedFocusSessions()
+    .filter(session => {
+      const date = dateKeyToLocalDate(focusSessionDateKey(session));
+      const timestamp = date?.getTime();
+      return Number.isFinite(timestamp) && timestamp >= start && timestamp < end;
+    })
+    .reduce((sum, session) => sum + Math.max(0, Number(session.elapsedSeconds) || 0), 0);
+}
+
+function renderFocusSneak() {
+  const stats = document.getElementById('focusSneakStats');
+  if (!stats) return;
+  focusSneakChart?.destroy();
+  focusSneakChart = null;
+  const chartCanvas = document.getElementById('focusSneakChart');
+  if (focusLoadError) {
+    stats.innerHTML = '<span class="hint">Focus data is temporarily unavailable. Your task analytics are unaffected.</span>';
+    chartCanvas.hidden = true;
+    return;
+  }
+  chartCanvas.hidden = false;
+  const [todayStart, todayEnd] = getRange('day', 0);
+  const [weekStart, weekEnd] = getRange('week', 0);
+  const todayEntries = finishedFocusSessions().filter(session => focusSessionDateKey(session) === localDateKey());
+  const todaySeconds = focusSecondsForRange(todayStart, todayEnd);
+  const weekSeconds = focusSecondsForRange(weekStart, weekEnd);
+  stats.innerHTML = `
+    <div class="focus-sneak-stat"><strong>${formatFocusHuman(todaySeconds)}</strong><span>today</span></div>
+    <div class="focus-sneak-stat"><strong>${todayEntries.length}</strong><span>session${todayEntries.length === 1 ? '' : 's'} today</span></div>
+    <div class="focus-sneak-stat"><strong>${formatFocusHuman(weekSeconds)}</strong><span>this week</span></div>
+  `;
+  const labels = [];
+  const data = [];
+  for (let offset = 6; offset >= 0; offset--) {
+    const day = addDays(startOfDay(new Date()), -offset);
+    const end = addDays(day, 1);
+    labels.push(day.toLocaleDateString(undefined, { weekday: 'short' }));
+    data.push(Math.round(focusSecondsForRange(day.getTime(), end.getTime()) / 6) / 10);
+  }
+  if (typeof Chart === 'undefined') return;
+  focusSneakChart = new Chart(chartCanvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: data.map(value => value > 0 ? '#c0376a' : '#f1d7e0'), borderRadius: 6, maxBarThickness: 28 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.raw} focused minute${item.raw === 1 ? '' : 's'}` } } },
+      scales: {
+        x: { ticks: { color: CHART_COLORS.text, font: { family: 'Poppins', size: 9 } }, grid: { display: false } },
+        y: { display: false, beginAtZero: true },
+      },
+    },
+  });
+}
+
+document.getElementById('focusMiniReturn').addEventListener('click', () => document.querySelector('[data-tab="focus"]')?.click());
+document.getElementById('focusMiniToggle').addEventListener('click', () => runFocusAction(activeFocusSession?.status === 'paused' ? 'resume' : 'pause'));
+document.getElementById('focusFinishForm').addEventListener('submit', finishFocusSession);
+document.getElementById('cancelFocusFinish').addEventListener('click', () => closeFocusFinishModal());
+document.getElementById('focusFinishBackdrop').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeFocusFinishModal();
+});
+document.getElementById('focusEditForm').addEventListener('submit', saveFocusEdit);
+document.getElementById('cancelFocusEdit').addEventListener('click', () => closeFocusEditModal());
+document.getElementById('focusEditBackdrop').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeFocusEditModal();
+});
+document.getElementById('retryFocus').addEventListener('click', async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = 'Retrying…';
+  try {
+    const response = await apiGet('/api/focus-sessions');
+    const rows = Array.isArray(response.sessions) ? response.sessions.map(syncFocusSession) : [];
+    activeFocusSession = rows.find(session => session.status === 'running' || session.status === 'paused') || null;
+    focusSessions = rows.filter(session => session.status !== 'running' && session.status !== 'paused');
+    focusLoadError = '';
+    renderFocus();
+    showToast('Focus sessions loaded.');
+  } catch (error) {
+    if (error.status === 401) showLogin('Your session expired. Log back in to load focus sessions.');
+    else {
+      focusLoadError = 'Focus sessions still could not be loaded. Check the connection and retry.';
+      renderFocus();
+    }
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Retry';
+  }
+});
+document.querySelectorAll('#focusPeriod .seg-btn').forEach(button => button.addEventListener('click', () => {
+  focusView.period = button.dataset.focusPeriod;
+  focusView.offset = 0;
+  renderFocusHistory();
+}));
+document.getElementById('focusPrev').addEventListener('click', () => {
+  if (focusView.period === 'all') return;
+  focusView.offset -= 1;
+  renderFocusHistory();
+});
+document.getElementById('focusNext').addEventListener('click', () => {
+  if (focusView.period === 'all' || focusView.offset >= 0) return;
+  focusView.offset += 1;
+  renderFocusHistory();
+});
+document.getElementById('focusJumpToday').addEventListener('click', () => {
+  focusView.offset = 0;
+  renderFocusHistory();
+});
+document.getElementById('focusJumpDate').addEventListener('change', event => {
+  const picked = dateKeyToLocalDate(event.target.value);
+  if (!picked || focusView.period === 'all') return;
+  focusView.offset = offsetFromDate(focusView.period, picked);
+  renderFocusHistory();
+});
+document.getElementById('focusCategoryFilter').addEventListener('change', event => {
+  focusView.category = event.target.value;
+  renderFocusLog();
+});
+document.getElementById('openFocusFromAnalytics').addEventListener('click', () => document.querySelector('[data-tab="focus"]')?.click());
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && activeFocusSession) refreshActiveFocusSession();
+});
+document.addEventListener('keydown', event => {
+  const openBackdrop = [document.getElementById('focusFinishBackdrop'), document.getElementById('focusEditBackdrop')]
+    .find(backdrop => backdrop.classList.contains('open'));
+  if (!openBackdrop) return;
+  if (event.key === 'Escape') {
+    if (openBackdrop.id === 'focusFinishBackdrop') closeFocusFinishModal();
+    else closeFocusEditModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = [...openBackdrop.querySelectorAll('input, select, textarea, button:not([disabled])')];
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
+
 // ---------- Analytics ----------
 
 const CHART_COLORS = { text: '#7b5665', grid: 'rgba(207, 113, 147, 0.2)', accent: '#c0376a', accent2: '#98621f', accent3: '#99507f' };
@@ -2679,6 +3830,7 @@ document.getElementById('regenRecap').addEventListener('click', generateRecap);
 
 function renderAnalytics() {
   renderStatChips();
+  renderFocusSneak();
   generateRecap();
   renderCategoryInsights();
   renderCharts();
@@ -3569,6 +4721,7 @@ async function startApp() {
   hideLogin();
   renderBoard();
   applyDeepLinkFromQuery();
+  updateFocusMiniTimer();
   publishAndroidWidgetSnapshot();
 }
 
@@ -3590,3 +4743,4 @@ async function boot() {
 configurePwa();
 boot();
 setInterval(renderDayClock, 1000);
+setInterval(updateActiveFocusDisplay, 1000);

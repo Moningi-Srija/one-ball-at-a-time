@@ -8,9 +8,9 @@
 
 [Open the no-login public demo](https://one-ball-at-a-time.onrender.com/demo)
 
-The demo keeps its task and expense state separate from the owner's private data:
+The demo keeps its task, focus-session, and expense state separate from the owner's private data:
 
-- its task and expense data are never sent to the app's private APIs;
+- its task, focus-session, and expense data are never sent to the app's private APIs;
 - its sample data and every change you make stay in your browser's `localStorage`;
 - **Reset demo** restores the original sample board;
 - the public copy uses generic protected body and future-building slots.
@@ -25,6 +25,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
+- Includes a refresh-safe **Focus Room** with stopwatch and 10/25/50/90-minute countdowns, pause/resume, optional tags and focus-quality notes, editable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
 - Includes a PostgreSQL-backed expense tracker with exact paise storage, editable daily entries, Food/Clothes/Transport/Trips categories, and Day/Week/Month/All Time analysis.
 - Lets you select a point on an all-time chart and jump to that day's log.
 - Installs as a standalone Progressive Web App from a supported phone or desktop browser.
@@ -63,7 +64,7 @@ Create a PostgreSQL database, then replace the sample values in `.env`. Start th
 npm start
 ```
 
-Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its state, expense, migration, and session tables on startup.
+Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its task state, expense, focus-session, migration, and login-session tables on startup.
 
 To install it like an app, open **Countdowns** and use **Install app**. On iPhone, use Safari's Share menu and choose **Add to Home Screen**. The PWA is a full-screen version of the website; the repository also includes a native Android shell with a real Home Screen widget.
 
@@ -124,7 +125,7 @@ Keep private or personally identifying copy out of the demo constants and sample
 
 ## Data and privacy model
 
-The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
+The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
 
 The login throttle is intentionally simple and in-memory. It is per server instance and resets when the service restarts; use an edge/platform rate limiter as well if you expect meaningful public traffic.
 
@@ -136,11 +137,11 @@ The demo does not call those private task-state API routes. It uses the browser 
 npm test
 ```
 
-The current automated tests cover countdown and expense validation, parameterized expense persistence, timing-safe PIN comparison, and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
+The current automated tests cover countdown and expense validation, parameterized persistence, focus-session validation and lifecycle transitions, concurrency safeguards, timing-safe PIN comparison, and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
 
 ## Product notes
 
-The philosophy is one task at a time, but the current prototype does not yet enforce a single running timer. Multiple task timers can run concurrently. The private persistence model is also app-wide rather than user-scoped.
+The dedicated Focus Room enforces one running or paused focus session. The older per-task board timers remain independent and can still run concurrently. The private persistence model is also app-wide rather than user-scoped.
 
 Charts and web fonts are loaded from external CDNs, so those parts need an internet connection.
 

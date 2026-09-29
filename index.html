@@ -68,6 +68,7 @@
         <button class="tab-btn" data-tab="countdowns">Countdowns</button>
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
+        <button class="tab-btn" data-tab="focus">Focus</button>
         <button class="tab-btn" data-tab="analytics">Analytics</button>
         <button class="tab-btn" data-tab="expenses">Expenses</button>
         <button class="tab-btn" data-tab="log">Log</button>
@@ -209,6 +210,105 @@
     <div id="categoryBreakdown" class="category-breakdown"></div>
   </section>
 
+  <!-- FOCUS SESSIONS -->
+  <section id="tab-focus" class="tab-panel focus-panel">
+    <div class="section-head focus-heading">
+      <div>
+        <p class="focus-kicker">Evidence over perfection</p>
+        <h2>Focus Room</h2>
+        <p class="focus-intro">You do not need the perfect plan. Start one honest session and let the minutes become proof.</p>
+      </div>
+      <span class="focus-note">Something is better than nothing.</span>
+    </div>
+
+    <div class="focus-load-status" id="focusLoadStatus" role="status" hidden>
+      <span id="focusLoadMessage"></span>
+      <button class="btn ghost small" id="retryFocus" type="button">Retry</button>
+    </div>
+
+    <section class="focus-room-card" aria-labelledby="focusRoomTitle">
+      <div id="focusRoom"></div>
+    </section>
+
+    <section class="focus-history" aria-labelledby="focusHistoryTitle">
+      <div class="focus-history-head">
+        <div>
+          <p class="focus-card-number">01</p>
+          <h3 id="focusHistoryTitle">Your protected time</h3>
+          <p class="hint">Actual focused minutes, including the small sessions. They count too.</p>
+        </div>
+        <div class="focus-period" id="focusPeriod" aria-label="Focus analysis period">
+          <button class="seg-btn" data-focus-period="day" type="button">Day</button>
+          <button class="seg-btn active" data-focus-period="week" type="button">Week</button>
+          <button class="seg-btn" data-focus-period="month" type="button">Month</button>
+          <button class="seg-btn" data-focus-period="all" type="button">All Time</button>
+        </div>
+      </div>
+
+      <div class="focus-date-nav" id="focusDateNav">
+        <button class="nav-arrow" id="focusPrev" type="button" aria-label="Previous focus period">&#8249;</button>
+        <div class="date-nav-center">
+          <div class="date-range-label" id="focusRangeLabel"></div>
+          <div class="date-nav-sub" id="focusRangeSub"></div>
+        </div>
+        <button class="nav-arrow" id="focusNext" type="button" aria-label="Next focus period">&#8250;</button>
+      </div>
+
+      <div class="focus-date-actions" id="focusDateActions">
+        <button class="link-btn" id="focusJumpToday" type="button">Jump to current</button>
+        <input type="date" id="focusJumpDate" class="date-picker" aria-label="Jump to a focus date">
+      </div>
+
+      <div class="focus-summary-grid" id="focusSummary" aria-live="polite"></div>
+
+      <div class="focus-analysis-grid">
+        <section class="focus-paper-card" aria-labelledby="focusTrendTitle">
+          <div class="focus-card-head">
+            <div>
+              <p class="focus-card-number">02</p>
+              <h3 id="focusTrendTitle">Focus time by day</h3>
+            </div>
+            <span class="hint" id="focusTrendHint"></span>
+          </div>
+          <div class="focus-chart-scroll">
+            <div class="focus-chart-stage" id="focusChartStage"><canvas id="focusTrendChart"></canvas></div>
+          </div>
+        </section>
+
+        <section class="focus-paper-card" aria-labelledby="focusCategoryTitle">
+          <div class="focus-card-head">
+            <div>
+              <p class="focus-card-number">03</p>
+              <h3 id="focusCategoryTitle">Where the time went</h3>
+            </div>
+          </div>
+          <div class="focus-category-layout">
+            <div class="focus-doughnut-wrap"><canvas id="focusCategoryChart"></canvas></div>
+            <div id="focusCategoryBreakdown" class="focus-category-breakdown"></div>
+          </div>
+        </section>
+      </div>
+
+      <section class="focus-log-card" aria-labelledby="focusLogTitle">
+        <div class="focus-log-head">
+          <div>
+            <p class="focus-card-number">04</p>
+            <h3 id="focusLogTitle">Session log</h3>
+            <p class="hint" id="focusLogCount"></p>
+          </div>
+          <label class="focus-filter-label" for="focusCategoryFilter">
+            <span>Tag</span>
+            <select id="focusCategoryFilter" class="log-filter" aria-label="Filter focus sessions by tag">
+              <option value="all">All tags</option>
+              <option value="none">No tag</option>
+            </select>
+          </label>
+        </div>
+        <div id="focusLog" class="focus-log"></div>
+      </section>
+    </section>
+  </section>
+
   <!-- ANALYTICS -->
   <section id="tab-analytics" class="tab-panel">
     <div class="section-head">
@@ -217,6 +317,16 @@
     </div>
 
     <div class="stat-chip-row" id="statChipRow"></div>
+
+    <section class="focus-sneak-card" id="focusSneakCard" aria-labelledby="focusSneakTitle">
+      <div class="focus-sneak-copy">
+        <p class="focus-kicker">Minutes are proof</p>
+        <h3 id="focusSneakTitle">Your focus, at a glance</h3>
+        <div class="focus-sneak-stats" id="focusSneakStats"></div>
+        <button class="btn ghost small" id="openFocusFromAnalytics" type="button">Open Focus Room →</button>
+      </div>
+      <div class="focus-sneak-chart"><canvas id="focusSneakChart"></canvas></div>
+    </section>
 
     <div class="analytics-period" id="analyticsPeriod">
       <button class="seg-btn active" data-analytics-period="week">This week</button>
@@ -462,6 +572,74 @@
 
   <footer class="xoxo">one ball, always.</footer>
 
+  <aside class="focus-mini-timer" id="focusMiniTimer" aria-hidden="true" hidden>
+    <button class="focus-mini-return" id="focusMiniReturn" type="button">
+      <span class="focus-mini-label">Focus session</span>
+      <strong id="focusMiniTime">00:00</strong>
+    </button>
+    <button class="btn ghost small" id="focusMiniToggle" type="button">Pause</button>
+  </aside>
+
+</div>
+
+<!-- Finish Focus Session Modal -->
+<div class="modal-backdrop" id="focusFinishBackdrop" aria-hidden="true">
+  <form class="modal focus-modal" id="focusFinishForm" role="dialog" aria-modal="true" aria-labelledby="focusFinishTitle">
+    <div class="focus-modal-heading">
+      <span class="focus-modal-sticker" aria-hidden="true">minutes = proof</span>
+      <h3 id="focusFinishTitle">Finish this session</h3>
+      <p>How it felt is optional. The time still counts even when focus was messy.</p>
+    </div>
+    <label>Focus felt like <span class="hint">(optional)</span>
+      <select id="focusFinishLevel">
+        <option value="">Just count it</option>
+        <option value="distracted">🌱 Distracted, but I showed up</option>
+        <option value="steady">🌤 Steady</option>
+        <option value="deep">✨ Deep focus</option>
+      </select>
+    </label>
+    <label>Session note <span class="hint">(optional)</span>
+      <textarea id="focusFinishNote" rows="3" maxlength="1000" placeholder="What moved forward? What should you pick up next?"></textarea>
+    </label>
+    <p class="focus-form-error" id="focusFinishError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelFocusFinish" type="button">Keep focusing</button>
+      <button class="btn primary" id="confirmFocusFinish" type="submit">Save session</button>
+    </div>
+  </form>
+</div>
+
+<!-- Edit Focus Session Modal -->
+<div class="modal-backdrop" id="focusEditBackdrop" aria-hidden="true">
+  <form class="modal focus-modal" id="focusEditForm" role="dialog" aria-modal="true" aria-labelledby="focusEditTitle">
+    <div class="focus-modal-heading">
+      <span class="focus-modal-sticker" aria-hidden="true">session note</span>
+      <h3 id="focusEditTitle">Edit Focus Session</h3>
+      <p>Fix the label or tag without changing the time you honestly recorded.</p>
+    </div>
+    <label>What were you working on?
+      <input type="text" id="focusEditLabel" maxlength="120" placeholder="Optional — the minutes can speak for themselves">
+    </label>
+    <label>Tag
+      <select id="focusEditCategory"></select>
+    </label>
+    <label>Focus felt like <span class="hint">(optional)</span>
+      <select id="focusEditLevel">
+        <option value="">Not rated</option>
+        <option value="distracted">🌱 Distracted, but I showed up</option>
+        <option value="steady">🌤 Steady</option>
+        <option value="deep">✨ Deep focus</option>
+      </select>
+    </label>
+    <label>Note <span class="hint">(optional)</span>
+      <textarea id="focusEditNote" rows="3" maxlength="1000"></textarea>
+    </label>
+    <p class="focus-form-error" id="focusEditError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelFocusEdit" type="button">Cancel</button>
+      <button class="btn primary" id="saveFocusEdit" type="submit">Save changes</button>
+    </div>
+  </form>
 </div>
 
 <!-- Add / Edit Expense Modal -->
