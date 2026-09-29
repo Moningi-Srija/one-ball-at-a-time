@@ -42,7 +42,7 @@ test('validates and normalizes a stopwatch focus session', () => {
 });
 
 test('validates countdown bounds in whole seconds', () => {
-  for (const plannedSeconds of [MIN_PLANNED_SECONDS, 1500, MAX_PLANNED_SECONDS]) {
+  for (const plannedSeconds of [MIN_PLANNED_SECONDS, 1500, 2220, MAX_PLANNED_SECONDS]) {
     const result = validateFocusStart(validStart({ mode: 'countdown', plannedSeconds }));
     assert.equal(result.ok, true, String(plannedSeconds));
     assert.equal(result.value.plannedSeconds, plannedSeconds);

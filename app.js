@@ -2099,7 +2099,17 @@ function renderCategoryBreakdown() {
 // ---------- Focus Sessions ----------
 
 const focusView = { period: 'week', offset: 0, category: 'all' };
-const focusDraft = { mode: 'countdown', plannedMinutes: 25, label: '', category: '', note: '' };
+const FOCUS_MIN_COUNTDOWN_MINUTES = 1;
+const FOCUS_MAX_COUNTDOWN_MINUTES = 720;
+const focusDraft = {
+  mode: 'countdown',
+  plannedMinutes: 25,
+  durationSource: 'preset',
+  customMinutes: '',
+  label: '',
+  category: '',
+  note: '',
+};
 const FOCUS_FLOAT_PREF_KEY = 'one-ball-focus-auto-float-v1';
 let focusTrendChart = null;
 let focusCategoryChart = null;
@@ -2160,6 +2170,22 @@ function formatFocusHuman(seconds, { precise = false } = {}) {
   const minutes = Math.floor((value % 3600) / 60);
   if (!hours) return `${minutes}m`;
   return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function parseFocusCountdownMinutes(rawValue) {
+  const raw = String(rawValue ?? '').trim();
+  if (!/^\d+$/.test(raw)) {
+    return { ok: false, error: `Enter a whole number from ${FOCUS_MIN_COUNTDOWN_MINUTES} to ${FOCUS_MAX_COUNTDOWN_MINUTES} minutes.` };
+  }
+  const minutes = Number(raw);
+  if (
+    !Number.isSafeInteger(minutes)
+    || minutes < FOCUS_MIN_COUNTDOWN_MINUTES
+    || minutes > FOCUS_MAX_COUNTDOWN_MINUTES
+  ) {
+    return { ok: false, error: `Enter a whole number from ${FOCUS_MIN_COUNTDOWN_MINUTES} to ${FOCUS_MAX_COUNTDOWN_MINUTES} minutes.` };
+  }
+  return { ok: true, minutes };
 }
 
 function supportsDocumentFocusPip() {
@@ -2724,7 +2750,7 @@ function renderFocusRoom() {
         </div>
         <p>Enter the room first. You can discover the perfect next step after you begin.</p>
       </div>
-      <form class="focus-setup" id="focusStartForm">
+      <form class="focus-setup" id="focusStartForm" novalidate>
         <div>
           <h3>What can you begin imperfectly?</h3>
           <p>The title and tag are optional. Starting is the only required field.</p>
@@ -2733,12 +2759,20 @@ function renderFocusRoom() {
           <button class="focus-mode-btn" data-focus-mode="stopwatch" type="button">Stopwatch</button>
           <button class="focus-mode-btn" data-focus-mode="countdown" type="button">Countdown</button>
         </div>
-        <div class="focus-preset-row" id="focusPresetRow" aria-label="Countdown length">
-          <button class="focus-preset-btn" data-focus-minutes="10" type="button">10m</button>
-          <button class="focus-preset-btn" data-focus-minutes="25" type="button">25m</button>
-          <button class="focus-preset-btn" data-focus-minutes="50" type="button">50m</button>
-          <button class="focus-preset-btn" data-focus-minutes="90" type="button">90m</button>
+        <div class="focus-countdown-options" id="focusCountdownOptions" role="group" aria-label="Countdown length">
+          <div class="focus-preset-row">
+            <button class="focus-preset-btn" data-focus-minutes="10" type="button">10m</button>
+            <button class="focus-preset-btn" data-focus-minutes="25" type="button">25m</button>
+            <button class="focus-preset-btn" data-focus-minutes="50" type="button">50m</button>
+            <button class="focus-preset-btn" data-focus-minutes="90" type="button">90m</button>
+          </div>
+          <label class="focus-custom-minutes" id="focusCustomMinutesLabel">
+            <span>Custom</span>
+            <input id="focusCustomMinutes" type="number" min="${FOCUS_MIN_COUNTDOWN_MINUTES}" max="${FOCUS_MAX_COUNTDOWN_MINUTES}" step="1" inputmode="numeric" autocomplete="off" placeholder="37" aria-label="Custom countdown minutes" aria-describedby="focusCustomError">
+            <span class="focus-custom-minutes-unit">min</span>
+          </label>
         </div>
+        <p class="focus-custom-error" id="focusCustomError" aria-live="polite" hidden></p>
         <div class="focus-fields">
           <label>What are you working on? <span class="hint">(optional)</span>
             <input id="focusStartLabel" type="text" maxlength="120" list="focusTaskSuggestions" placeholder="e.g. Read the ticket and make one note">
@@ -2767,8 +2801,12 @@ function renderFocusRoom() {
     const labelInput = document.getElementById('focusStartLabel');
     const categoryInput = document.getElementById('focusStartCategory');
     const noteInput = document.getElementById('focusStartNote');
+    const customMinutesInput = document.getElementById('focusCustomMinutes');
+    const customMinutesLabel = document.getElementById('focusCustomMinutesLabel');
+    const customError = document.getElementById('focusCustomError');
     labelInput.value = focusDraft.label;
     noteInput.value = focusDraft.note;
+    customMinutesInput.value = focusDraft.customMinutes;
     populateFocusCategorySelect(categoryInput);
     categoryInput.value = focusDraft.category;
     active.forEach(task => {
@@ -2783,21 +2821,38 @@ function renderFocusRoom() {
       saveFocusFloatPreference(event.target.checked);
     });
 
-    const refreshDraftControls = () => {
+    const refreshDraftControls = ({ showCustomError = false } = {}) => {
       document.querySelectorAll('[data-focus-mode]').forEach(button => {
         const activeMode = button.dataset.focusMode === focusDraft.mode;
         button.classList.toggle('active', activeMode);
         button.setAttribute('aria-pressed', String(activeMode));
       });
       document.querySelectorAll('[data-focus-minutes]').forEach(button => {
-        const activePreset = Number(button.dataset.focusMinutes) === focusDraft.plannedMinutes && focusDraft.mode === 'countdown';
+        const activePreset = focusDraft.durationSource === 'preset'
+          && Number(button.dataset.focusMinutes) === focusDraft.plannedMinutes
+          && focusDraft.mode === 'countdown';
         button.classList.toggle('active', activePreset);
         button.setAttribute('aria-pressed', String(activePreset));
       });
-      document.getElementById('focusPresetRow').hidden = focusDraft.mode !== 'countdown';
+      const customResult = focusDraft.durationSource === 'custom'
+        ? parseFocusCountdownMinutes(focusDraft.customMinutes)
+        : { ok: true, minutes: focusDraft.plannedMinutes };
+      if (customResult.ok) focusDraft.plannedMinutes = customResult.minutes;
+      const customInvalid = focusDraft.durationSource === 'custom' && !customResult.ok;
+      customMinutesLabel.classList.toggle('active', focusDraft.mode === 'countdown' && focusDraft.durationSource === 'custom');
+      customMinutesLabel.classList.toggle('is-invalid', showCustomError && customInvalid);
+      customMinutesInput.disabled = focusDraft.mode !== 'countdown';
+      customMinutesInput.setAttribute('aria-invalid', String(showCustomError && customInvalid));
+      customError.textContent = customInvalid ? customResult.error : '';
+      customError.hidden = !(showCustomError && customInvalid && focusDraft.mode === 'countdown');
+      document.getElementById('focusCountdownOptions').hidden = focusDraft.mode !== 'countdown';
       document.getElementById('focusIdleState').textContent = focusDraft.mode === 'countdown' ? 'COUNTDOWN' : 'STOPWATCH';
-      document.getElementById('focusIdleTime').textContent = focusDraft.mode === 'countdown' ? `${String(focusDraft.plannedMinutes).padStart(2, '0')}:00` : '00:00';
-      document.getElementById('focusIdleCaption').textContent = focusDraft.mode === 'countdown' ? 'an intention, not a test' : 'stay as long as the work needs';
+      document.getElementById('focusIdleTime').textContent = focusDraft.mode === 'countdown'
+        ? (customInvalid ? '--:--' : formatFocusClock(focusDraft.plannedMinutes * 60))
+        : '00:00';
+      document.getElementById('focusIdleCaption').textContent = focusDraft.mode === 'countdown'
+        ? (customInvalid ? `enter ${FOCUS_MIN_COUNTDOWN_MINUTES}–${FOCUS_MAX_COUNTDOWN_MINUTES} whole minutes` : 'an intention, not a test')
+        : 'stay as long as the work needs';
     };
     document.querySelectorAll('[data-focus-mode]').forEach(button => button.addEventListener('click', () => {
       focusDraft.mode = button.dataset.focusMode;
@@ -2806,8 +2861,17 @@ function renderFocusRoom() {
     document.querySelectorAll('[data-focus-minutes]').forEach(button => button.addEventListener('click', () => {
       focusDraft.mode = 'countdown';
       focusDraft.plannedMinutes = Number(button.dataset.focusMinutes);
+      focusDraft.durationSource = 'preset';
+      focusDraft.customMinutes = '';
+      customMinutesInput.value = '';
       refreshDraftControls();
     }));
+    customMinutesInput.addEventListener('input', () => {
+      focusDraft.mode = 'countdown';
+      focusDraft.durationSource = 'custom';
+      focusDraft.customMinutes = customMinutesInput.value;
+      refreshDraftControls({ showCustomError: customMinutesInput.value.trim() !== '' });
+    });
     refreshDraftControls();
     document.getElementById('startFocusSession').disabled = Boolean(focusLoadError);
     document.getElementById('focusStartForm').addEventListener('submit', startFocusSession);
@@ -2926,6 +2990,29 @@ function updateFocusMiniTimer() {
 async function startFocusSession(event) {
   event.preventDefault();
   if (focusActionPending || focusLoadError) return;
+  let plannedMinutes = null;
+  if (focusDraft.mode === 'countdown') {
+    const customMinutesInput = document.getElementById('focusCustomMinutes');
+    const rawMinutes = focusDraft.durationSource === 'custom'
+      ? (customMinutesInput?.value ?? focusDraft.customMinutes)
+      : String(focusDraft.plannedMinutes);
+    const countdownResult = parseFocusCountdownMinutes(rawMinutes);
+    if (!countdownResult.ok) {
+      const customMinutesLabel = document.getElementById('focusCustomMinutesLabel');
+      const customError = document.getElementById('focusCustomError');
+      if (customMinutesInput) customMinutesInput.setAttribute('aria-invalid', 'true');
+      if (customMinutesLabel) customMinutesLabel.classList.add('is-invalid');
+      if (customError) {
+        customError.textContent = countdownResult.error;
+        customError.hidden = false;
+      }
+      customMinutesInput?.focus();
+      return;
+    }
+    plannedMinutes = countdownResult.minutes;
+    focusDraft.plannedMinutes = plannedMinutes;
+    if (focusDraft.durationSource === 'custom') focusDraft.customMinutes = String(plannedMinutes);
+  }
   focusDraft.label = document.getElementById('focusStartLabel').value.trim().slice(0, 120);
   focusDraft.category = document.getElementById('focusStartCategory').value;
   focusDraft.note = document.getElementById('focusStartNote').value.trim().slice(0, 1000);
@@ -2940,7 +3027,7 @@ async function startFocusSession(event) {
     category: focusDraft.category,
     note: focusDraft.note,
     mode: focusDraft.mode,
-    plannedSeconds: focusDraft.mode === 'countdown' ? focusDraft.plannedMinutes * 60 : null,
+    plannedSeconds: focusDraft.mode === 'countdown' ? plannedMinutes * 60 : null,
   };
   const now = new Date().toISOString();
   const previewSession = syncFocusSession({

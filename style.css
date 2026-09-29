@@ -2213,6 +2213,13 @@ body.chart-expanded-open { overflow: hidden; }
 .focus-active-copy > p { margin: -6px 0 0; color: var(--text-dim); font-size: 11.5px; line-height: 1.55; }
 .focus-mode-row,
 .focus-preset-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.focus-countdown-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 10px;
+}
+.focus-countdown-options[hidden] { display: none; }
 .focus-mode-btn,
 .focus-preset-btn {
   min-height: 38px;
@@ -2228,6 +2235,56 @@ body.chart-expanded-open { overflow: hidden; }
 .focus-preset-btn:hover { border-color: var(--border-strong); color: var(--accent); }
 .focus-mode-btn.active,
 .focus-preset-btn.active { border-color: var(--accent); background: #ffe3ed; color: var(--accent); box-shadow: 2px 3px 0 rgba(184, 77, 118, .12); }
+.focus-custom-minutes {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  padding: 5px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .84);
+  color: var(--text-dim);
+  font: 600 10.5px var(--sans);
+  cursor: text;
+}
+.focus-custom-minutes:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(192, 55, 106, .12);
+}
+.focus-custom-minutes.active {
+  border-color: var(--accent);
+  background: #ffe3ed;
+  color: var(--accent);
+  box-shadow: 2px 3px 0 rgba(184, 77, 118, .12);
+}
+.focus-custom-minutes.is-invalid { border-color: var(--danger); }
+.focus-custom-minutes input {
+  width: 58px;
+  min-width: 0;
+  padding: 4px 3px;
+  border: 0;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+  font: 700 12px var(--sans);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.focus-custom-minutes input:focus { border-bottom-color: var(--accent); }
+.focus-custom-minutes-unit { white-space: nowrap; }
+.focus-custom-error {
+  flex-basis: 100%;
+  min-height: 15px;
+  margin: -2px 0 0;
+  color: var(--danger);
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.focus-custom-error[hidden] { display: none; }
 .focus-fields { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(160px, .65fr); gap: 10px; }
 .focus-fields label,
 .focus-setup > label { display: flex; flex-direction: column; gap: 5px; color: var(--text-dim); font-size: 10.5px; font-weight: 600; }
@@ -2483,6 +2540,15 @@ body.chart-expanded-open { overflow: hidden; }
   .focus-heading .focus-note { align-self: flex-start; }
   .focus-room-card::before { left: 22px; }
   .focus-room-inner { min-height: 0; padding: 27px 17px 27px 37px; }
+  .focus-countdown-options { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .focus-countdown-options .focus-preset-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+  }
+  .focus-countdown-options .focus-preset-btn { min-width: 0; padding-inline: 6px; }
+  .focus-custom-minutes { width: 100%; min-height: 44px; justify-content: center; }
+  .focus-custom-minutes input { width: 72px; }
   .focus-fields { grid-template-columns: 1fr; }
   .focus-start-button { width: 100%; }
   .focus-history-head,
