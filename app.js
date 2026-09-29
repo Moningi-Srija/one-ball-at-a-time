@@ -2100,12 +2100,37 @@ function renderCategoryBreakdown() {
 
 const focusView = { period: 'week', offset: 0, category: 'all' };
 const focusDraft = { mode: 'countdown', plannedMinutes: 25, label: '', category: '', note: '' };
+const FOCUS_FLOAT_PREF_KEY = 'one-ball-focus-auto-float-v1';
 let focusTrendChart = null;
 let focusCategoryChart = null;
 let focusSneakChart = null;
 let editingFocusId = null;
 let focusActionPending = false;
 let focusReturnElement = null;
+let focusAutoFloat = (() => {
+  try {
+    const saved = localStorage.getItem(FOCUS_FLOAT_PREF_KEY);
+    return saved === null ? true : saved === 'true';
+  } catch (_) {
+    return true;
+  }
+})();
+let focusPipWindow = null;
+let focusPipMode = null;
+let focusPipOpenPromise = null;
+let focusPipRequestGeneration = 0;
+let focusPipInterval = null;
+let focusPipPreviewSession = null;
+let focusPipClosing = false;
+let focusPipCanvas = null;
+let focusPipContext = null;
+let focusPipStream = null;
+let focusPipVideoPrepared = false;
+let focusPipVideoReady = false;
+let suppressNextVideoPipCloseNotice = false;
+const intentionallyClosedFocusPipWindows = new WeakSet();
+const deletingFocusSessionIds = new Set();
+const deletingExpenseIds = new Set();
 
 function syncFocusSession(session) {
   return session ? { ...session, _syncedAt: Date.now() } : null;
@@ -2135,6 +2160,494 @@ function formatFocusHuman(seconds, { precise = false } = {}) {
   const minutes = Math.floor((value % 3600) / 60);
   if (!hours) return `${minutes}m`;
   return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+function supportsDocumentFocusPip() {
+  return Boolean(
+    window.isSecureContext
+    && 'documentPictureInPicture' in window
+    && typeof window.documentPictureInPicture?.requestWindow === 'function'
+  );
+}
+
+function supportsVideoFocusPip() {
+  const video = document.getElementById('focusPipVideo');
+  return Boolean(
+    document.pictureInPictureEnabled
+    && video
+    && typeof video.requestPictureInPicture === 'function'
+    && typeof HTMLCanvasElement.prototype.captureStream === 'function'
+  );
+}
+
+function supportsFocusPip() {
+  return supportsDocumentFocusPip() || supportsVideoFocusPip();
+}
+
+function focusPipIsOpen() {
+  if (focusPipMode === 'document') return Boolean(focusPipWindow && !focusPipWindow.closed);
+  if (focusPipMode === 'video') return document.pictureInPictureElement === document.getElementById('focusPipVideo');
+  return false;
+}
+
+function saveFocusFloatPreference(value) {
+  focusAutoFloat = Boolean(value);
+  try { localStorage.setItem(FOCUS_FLOAT_PREF_KEY, String(focusAutoFloat)); }
+  catch (_) { /* Storage can be unavailable in strict privacy modes. */ }
+}
+
+function focusSessionForFloatingTimer() {
+  return activeFocusSession || focusPipPreviewSession;
+}
+
+function focusDocumentTitle() {
+  return DEMO_MODE ? 'One Ball at a Time — Public Demo' : 'One Ball at a Time';
+}
+
+function updateFocusDocumentTitle() {
+  const session = focusSessionForFloatingTimer();
+  document.title = session
+    ? `${activeFocusDisplay(session).value} · Focus — One Ball at a Time`
+    : focusDocumentTitle();
+}
+
+function focusPipStatusText(session, display) {
+  if (!activeFocusSession && focusPipPreviewSession) return 'Starting session…';
+  if (session?.status === 'paused') return 'Paused';
+  if (display.reached) return 'Goal reached';
+  return 'In the room';
+}
+
+function truncateCanvasText(context, value, maxWidth) {
+  const textValue = String(value || '');
+  if (context.measureText(textValue).width <= maxWidth) return textValue;
+  let shortened = textValue;
+  while (shortened && context.measureText(`${shortened}…`).width > maxWidth) shortened = shortened.slice(0, -1);
+  return `${shortened}…`;
+}
+
+function drawFocusPipVideoFrame() {
+  const session = focusSessionForFloatingTimer();
+  if (!session || !focusPipCanvas || !focusPipContext) return;
+  const context = focusPipContext;
+  const { width, height } = focusPipCanvas;
+  const display = activeFocusDisplay(session);
+  const category = focusCategoryMeta(session.category);
+
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = '#fffafb';
+  context.fillRect(0, 0, width, height);
+  context.strokeStyle = 'rgba(192,55,106,.11)';
+  context.lineWidth = 1;
+  for (let x = 0; x <= width; x += 36) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
+    context.stroke();
+  }
+  for (let y = 0; y <= height; y += 36) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(width, y);
+    context.stroke();
+  }
+
+  context.fillStyle = '#c0376a';
+  context.fillRect(0, 0, 11, height);
+  context.font = '700 22px system-ui, sans-serif';
+  context.fillStyle = '#a2295c';
+  context.fillText(focusPipStatusText(session, display).toUpperCase(), 48, 55);
+  context.font = '600 22px system-ui, sans-serif';
+  context.fillStyle = '#76515f';
+  context.textAlign = 'right';
+  context.fillText(`${category.icon} ${category.label}`, width - 42, 55);
+  context.textAlign = 'left';
+
+  context.font = '700 34px Georgia, serif';
+  context.fillStyle = '#432b35';
+  context.fillText(truncateCanvasText(context, session.label?.trim() || 'An honest focus session', width - 90), 48, 115);
+  context.font = '800 104px Georgia, serif';
+  context.fillStyle = '#432b35';
+  context.fillText(display.value, 48, 235);
+
+  const trackX = 48;
+  const trackY = 274;
+  const trackWidth = width - 96;
+  context.fillStyle = '#f0dce4';
+  context.fillRect(trackX, trackY, trackWidth, 13);
+  context.fillStyle = display.reached ? '#4d8b70' : '#d34778';
+  context.fillRect(trackX, trackY, Math.max(display.progress ? 8 : 0, trackWidth * display.progress), 13);
+
+  context.font = '500 20px system-ui, sans-serif';
+  context.fillStyle = '#76515f';
+  context.fillText(truncateCanvasText(context, display.caption, width - 96), 48, 330);
+  context.font = '600 18px system-ui, sans-serif';
+  context.fillStyle = '#a2295c';
+  context.fillText('Your session keeps running. Return to One Ball at a Time for controls.', 48, 372);
+}
+
+function initializeFocusPipVideo() {
+  if (focusPipVideoPrepared) {
+    const preparedVideo = document.getElementById('focusPipVideo');
+    focusPipVideoReady = focusPipVideoReady
+      || (preparedVideo.readyState >= 1 && Boolean(preparedVideo.srcObject?.getVideoTracks?.().length));
+    return focusPipVideoReady;
+  }
+  if (!supportsVideoFocusPip()) return false;
+  const video = document.getElementById('focusPipVideo');
+  try {
+    focusPipCanvas = document.createElement('canvas');
+    focusPipCanvas.width = 720;
+    focusPipCanvas.height = 405;
+    focusPipContext = focusPipCanvas.getContext('2d');
+    if (!focusPipContext) throw new Error('Canvas drawing is unavailable.');
+    focusPipStream = focusPipCanvas.captureStream(1);
+    if (!focusPipStream?.getVideoTracks?.().length) throw new Error('Canvas video stream is unavailable.');
+    video.srcObject = focusPipStream;
+    video.muted = true;
+    video.playsInline = true;
+    focusPipVideoPrepared = true;
+    const markVideoReady = () => {
+      focusPipVideoReady = video.readyState >= 1 && Boolean(video.srcObject?.getVideoTracks?.().length);
+    };
+    video.addEventListener('loadedmetadata', markVideoReady);
+    video.addEventListener('canplay', markVideoReady);
+    video.addEventListener('pause', () => {
+      if (document.pictureInPictureElement !== video || !focusSessionForFloatingTimer()) return;
+      const playback = video.play();
+      if (playback && typeof playback.catch === 'function') {
+        playback.catch(error => console.warn('Could not keep the fallback timer visible.', error));
+      }
+    });
+    video.addEventListener('leavepictureinpicture', () => {
+      if (focusPipMode !== 'video') return;
+      const shouldNotify = Boolean(activeFocusSession)
+        && !focusPipClosing
+        && !suppressNextVideoPipCloseNotice;
+      focusPipMode = null;
+      focusPipOpenPromise = null;
+      focusPipClosing = false;
+      suppressNextVideoPipCloseNotice = false;
+      updateFocusFloatingControls();
+      if (shouldNotify) showToast('Floating timer closed — your focus session is still running.');
+    });
+    drawFocusPipVideoFrame();
+    const playback = video.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => {});
+    markVideoReady();
+    return focusPipVideoReady;
+  } catch (error) {
+    console.warn('Could not prepare video Picture-in-Picture.', error);
+    focusPipCanvas = null;
+    focusPipContext = null;
+    focusPipStream = null;
+    focusPipVideoPrepared = false;
+    focusPipVideoReady = false;
+    return false;
+  }
+}
+
+function setupDocumentFocusPip(pipWindow) {
+  focusPipWindow = pipWindow;
+  focusPipMode = 'document';
+  focusPipOpenPromise = null;
+  const pipDocument = pipWindow.document;
+  pipDocument.documentElement.lang = document.documentElement.lang || 'en';
+  pipDocument.title = 'Focus timer — One Ball at a Time';
+
+  const style = pipDocument.createElement('style');
+  style.textContent = `
+    :root { color-scheme: light; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { min-width: 280px; min-height: 190px; margin: 0; color: #432b35; background-color: #fffafb; background-image: linear-gradient(rgba(192,55,106,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(192,55,106,.08) 1px, transparent 1px); background-size: 24px 24px; }
+    button { font: inherit; }
+    .card { min-height: 100vh; display: grid; grid-template-rows: auto auto 1fr auto; gap: 8px; padding: 14px 15px 13px; border-left: 6px solid #c0376a; background: rgba(255,250,251,.9); }
+    .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .status { color: #a2295c; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .tag { max-width: 52%; overflow: hidden; color: #76515f; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    h1 { margin: 0; overflow: hidden; font: 800 18px/1.15 Georgia, serif; text-overflow: ellipsis; white-space: nowrap; }
+    .clock-row { align-self: center; }
+    time { display: block; font: 800 clamp(42px, 18vw, 66px)/.95 Georgia, serif; font-variant-numeric: tabular-nums; }
+    .caption { min-height: 14px; margin: 7px 0 0; overflow: hidden; color: #76515f; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+    .track { height: 7px; margin-top: 9px; overflow: hidden; border-radius: 99px; background: #f0dce4; }
+    .fill { height: 100%; width: 0; border-radius: inherit; background: #d34778; transition: width .25s ease; }
+    .reached .fill { background: #4d8b70; }
+    .controls { display: flex; align-items: center; gap: 7px; }
+    .btn { min-height: 34px; padding: 7px 11px; border: 1px solid #d787a5; border-radius: 999px; background: #fff; color: #8f2750; font-size: 10px; font-weight: 800; cursor: pointer; }
+    .btn:hover { background: #ffe7f0; }
+    .btn.primary { margin-left: auto; border-color: #c0376a; background: #c0376a; color: #fff; }
+    .btn:disabled { cursor: wait; opacity: .58; }
+    .error { margin: 0; color: #9d2d45; font-size: 9px; }
+    .error:empty { display: none; }
+    @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+  `;
+  pipDocument.head.appendChild(style);
+  pipDocument.body.innerHTML = `
+    <main class="card" id="pipCard">
+      <div class="top"><span class="status" id="pipStatus" role="status"></span><span class="tag" id="pipTag"></span></div>
+      <h1 id="pipLabel"></h1>
+      <div class="clock-row">
+        <time id="pipTime" role="timer" aria-live="off"></time>
+        <div class="track" id="pipProgress" role="progressbar" aria-label="Focus countdown progress"><div class="fill" id="pipProgressFill"></div></div>
+        <p class="caption" id="pipCaption"></p>
+        <p class="error" id="pipError" role="status"></p>
+      </div>
+      <div class="controls">
+        <button class="btn" id="pipReturn" type="button">Return</button>
+        <button class="btn" id="pipToggle" type="button">Pause</button>
+        <button class="btn primary" id="pipFinish" type="button">Finish & save</button>
+      </div>
+    </main>
+  `;
+
+  pipDocument.getElementById('pipReturn').addEventListener('click', () => {
+    window.focus();
+    document.querySelector('[data-tab="focus"]')?.click();
+  });
+  pipDocument.getElementById('pipToggle').addEventListener('click', async () => {
+    if (!activeFocusSession || focusActionPending) return;
+    await runFocusAction(activeFocusSession.status === 'paused' ? 'resume' : 'pause');
+    updateFocusPictureInPicture();
+  });
+  pipDocument.getElementById('pipFinish').addEventListener('click', finishFocusFromPictureInPicture);
+  const pipInterval = pipWindow.setInterval(updateFocusPictureInPicture, 1000);
+  focusPipInterval = pipInterval;
+  pipWindow.addEventListener('pagehide', () => {
+    pipWindow.clearInterval(pipInterval);
+    if (focusPipWindow !== pipWindow) return;
+    const shouldNotify = Boolean(activeFocusSession)
+      && !focusPipClosing
+      && !intentionallyClosedFocusPipWindows.has(pipWindow);
+    focusPipInterval = null;
+    focusPipWindow = null;
+    if (focusPipMode === 'document') focusPipMode = null;
+    focusPipOpenPromise = null;
+    focusPipClosing = false;
+    updateFocusFloatingControls();
+    if (shouldNotify) showToast('Floating timer closed — your focus session is still running.');
+  }, { once: true });
+  updateFocusPictureInPicture();
+  updateFocusFloatingControls();
+}
+
+function openDocumentFocusPip(session, { silent = false, requestGeneration } = {}) {
+  focusPipPreviewSession = session || focusPipPreviewSession;
+  let request;
+  try {
+    request = window.documentPictureInPicture.requestWindow({ width: 360, height: 250 });
+  } catch (error) {
+    console.warn('Document Picture-in-Picture could not open.', error);
+    return openVideoFocusPip(session, { silent, requestGeneration });
+  }
+  const openPromise = Promise.resolve(request)
+    .then(pipWindow => {
+      if (requestGeneration !== focusPipRequestGeneration || !focusSessionForFloatingTimer()) {
+        pipWindow.close();
+        if (focusPipOpenPromise === openPromise) focusPipOpenPromise = null;
+        updateFocusFloatingControls();
+        return false;
+      }
+      setupDocumentFocusPip(pipWindow);
+      return true;
+    })
+    .catch(error => {
+      if (focusPipOpenPromise === openPromise) focusPipOpenPromise = null;
+      if (requestGeneration !== focusPipRequestGeneration) {
+        updateFocusFloatingControls();
+        return false;
+      }
+      console.warn('Document Picture-in-Picture was blocked.', error);
+      if (!silent) showToast('The floating timer was blocked. Click “Float timer” to try again.');
+      updateFocusFloatingControls();
+      return false;
+    });
+  focusPipOpenPromise = openPromise;
+  updateFocusFloatingControls();
+  return openPromise;
+}
+
+function openVideoFocusPip(session, { silent = false, requestGeneration } = {}) {
+  focusPipPreviewSession = session || focusPipPreviewSession;
+  if (!initializeFocusPipVideo()) {
+    if (!silent) showToast('This browser cannot float the timer. The tab title and mini timer will keep counting.');
+    return Promise.resolve(false);
+  }
+  const video = document.getElementById('focusPipVideo');
+  drawFocusPipVideoFrame();
+  let request;
+  try {
+    const playback = video.play();
+    if (playback && typeof playback.catch === 'function') playback.catch(() => {});
+    request = video.requestPictureInPicture();
+  } catch (error) {
+    console.warn('Video Picture-in-Picture could not open.', error);
+    if (!silent) showToast('The floating timer was blocked. Click “Float timer” to try again.');
+    return Promise.resolve(false);
+  }
+  const openPromise = Promise.resolve(request)
+    .then(() => {
+      if (requestGeneration !== focusPipRequestGeneration || !focusSessionForFloatingTimer()) {
+        if (focusPipOpenPromise === openPromise) focusPipOpenPromise = null;
+        if (document.pictureInPictureElement === video && focusPipMode !== 'video') {
+          const exit = document.exitPictureInPicture();
+          if (exit && typeof exit.catch === 'function') exit.catch(() => {});
+        }
+        updateFocusFloatingControls();
+        return false;
+      }
+      focusPipMode = 'video';
+      if (focusPipOpenPromise === openPromise) focusPipOpenPromise = null;
+      updateFocusFloatingControls();
+      return true;
+    })
+    .catch(error => {
+      if (focusPipOpenPromise === openPromise) focusPipOpenPromise = null;
+      if (requestGeneration !== focusPipRequestGeneration) {
+        updateFocusFloatingControls();
+        return false;
+      }
+      console.warn('Video Picture-in-Picture was blocked.', error);
+      if (!silent) showToast('The floating timer was blocked. Click “Float timer” to try again.');
+      updateFocusFloatingControls();
+      return false;
+    });
+  focusPipOpenPromise = openPromise;
+  updateFocusFloatingControls();
+  return openPromise;
+}
+
+function openFocusPictureInPicture({ session = activeFocusSession, silent = false } = {}) {
+  if (focusPipIsOpen()) {
+    if (focusPipMode === 'document') focusPipWindow?.focus();
+    return Promise.resolve(true);
+  }
+  if (focusPipOpenPromise) return focusPipOpenPromise;
+  if (!session) return Promise.resolve(false);
+  const requestGeneration = ++focusPipRequestGeneration;
+  if (supportsDocumentFocusPip()) return openDocumentFocusPip(session, { silent, requestGeneration });
+  if (supportsVideoFocusPip()) return openVideoFocusPip(session, { silent, requestGeneration });
+  if (!silent) showToast('This browser cannot float the timer. The tab title and mini timer will keep counting.');
+  return Promise.resolve(false);
+}
+
+async function closeFocusPictureInPicture({ silent = true } = {}) {
+  focusPipClosing = true;
+  focusPipRequestGeneration += 1;
+  const pendingOpenPromise = focusPipOpenPromise;
+  const pipWindow = focusPipWindow;
+  if (focusPipInterval && pipWindow && !pipWindow.closed) pipWindow.clearInterval(focusPipInterval);
+  focusPipInterval = null;
+  try {
+    if (focusPipMode === 'document' && pipWindow && !pipWindow.closed) {
+      intentionallyClosedFocusPipWindows.add(pipWindow);
+      pipWindow.close();
+    }
+    if (focusPipMode === 'video' && document.pictureInPictureElement === document.getElementById('focusPipVideo')) {
+      suppressNextVideoPipCloseNotice = true;
+      await document.exitPictureInPicture();
+    }
+  } catch (error) {
+    suppressNextVideoPipCloseNotice = false;
+    console.warn('Could not close the floating timer cleanly.', error);
+  } finally {
+    if (focusPipMode === 'document') {
+      focusPipWindow = null;
+      focusPipMode = null;
+    }
+    if (!pendingOpenPromise) focusPipOpenPromise = null;
+    focusPipPreviewSession = null;
+    window.setTimeout(() => { focusPipClosing = false; }, 0);
+    updateFocusFloatingControls();
+    if (!silent) showToast('Floating timer closed. Your focus session is still running.');
+  }
+}
+
+function toggleFocusPictureInPicture() {
+  if (focusPipIsOpen()) {
+    closeFocusPictureInPicture({ silent: false });
+    return;
+  }
+  openFocusPictureInPicture({ silent: false });
+}
+
+function updateFocusFloatingControls() {
+  const isOpen = focusPipIsOpen();
+  const isOpening = Boolean(focusPipOpenPromise) && !isOpen;
+  const available = supportsFocusPip();
+  [document.getElementById('floatFocusSession'), document.getElementById('focusMiniFloat')]
+    .filter(Boolean)
+    .forEach(button => {
+      const compact = button.id === 'focusMiniFloat';
+      button.disabled = focusActionPending || isOpening || !available || !activeFocusSession;
+      button.classList.toggle('is-active', isOpen);
+      button.setAttribute('aria-pressed', String(isOpen));
+      button.textContent = isOpening
+        ? 'Opening…'
+        : (isOpen ? (compact ? 'Close' : 'Close floating timer') : (compact ? 'Float ↗' : 'Float timer ↗'));
+      button.title = available
+        ? 'Keep this timer above your other windows'
+        : 'Floating timers are not supported by this browser';
+    });
+}
+
+function updateFocusPictureInPicture() {
+  const session = focusSessionForFloatingTimer();
+  if (!session) return;
+  const display = activeFocusDisplay(session);
+  if (focusPipMode === 'video') {
+    drawFocusPipVideoFrame();
+    return;
+  }
+  if (focusPipMode !== 'document' || !focusPipWindow || focusPipWindow.closed) return;
+  const pipDocument = focusPipWindow.document;
+  const category = focusCategoryMeta(session.category);
+  const card = pipDocument.getElementById('pipCard');
+  const status = pipDocument.getElementById('pipStatus');
+  const label = pipDocument.getElementById('pipLabel');
+  const tag = pipDocument.getElementById('pipTag');
+  const time = pipDocument.getElementById('pipTime');
+  const caption = pipDocument.getElementById('pipCaption');
+  const progress = pipDocument.getElementById('pipProgress');
+  const fill = pipDocument.getElementById('pipProgressFill');
+  const toggle = pipDocument.getElementById('pipToggle');
+  const finish = pipDocument.getElementById('pipFinish');
+  if (card) card.classList.toggle('reached', display.reached);
+  if (status) status.textContent = focusPipStatusText(session, display);
+  if (label) label.textContent = session.label?.trim() || 'An honest focus session';
+  if (tag) tag.textContent = `${category.icon} ${category.label}`;
+  if (time) time.textContent = display.value;
+  if (caption) caption.textContent = display.caption;
+  if (progress) {
+    const planned = Math.max(0, Number(session.plannedSeconds) || 0);
+    progress.hidden = !planned;
+    progress.setAttribute('aria-valuemin', '0');
+    progress.setAttribute('aria-valuemax', String(planned || 1));
+    progress.setAttribute('aria-valuenow', String(Math.min(display.elapsed, planned || 1)));
+  }
+  if (fill) fill.style.width = `${display.progress * 100}%`;
+  if (toggle) {
+    toggle.textContent = session.status === 'paused' ? 'Resume' : 'Pause';
+    toggle.disabled = focusActionPending || !activeFocusSession;
+  }
+  if (finish) finish.disabled = focusActionPending || !activeFocusSession;
+}
+
+async function finishFocusFromPictureInPicture() {
+  if (!activeFocusSession || focusActionPending) return;
+  const pipDocument = focusPipWindow?.document;
+  const error = pipDocument?.getElementById('pipError');
+  if (error) error.textContent = '';
+  updateFocusPictureInPicture();
+  const saved = await runFocusAction('finish', {
+    focusLevel: activeFocusSession?.focusLevel || null,
+    note: activeFocusSession?.note || '',
+  });
+  if (!saved) {
+    if (error) error.textContent = 'Could not save. Your session is still active—please try again.';
+    return;
+  }
+  renderFocusSneak();
+  showToast(`${formatFocusHuman(saved.elapsedSeconds, { precise: true })} of focus saved.`);
 }
 
 function focusCategoryMeta(categoryId) {
@@ -2238,6 +2751,13 @@ function renderFocusRoom() {
         <label>One-line intention <span class="hint">(optional)</span>
           <textarea id="focusStartNote" rows="2" maxlength="1000" placeholder="What would make this session enough?"></textarea>
         </label>
+        <label class="focus-float-choice${supportsFocusPip() ? '' : ' is-unavailable'}" id="focusAutoFloatChoice">
+          <input id="focusAutoFloat" type="checkbox"${focusAutoFloat ? ' checked' : ''}${supportsFocusPip() ? '' : ' disabled'}>
+          <strong>${supportsFocusPip() ? 'Keep the timer above my other windows' : 'Floating timer is unavailable in this browser'}</strong>
+          <small>${supportsFocusPip()
+            ? 'A small timer opens when you start, so changing tabs cannot make you forget it.'
+            : 'The tab title and the in-page mini timer will still keep counting.'}</small>
+        </label>
         <button class="btn primary focus-start-button" id="startFocusSession" type="submit">Start focus session</button>
         <span class="focus-start-hint">Even ten honest minutes become part of your history.</span>
       </form>
@@ -2259,6 +2779,9 @@ function renderFocusRoom() {
     labelInput.addEventListener('input', () => { focusDraft.label = labelInput.value; });
     categoryInput.addEventListener('change', () => { focusDraft.category = categoryInput.value; });
     noteInput.addEventListener('input', () => { focusDraft.note = noteInput.value; });
+    document.getElementById('focusAutoFloat').addEventListener('change', event => {
+      saveFocusFloatPreference(event.target.checked);
+    });
 
     const refreshDraftControls = () => {
       document.querySelectorAll('[data-focus-mode]').forEach(button => {
@@ -2317,6 +2840,7 @@ function renderFocusRoom() {
       <div class="focus-goal-message" id="activeFocusGoal"></div>
       <div class="focus-controls">
         <button class="btn ghost" id="toggleFocusSession" type="button"></button>
+        <button class="btn ghost focus-float-button" id="floatFocusSession" type="button">Float timer ↗</button>
         <button class="btn primary" id="finishFocusSession" type="button">Finish & save</button>
         <button class="btn danger-ghost" id="cancelFocusSession" type="button">Discard</button>
       </div>
@@ -2333,6 +2857,7 @@ function renderFocusRoom() {
     noteElement.textContent = note;
   }
   document.getElementById('toggleFocusSession').addEventListener('click', () => runFocusAction(activeFocusSession.status === 'paused' ? 'resume' : 'pause'));
+  document.getElementById('floatFocusSession').addEventListener('click', toggleFocusPictureInPicture);
   document.getElementById('finishFocusSession').addEventListener('click', openFocusFinishModal);
   document.getElementById('cancelFocusSession').addEventListener('click', cancelActiveFocusSession);
   updateActiveFocusDisplay();
@@ -2341,6 +2866,9 @@ function renderFocusRoom() {
 function updateActiveFocusDisplay() {
   if (!activeFocusSession) {
     updateFocusMiniTimer();
+    updateFocusPictureInPicture();
+    updateFocusFloatingControls();
+    updateFocusDocumentTitle();
     return;
   }
   const display = activeFocusDisplay(activeFocusSession);
@@ -2374,6 +2902,9 @@ function updateActiveFocusDisplay() {
   if (toggle) toggle.textContent = activeFocusSession.status === 'paused' ? 'Resume' : 'Pause';
   if (goal) goal.textContent = display.reached ? 'You reached the intention. Finish now or keep going—the extra time will still be recorded.' : '';
   updateFocusMiniTimer();
+  updateFocusPictureInPicture();
+  updateFocusFloatingControls();
+  updateFocusDocumentTitle();
 }
 
 function updateFocusMiniTimer() {
@@ -2389,6 +2920,7 @@ function updateFocusMiniTimer() {
   const toggle = document.getElementById('focusMiniToggle');
   toggle.textContent = activeFocusSession.status === 'paused' ? 'Resume' : 'Pause';
   toggle.disabled = focusActionPending;
+  updateFocusFloatingControls();
 }
 
 async function startFocusSession(event) {
@@ -2410,6 +2942,23 @@ async function startFocusSession(event) {
     mode: focusDraft.mode,
     plannedSeconds: focusDraft.mode === 'countdown' ? focusDraft.plannedMinutes * 60 : null,
   };
+  const now = new Date().toISOString();
+  const previewSession = syncFocusSession({
+    id: 'starting-focus-session',
+    status: 'running',
+    ...draft,
+    focusLevel: null,
+    elapsedSeconds: 0,
+    startedAt: now,
+    runningSince: now,
+    endedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  });
+  const shouldAutoFloat = focusAutoFloat && supportsFocusPip();
+  const pipAttempt = shouldAutoFloat
+    ? openFocusPictureInPicture({ session: previewSession, silent: true })
+    : null;
   const button = document.getElementById('startFocusSession');
   focusActionPending = true;
   button.disabled = true;
@@ -2435,18 +2984,46 @@ async function startFocusSession(event) {
       session = response.session;
     }
     activeFocusSession = syncFocusSession(session);
+    focusPipPreviewSession = null;
     focusDraft.label = '';
     focusDraft.note = '';
     if (DEMO_MODE) persistDemoState();
     renderFocusRoom();
     showToast('Focus session started. You are in the room.');
+    if (pipAttempt) {
+      pipAttempt.then(opened => {
+        if (!opened && activeFocusSession) showToast('Session started. Click “Float timer” if the browser blocked the floating window.');
+      });
+    }
   } catch (error) {
     if (error.status === 409) {
-      await refreshActiveFocusSession();
-      showToast('A focus session is already active. I brought it back.');
+      let recovered = null;
+      let recoveryError = null;
+      try {
+        recovered = await refreshActiveFocusSession({ throwOnError: true });
+      } catch (refreshError) {
+        recoveryError = refreshError;
+      }
+      focusPipPreviewSession = null;
+      if (recovered) {
+        showToast('A focus session was already active. I brought it back.');
+      } else {
+        closeFocusPictureInPicture({ silent: true });
+        button.disabled = false;
+        button.textContent = 'Start focus session';
+        if (recoveryError?.status !== 401) {
+          showToast(recoveryError
+            ? 'Another session exists, but I could not reconnect to it. Check the connection and retry.'
+            : 'That other session has ended. Press Start again when you are ready.');
+        }
+      }
     } else if (error.status === 401) {
+      focusPipPreviewSession = null;
+      closeFocusPictureInPicture({ silent: true });
       showLogin('Your session expired. Log back in, then start the focus session again.');
     } else {
+      focusPipPreviewSession = null;
+      closeFocusPictureInPicture({ silent: true });
       button.disabled = false;
       button.textContent = 'Start focus session';
       showToast(error.message || 'Could not start the session. Check the connection and try again.');
@@ -2493,6 +3070,8 @@ async function runFocusAction(action, body) {
     if (action === 'finish' || action === 'cancel') {
       focusSessions = [syncFocusSession(session), ...focusSessions.filter(item => String(item.id) !== String(session.id))];
       activeFocusSession = null;
+      focusPipPreviewSession = null;
+      closeFocusPictureInPicture({ silent: true });
     } else {
       activeFocusSession = syncFocusSession(session);
     }
@@ -2564,8 +3143,8 @@ async function finishFocusSession(event) {
   showToast(`${formatFocusHuman(saved.elapsedSeconds, { precise: true })} of focus saved. Imperfect action still counts.`);
 }
 
-async function refreshActiveFocusSession() {
-  if (DEMO_MODE || focusLoadError) return;
+async function refreshActiveFocusSession({ throwOnError = false } = {}) {
+  if (DEMO_MODE || focusLoadError) return activeFocusSession;
   try {
     const response = await apiGet('/api/focus-sessions/active');
     const session = response.session || null;
@@ -2577,10 +3156,14 @@ async function refreshActiveFocusSession() {
       focusSessions = rows.filter(item => item.status !== 'running' && item.status !== 'paused');
       activeFocusSession = rows.find(item => item.status === 'running' || item.status === 'paused') || null;
     }
+    if (!activeFocusSession) closeFocusPictureInPicture({ silent: true });
     renderFocusRoom();
     if (document.getElementById('tab-focus').classList.contains('active')) renderFocusHistory();
+    return activeFocusSession;
   } catch (error) {
     if (error.status === 401) showLogin('Your session expired. Log back in to reconnect the focus timer.');
+    if (throwOnError) throw error;
+    return null;
   }
 }
 
@@ -2880,12 +3463,15 @@ function renderFocusLog() {
       edit.type = 'button';
       edit.className = 'btn ghost small';
       edit.textContent = 'Edit';
+      edit.setAttribute('aria-label', `Edit ${title.textContent} from ${dateLabel.textContent}`);
       edit.addEventListener('click', () => openFocusEditModal(session.id));
       const remove = document.createElement('button');
       remove.type = 'button';
-      remove.className = 'btn danger-ghost small';
-      remove.textContent = 'Delete';
-      remove.addEventListener('click', () => deleteFocusSession(session.id));
+      remove.className = 'btn danger-ghost small log-delete-action';
+      remove.textContent = '🗑 Delete';
+      remove.dataset.deleteFocusId = String(session.id);
+      remove.setAttribute('aria-label', `Delete ${title.textContent}, ${duration.textContent}, from ${dateLabel.textContent}`);
+      remove.addEventListener('click', () => deleteFocusSession(session.id, remove));
       actions.append(edit, remove);
       row.append(main, duration, actions);
       day.appendChild(row);
@@ -3001,20 +3587,48 @@ async function saveFocusEdit(event) {
   }
 }
 
-async function deleteFocusSession(id) {
+async function deleteFocusSession(id, button = null) {
   const session = focusSessions.find(item => String(item.id) === String(id));
   if (!session) return;
+  const key = String(session.id);
+  if (deletingFocusSessionIds.has(key)) return;
   const label = session.label?.trim() || 'this focus session';
   if (!window.confirm(`Delete “${label}” and its ${formatFocusHuman(session.elapsedSeconds, { precise: true })} from your focus history?`)) return;
+  deletingFocusSessionIds.add(key);
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Deleting…';
+  }
   try {
-    if (!DEMO_MODE) await apiDelete(`/api/focus-sessions/${encodeURIComponent(session.id)}`);
+    if (!DEMO_MODE) {
+      try {
+        await apiDelete(`/api/focus-sessions/${encodeURIComponent(session.id)}`);
+      } catch (error) {
+        if (error.status !== 404) throw error;
+      }
+    }
     focusSessions = focusSessions.filter(item => String(item.id) !== String(session.id));
     if (DEMO_MODE) persistDemoState();
     renderFocusHistory();
     renderFocusSneak();
-    showToast('Focus session deleted.');
+    const heading = document.getElementById('focusLogTitle');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+    showToast('Focus session deleted. Your totals and charts are updated.');
   } catch (error) {
-    handleSaveError(error);
+    if (error.status === 401) {
+      showLogin('Your session expired. Log back in, then delete this focus session again.');
+    } else {
+      showToast('Couldn’t delete that focus session. It is still safely in your log.');
+    }
+  } finally {
+    deletingFocusSessionIds.delete(key);
+    if (button?.isConnected) {
+      button.disabled = false;
+      button.textContent = '🗑 Delete';
+    }
   }
 }
 
@@ -3078,6 +3692,7 @@ function renderFocusSneak() {
 }
 
 document.getElementById('focusMiniReturn').addEventListener('click', () => document.querySelector('[data-tab="focus"]')?.click());
+document.getElementById('focusMiniFloat').addEventListener('click', toggleFocusPictureInPicture);
 document.getElementById('focusMiniToggle').addEventListener('click', () => runFocusAction(activeFocusSession?.status === 'paused' ? 'resume' : 'pause'));
 document.getElementById('focusFinishForm').addEventListener('submit', finishFocusSession);
 document.getElementById('cancelFocusFinish').addEventListener('click', () => closeFocusFinishModal());
@@ -4217,10 +4832,11 @@ function renderExpenseLedger(entries) {
       edit.addEventListener('click', () => openExpenseModal(expense.id));
       const remove = document.createElement('button');
       remove.type = 'button';
-      remove.className = 'btn danger-ghost small';
-      remove.textContent = 'Delete';
+      remove.className = 'btn danger-ghost small log-delete-action';
+      remove.textContent = '🗑 Delete';
+      remove.dataset.deleteExpenseId = String(expense.id);
       remove.setAttribute('aria-label', `Delete ${category.label} expense of ${amount.textContent} on ${date}`);
-      remove.addEventListener('click', () => deleteExpense(expense.id));
+      remove.addEventListener('click', () => deleteExpense(expense.id, remove));
       actions.append(edit, remove);
       row.append(main, amount, actions);
       group.appendChild(row);
@@ -4366,19 +4982,47 @@ async function saveExpenseDraft(event) {
   }
 }
 
-async function deleteExpense(id) {
-  const expense = expenses.find(item => item.id === id);
+async function deleteExpense(id, button = null) {
+  const expense = expenses.find(item => String(item.id) === String(id));
   if (!expense) return;
+  const key = String(expense.id);
+  if (deletingExpenseIds.has(key)) return;
   const category = expenseCategoryById(expense.category);
   if (!window.confirm(`Delete ${formatExpenseMoney(expensePaise(expense))} for ${category.label} on ${expense.date}?`)) return;
+  deletingExpenseIds.add(key);
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Deleting…';
+  }
   try {
-    if (!DEMO_MODE) await apiDelete(`/api/expenses/${encodeURIComponent(id)}`);
-    expenses = expenses.filter(item => item.id !== id);
+    if (!DEMO_MODE) {
+      try {
+        await apiDelete(`/api/expenses/${encodeURIComponent(expense.id)}`);
+      } catch (error) {
+        if (error.status !== 404) throw error;
+      }
+    }
+    expenses = expenses.filter(item => String(item.id) !== String(expense.id));
     if (DEMO_MODE) persistDemoState();
     renderExpenses();
-    showToast('Expense deleted.');
+    const heading = document.getElementById('expenseLedgerTitle');
+    if (heading) {
+      heading.tabIndex = -1;
+      heading.focus({ preventScroll: true });
+    }
+    showToast('Expense deleted. Your totals and charts are updated.');
   } catch (error) {
-    handleSaveError(error);
+    if (error.status === 401) {
+      showLogin('Your session expired. Log back in, then delete this expense again.');
+    } else {
+      showToast('Couldn’t delete that expense. It is still safely in your log.');
+    }
+  } finally {
+    deletingExpenseIds.delete(key);
+    if (button?.isConnected) {
+      button.disabled = false;
+      button.textContent = '🗑 Delete';
+    }
   }
 }
 
@@ -4719,9 +5363,11 @@ async function startApp() {
   renderDayClock();
 
   hideLogin();
+  initializeFocusPipVideo();
   renderBoard();
   applyDeepLinkFromQuery();
   updateFocusMiniTimer();
+  updateFocusDocumentTitle();
   publishAndroidWidgetSnapshot();
 }
 

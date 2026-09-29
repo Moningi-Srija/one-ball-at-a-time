@@ -25,8 +25,8 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
-- Includes a refresh-safe **Focus Room** with stopwatch and 10/25/50/90-minute countdowns, pause/resume, optional tags and focus-quality notes, editable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
-- Includes a PostgreSQL-backed expense tracker with exact paise storage, editable daily entries, Food/Clothes/Transport/Trips categories, and Day/Week/Month/All Time analysis.
+- Includes a refresh-safe **Focus Room** with stopwatch and 10/25/50/90-minute countdowns, pause/resume, an optional always-on-top floating timer, optional tags and focus-quality notes, editable/deletable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
+- Includes a PostgreSQL-backed expense tracker with exact paise storage, editable/deletable daily entries, Food/Clothes/Transport/Trips categories, and Day/Week/Month/All Time analysis.
 - Lets you select a point on an all-time chart and jump to that day's log.
 - Installs as a standalone Progressive Web App from a supported phone or desktop browser.
 - Includes a personal Android wrapper and configurable Home Screen widget for today's score or a saved countdown.

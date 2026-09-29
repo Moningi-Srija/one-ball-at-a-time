@@ -295,6 +295,7 @@
             <p class="focus-card-number">04</p>
             <h3 id="focusLogTitle">Session log</h3>
             <p class="hint" id="focusLogCount"></p>
+            <p class="log-delete-hint">Every saved session can be edited or deleted here.</p>
           </div>
           <label class="focus-filter-label" for="focusCategoryFilter">
             <span>Tag</span>
@@ -511,6 +512,7 @@
           <p class="expense-card-number">03</p>
           <h3 id="expenseLedgerTitle">Expense log</h3>
           <p class="hint" id="expenseLedgerCount"></p>
+          <p class="log-delete-hint">Every expense can be edited or deleted from its row.</p>
         </div>
         <label class="expense-filter-label" for="expenseCategoryFilter">
           <span>Category</span>
@@ -577,8 +579,11 @@
       <span class="focus-mini-label">Focus session</span>
       <strong id="focusMiniTime">00:00</strong>
     </button>
+    <button class="btn ghost small" id="focusMiniFloat" type="button">Float ↗</button>
     <button class="btn ghost small" id="focusMiniToggle" type="button">Pause</button>
   </aside>
+
+  <video class="focus-pip-video-source" id="focusPipVideo" muted playsinline aria-hidden="true" tabindex="-1"></video>
 
 </div>
 
