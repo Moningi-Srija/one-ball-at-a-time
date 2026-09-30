@@ -145,6 +145,37 @@ async function init() {
       );
     }
 
+    const capFinishedCountdownElapsedMigration = await client.query(
+      `SELECT 1 FROM schema_migrations WHERE name = $1`,
+      ['004_cap_finished_countdown_elapsed']
+    );
+    if (capFinishedCountdownElapsedMigration.rowCount === 0) {
+      await client.query(`
+        UPDATE focus_sessions
+        SET elapsed_seconds = LEAST(elapsed_seconds, planned_seconds::bigint),
+            updated_at = clock_timestamp()
+        WHERE status = 'finished'
+          AND mode = 'countdown'
+          AND planned_seconds IS NOT NULL
+          AND elapsed_seconds > planned_seconds;
+
+        ALTER TABLE focus_sessions
+          DROP CONSTRAINT IF EXISTS focus_sessions_finished_countdown_elapsed_check;
+        ALTER TABLE focus_sessions
+          ADD CONSTRAINT focus_sessions_finished_countdown_elapsed_check
+          CHECK (
+            status <> 'finished'
+            OR mode <> 'countdown'
+            OR planned_seconds IS NULL
+            OR elapsed_seconds <= planned_seconds
+          );
+      `);
+      await client.query(
+        `INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`,
+        ['004_cap_finished_countdown_elapsed']
+      );
+    }
+
     await client.query('COMMIT');
   } catch (error) {
     try {
@@ -445,14 +476,22 @@ async function transitionFocusSession(id, action, { focusLevel = null, note } = 
         action === 'finish' && note !== undefined ? note : null,
         action === 'finish' && note !== undefined,
       ];
-      sql = `UPDATE focus_sessions
-             SET status = '${targetStatus}',
-                 elapsed_seconds = elapsed_seconds
+      const accumulatedSeconds = `elapsed_seconds
                    + CASE
                        WHEN status = 'running'
                          THEN GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (date_trunc('second', clock_timestamp()) - running_since))))::bigint
                        ELSE 0
-                     END,
+                     END`;
+      const recordedSeconds = action === 'finish'
+        ? `CASE
+                     WHEN mode = 'countdown' AND planned_seconds IS NOT NULL
+                       THEN LEAST(planned_seconds::bigint, ${accumulatedSeconds})
+                     ELSE ${accumulatedSeconds}
+                   END`
+        : accumulatedSeconds;
+      sql = `UPDATE focus_sessions
+             SET status = '${targetStatus}',
+                 elapsed_seconds = ${recordedSeconds},
                  running_since = NULL,
                  ended_at = date_trunc('second', clock_timestamp()),
                  focus_level = $2,

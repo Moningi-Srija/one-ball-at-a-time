@@ -259,6 +259,8 @@ function createDemoFocusSessions() {
     start.setDate(start.getDate() - daysAgo);
     start.setHours(9 + (index % 5) * 2, 10 + index, 0, 0);
     const end = new Date(start.getTime() + minutes * 60000);
+    const mode = index % 3 === 0 ? 'stopwatch' : 'countdown';
+    const plannedSeconds = mode === 'countdown' ? (minutes >= 45 ? 50 : 25) * 60 : null;
     return {
       id,
       status: 'finished',
@@ -266,11 +268,11 @@ function createDemoFocusSessions() {
       category,
       note: '',
       focusLevel,
-      mode: index % 3 === 0 ? 'stopwatch' : 'countdown',
-      plannedSeconds: index % 3 === 0 ? null : (minutes >= 45 ? 50 : 25) * 60,
+      mode,
+      plannedSeconds,
       date: localDateKey(start),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      elapsedSeconds: minutes * 60,
+      elapsedSeconds: focusSecondsForSaving({ mode, plannedSeconds }, minutes * 60),
       startedAt: start.toISOString(),
       runningSince: null,
       endedAt: end.toISOString(),
@@ -409,7 +411,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 4, active, log, countdowns, targets, frog, expenses, focusSessions, activeFocusSession }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 5, active, log, countdowns, targets, frog, expenses, focusSessions, activeFocusSession }));
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
@@ -498,7 +500,14 @@ async function loadState() {
     const hadExpenses = Array.isArray(state.expenses);
     expenses = hadExpenses ? state.expenses : createDemoExpenses();
     const hadFocusSessions = Array.isArray(state.focusSessions);
-    focusSessions = hadFocusSessions ? state.focusSessions : createDemoFocusSessions();
+    let repairedFocusHistory = false;
+    focusSessions = (hadFocusSessions ? state.focusSessions : createDemoFocusSessions()).map(session => {
+      if (session?.status !== 'finished') return session;
+      const elapsedSeconds = focusSecondsForSaving(session, session.elapsedSeconds);
+      if (elapsedSeconds === Number(session.elapsedSeconds)) return session;
+      repairedFocusHistory = true;
+      return { ...session, elapsedSeconds };
+    });
     activeFocusSession = state.activeFocusSession || null;
     if (activeFocusSession?.status === 'running') {
       const lastRunningAt = Date.parse(activeFocusSession.runningSince || activeFocusSession.startedAt);
@@ -509,7 +518,7 @@ async function loadState() {
       }
     }
     activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
-    if (!hadExpenses || !hadFocusSessions) persistDemoState();
+    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory) persistDemoState();
   } else {
     expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
     const loadedFocusSessions = Array.isArray(focusPayload?.sessions) ? focusPayload.sessions : [];
@@ -2158,6 +2167,12 @@ function focusElapsedSeconds(session, now = Date.now()) {
   return Math.floor(saved + Math.max(0, now - syncedAt) / 1000);
 }
 
+function focusSecondsForSaving(session, elapsedSeconds = focusElapsedSeconds(session)) {
+  const elapsed = Math.max(0, Math.floor(Number(elapsedSeconds) || 0));
+  const planned = Math.max(0, Math.floor(Number(session?.plannedSeconds) || 0));
+  return session?.mode === 'countdown' && planned > 0 ? Math.min(elapsed, planned) : elapsed;
+}
+
 function formatFocusClock(seconds) {
   const value = Math.max(0, Math.floor(Number(seconds) || 0));
   const hours = Math.floor(value / 3600);
@@ -2243,8 +2258,8 @@ function updateFocusDocumentTitle() {
 
 function focusPipStatusText(session, display) {
   if (!activeFocusSession && focusPipPreviewSession) return 'Starting session…';
-  if (session?.status === 'paused') return 'Paused';
   if (display.reached) return 'Goal reached';
+  if (session?.status === 'paused') return 'Paused';
   return 'In the room';
 }
 
@@ -2313,7 +2328,13 @@ function drawFocusPipVideoFrame() {
   context.fillText(truncateCanvasText(context, display.caption, width - 96), 48, 330);
   context.font = '600 18px system-ui, sans-serif';
   context.fillStyle = '#a2295c';
-  context.fillText('Your session keeps running. Return to One Ball at a Time for controls.', 48, 372);
+  context.fillText(
+    display.reached
+      ? 'Intention complete. Extra time will not change the saved total.'
+      : 'Your session keeps running. Return to One Ball at a Time for controls.',
+    48,
+    372
+  );
 }
 
 function initializeFocusPipVideo() {
@@ -2721,7 +2742,7 @@ function activeFocusDisplay(session, now = Date.now()) {
       label: remaining > 0 ? (session.status === 'paused' ? 'Countdown paused' : 'Time remaining') : 'Goal reached',
       caption: remaining > 0
         ? `${formatFocusHuman(elapsed, { precise: true })} focused · ${formatFocusHuman(planned)} intention`
-        : `${formatFocusHuman(elapsed, { precise: true })} focused · finish when you leave the room`,
+        : `${formatFocusHuman(planned)} complete · extra time will not inflate your log`,
       progress: Math.min(1, elapsed / planned),
       reached: remaining <= 0,
     };
@@ -2968,7 +2989,9 @@ function updateActiveFocusDisplay() {
   }
   if (status) status.textContent = activeFocusSession.status === 'paused' ? 'Ⅱ Paused' : '● In the room';
   if (toggle) toggle.textContent = activeFocusSession.status === 'paused' ? 'Resume' : 'Pause';
-  if (goal) goal.textContent = display.reached ? 'You reached the intention. Finish now or keep going—the extra time will still be recorded.' : '';
+  if (goal) goal.textContent = display.reached
+    ? `You reached the intention. Finish now or keep going—the saved session stays at ${formatFocusHuman(activeFocusSession.plannedSeconds)}.`
+    : '';
   updateFocusMiniTimer();
   updateFocusPictureInPicture();
   updateFocusFloatingControls();
@@ -3135,7 +3158,10 @@ async function runFocusAction(action, body) {
     if (DEMO_MODE) {
       const now = new Date().toISOString();
       const elapsed = focusElapsedSeconds(activeFocusSession);
-      session = { ...activeFocusSession, elapsedSeconds: elapsed, updatedAt: now };
+      const recordedElapsed = action === 'finish'
+        ? focusSecondsForSaving(activeFocusSession, elapsed)
+        : elapsed;
+      session = { ...activeFocusSession, elapsedSeconds: recordedElapsed, updatedAt: now };
       if (action === 'pause') {
         session.status = 'paused';
         session.runningSince = null;
@@ -3193,6 +3219,16 @@ function openFocusFinishModal() {
   focusReturnElement = document.activeElement;
   document.getElementById('focusFinishLevel').value = activeFocusSession.focusLevel || '';
   document.getElementById('focusFinishNote').value = activeFocusSession.note || '';
+  const finishCopy = document.getElementById('focusFinishCopy');
+  const elapsed = focusElapsedSeconds(activeFocusSession);
+  const recorded = focusSecondsForSaving(activeFocusSession, elapsed);
+  if (activeFocusSession.mode === 'countdown') {
+    finishCopy.textContent = elapsed >= activeFocusSession.plannedSeconds
+      ? `This countdown will save ${formatFocusHuman(recorded, { precise: true })}. Time after the goal is not added.`
+      : `Finish now to save the time completed so far, up to your ${formatFocusHuman(activeFocusSession.plannedSeconds)} goal.`;
+  } else {
+    finishCopy.textContent = 'How it felt is optional. The time still counts even when focus was messy.';
+  }
   document.getElementById('focusFinishError').textContent = '';
   document.getElementById('confirmFocusFinish').disabled = false;
   const backdrop = document.getElementById('focusFinishBackdrop');
@@ -3322,7 +3358,7 @@ function focusDailySeries(entries) {
   const secondsByDate = new Map();
   entries.forEach(session => {
     const key = focusSessionDateKey(session);
-    secondsByDate.set(key, (secondsByDate.get(key) || 0) + Math.max(0, Number(session.elapsedSeconds) || 0));
+    secondsByDate.set(key, (secondsByDate.get(key) || 0) + focusSecondsForSaving(session, session.elapsedSeconds));
   });
   const labels = [];
   const seconds = [];
@@ -3340,12 +3376,12 @@ function focusDailySeries(entries) {
 }
 
 function renderFocusSummary(entries) {
-  const total = entries.reduce((sum, session) => sum + Math.max(0, Number(session.elapsedSeconds) || 0), 0);
+  const total = entries.reduce((sum, session) => sum + focusSecondsForSaving(session, session.elapsedSeconds), 0);
   const average = entries.length ? Math.round(total / entries.length) : 0;
-  const longest = entries.reduce((max, session) => Math.max(max, Number(session.elapsedSeconds) || 0), 0);
+  const longest = entries.reduce((max, session) => Math.max(max, focusSecondsForSaving(session, session.elapsedSeconds)), 0);
   const activeDays = new Set(entries.map(focusSessionDateKey)).size;
   const cards = [
-    { label: 'Focus time', value: formatFocusHuman(total), note: 'actual time you protected' },
+    { label: 'Focus time', value: formatFocusHuman(total), note: 'countdowns stop at their chosen goal' },
     { label: 'Sessions', value: String(entries.length), note: entries.length === 1 ? 'one honest start' : 'honest starts recorded' },
     { label: 'Average session', value: formatFocusHuman(average), note: 'no minimum required' },
     { label: 'Longest session', value: formatFocusHuman(longest), note: `${activeDays} active day${activeDays === 1 ? '' : 's'}` },
@@ -3377,7 +3413,7 @@ function renderFocusCharts(entries) {
   const categoryTotals = new Map();
   entries.forEach(session => {
     const key = session.category || '';
-    categoryTotals.set(key, (categoryTotals.get(key) || 0) + Math.max(0, Number(session.elapsedSeconds) || 0));
+    categoryTotals.set(key, (categoryTotals.get(key) || 0) + focusSecondsForSaving(session, session.elapsedSeconds));
   });
   const categoryEntries = [...categoryTotals.entries()]
     .map(([id, secondsValue]) => ({ meta: focusCategoryMeta(id), seconds: secondsValue }))
@@ -3510,7 +3546,7 @@ function renderFocusLog() {
     dateLabel.textContent = date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
     const total = document.createElement('span');
     total.className = 'focus-day-total';
-    const daySeconds = sessions.reduce((sum, session) => sum + (Number(session.elapsedSeconds) || 0), 0);
+    const daySeconds = sessions.reduce((sum, session) => sum + focusSecondsForSaving(session, session.elapsedSeconds), 0);
     total.textContent = `${formatFocusHuman(daySeconds)} · ${sessions.length} session${sessions.length === 1 ? '' : 's'}`;
     head.append(dateLabel, total);
     day.appendChild(head);
@@ -3547,7 +3583,7 @@ function renderFocusLog() {
       }
       const duration = document.createElement('div');
       duration.className = 'focus-entry-duration';
-      duration.textContent = formatFocusHuman(session.elapsedSeconds, { precise: true });
+      duration.textContent = formatFocusHuman(focusSecondsForSaving(session, session.elapsedSeconds), { precise: true });
       const actions = document.createElement('div');
       actions.className = 'focus-entry-actions';
       const edit = document.createElement('button');
@@ -3684,7 +3720,8 @@ async function deleteFocusSession(id, button = null) {
   const key = String(session.id);
   if (deletingFocusSessionIds.has(key)) return;
   const label = session.label?.trim() || 'this focus session';
-  if (!window.confirm(`Delete “${label}” and its ${formatFocusHuman(session.elapsedSeconds, { precise: true })} from your focus history?`)) return;
+  const recordedSeconds = focusSecondsForSaving(session, session.elapsedSeconds);
+  if (!window.confirm(`Delete “${label}” and its ${formatFocusHuman(recordedSeconds, { precise: true })} from your focus history?`)) return;
   deletingFocusSessionIds.add(key);
   if (button) {
     button.disabled = true;
@@ -3730,7 +3767,7 @@ function focusSecondsForRange(start, end) {
       const timestamp = date?.getTime();
       return Number.isFinite(timestamp) && timestamp >= start && timestamp < end;
     })
-    .reduce((sum, session) => sum + Math.max(0, Number(session.elapsedSeconds) || 0), 0);
+    .reduce((sum, session) => sum + focusSecondsForSaving(session, session.elapsedSeconds), 0);
 }
 
 function renderFocusSneak() {

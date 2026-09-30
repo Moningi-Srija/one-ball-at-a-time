@@ -25,7 +25,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
-- Includes a refresh-safe **Focus Room** with stopwatch, 10/25/50/90-minute presets, and custom 1–720-minute countdowns, plus pause/resume, an optional always-on-top floating timer, optional tags and focus-quality notes, editable/deletable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
+- Includes a refresh-safe **Focus Room** with stopwatch, 10/25/50/90-minute presets, and custom 1–720-minute countdowns that never log more than their chosen duration, plus pause/resume, an optional always-on-top floating timer, optional tags and focus-quality notes, editable/deletable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
 - Includes a PostgreSQL-backed expense tracker with exact paise storage, editable/deletable daily entries, Food/Clothes/Transport/Trips/Home & Rent/Family Support/Miscellaneous categories, and Day/Week/Month/All Time analysis.
 - Lets you select a point on an all-time chart and jump to that day's log.
 - Installs as a standalone Progressive Web App from a supported phone or desktop browser.
@@ -125,7 +125,7 @@ Keep private or personally identifying copy out of the demo constants and sample
 
 ## Data and privacy model
 
-The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
+The private app stores five shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, a cap that prevents finished countdowns from exceeding their planned duration, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
 
 The login throttle is intentionally simple and in-memory. It is per server instance and resets when the service restarts; use an edge/platform rate limiter as well if you expect meaningful public traffic.
 
