@@ -135,8 +135,12 @@ const EXPENSE_CATEGORIES = [
   { id: 'clothes', label: 'Clothes', icon: '👗', color: '#99507f' },
   { id: 'transport', label: 'Transport', icon: '🚕', color: '#4f9fbd' },
   { id: 'trips', label: 'Trips', icon: '✈️', color: '#a66b2b' },
+  { id: 'home_rent', label: 'Home & Rent', icon: '🏠', color: '#5968a8' },
+  { id: 'family_support', label: 'Family Support', icon: '🫶', color: '#5f9872' },
+  { id: 'miscellaneous', label: 'Miscellaneous', icon: '🧾', color: '#8b8490' },
 ];
-const expenseCategoryById = id => EXPENSE_CATEGORIES.find(category => category.id === id) || EXPENSE_CATEGORIES[0];
+const expenseCategoryById = id => EXPENSE_CATEGORIES.find(category => category.id === id)
+  || EXPENSE_CATEGORIES.find(category => category.id === 'miscellaneous');
 
 const FOCUS_LEVELS = {
   distracted: { label: 'Distracted, but showed up', icon: '🌱' },

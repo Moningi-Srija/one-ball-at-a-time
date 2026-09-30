@@ -1,4 +1,12 @@
-const EXPENSE_CATEGORIES = Object.freeze(['food', 'clothes', 'transport', 'trips']);
+const EXPENSE_CATEGORIES = Object.freeze([
+  'food',
+  'clothes',
+  'transport',
+  'trips',
+  'home_rent',
+  'family_support',
+  'miscellaneous',
+]);
 const EXPENSE_CATEGORY_SET = new Set(EXPENSE_CATEGORIES);
 const MAX_NOTE_LENGTH = 500;
 const MAX_AMOUNT = 9_999_999_999.99;

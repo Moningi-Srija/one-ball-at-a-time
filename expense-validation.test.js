@@ -32,6 +32,15 @@ test('accepts an expense and converts rupees to exact integer paise', () => {
 });
 
 test('accepts every supported category', () => {
+  assert.deepEqual(EXPENSE_CATEGORIES, [
+    'food',
+    'clothes',
+    'transport',
+    'trips',
+    'home_rent',
+    'family_support',
+    'miscellaneous',
+  ]);
   for (const category of EXPENSE_CATEGORIES) {
     assert.equal(validateExpense(validExpense({ category })).ok, true);
   }
@@ -87,13 +96,13 @@ test('accepts valid optional list filters', () => {
   assert.deepEqual(validateExpenseFilters({
     from: '2026-09-01',
     to: '2026-09-30',
-    category: 'transport',
+    category: 'family_support',
   }), {
     ok: true,
     value: {
       from: '2026-09-01',
       to: '2026-09-30',
-      category: 'transport',
+      category: 'family_support',
     },
   });
   assert.equal(validateExpenseFilters({}).ok, true);
