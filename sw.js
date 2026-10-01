@@ -1,4 +1,4 @@
-const CACHE_NAME = 'one-ball-shell-v3';
+const CACHE_NAME = 'one-ball-shell-v4';
 const SHELL_FILES = [
   '/offline.html',
   '/style.css',
