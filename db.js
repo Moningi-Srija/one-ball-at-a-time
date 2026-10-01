@@ -176,6 +176,33 @@ async function init() {
       );
     }
 
+    const outingsExpenseCategoryMigration = await client.query(
+      `SELECT 1 FROM schema_migrations WHERE name = $1`,
+      ['005_add_outings_expense_category']
+    );
+    if (outingsExpenseCategoryMigration.rowCount === 0) {
+      await client.query(`
+        ALTER TABLE expenses
+          DROP CONSTRAINT IF EXISTS expenses_category_check;
+        ALTER TABLE expenses
+          ADD CONSTRAINT expenses_category_check
+          CHECK (category IN (
+            'food',
+            'clothes',
+            'transport',
+            'trips',
+            'outings',
+            'home_rent',
+            'family_support',
+            'miscellaneous'
+          ));
+      `);
+      await client.query(
+        `INSERT INTO schema_migrations (name) VALUES ($1) ON CONFLICT (name) DO NOTHING`,
+        ['005_add_outings_expense_category']
+      );
+    }
+
     await client.query('COMMIT');
   } catch (error) {
     try {

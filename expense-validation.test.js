@@ -37,6 +37,7 @@ test('accepts every supported category', () => {
     'clothes',
     'transport',
     'trips',
+    'outings',
     'home_rent',
     'family_support',
     'miscellaneous',
@@ -96,13 +97,13 @@ test('accepts valid optional list filters', () => {
   assert.deepEqual(validateExpenseFilters({
     from: '2026-09-01',
     to: '2026-09-30',
-    category: 'family_support',
+    category: 'outings',
   }), {
     ok: true,
     value: {
       from: '2026-09-01',
       to: '2026-09-30',
-      category: 'family_support',
+      category: 'outings',
     },
   });
   assert.equal(validateExpenseFilters({}).ok, true);

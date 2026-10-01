@@ -3,6 +3,7 @@ const EXPENSE_CATEGORIES = Object.freeze([
   'clothes',
   'transport',
   'trips',
+  'outings',
   'home_rent',
   'family_support',
   'miscellaneous',

@@ -51,6 +51,48 @@ test('init expands the production expense category constraint without rewriting 
   assert.equal(queries.filter(({ sql }) => sql === 'COMMIT').length, 1);
 });
 
+test('init adds outings to the production expense category constraint', async t => {
+  const originalConnect = db.pool.connect;
+  const queries = [];
+  const client = {
+    async query(sql, values = []) {
+      queries.push({ sql, values });
+      if (/SELECT 1 FROM schema_migrations/.test(sql)) {
+        return { rowCount: values[0] === '005_add_outings_expense_category' ? 0 : 1, rows: [] };
+      }
+      return { rowCount: 1, rows: [] };
+    },
+    release() {},
+  };
+  db.pool.connect = async () => client;
+  t.after(() => { db.pool.connect = originalConnect; });
+
+  await db.init();
+
+  const constraintQuery = queries.find(({ sql }) => (
+    /ADD CONSTRAINT expenses_category_check/.test(sql)
+    && /'outings'/.test(sql)
+  ));
+  assert.ok(constraintQuery, 'expected the outings category constraint migration to run');
+  for (const category of [
+    'food',
+    'clothes',
+    'transport',
+    'trips',
+    'outings',
+    'home_rent',
+    'family_support',
+    'miscellaneous',
+  ]) {
+    assert.match(constraintQuery.sql, new RegExp(`'${category}'`));
+  }
+  assert.ok(queries.some(({ sql, values }) => (
+    /INSERT INTO schema_migrations/.test(sql)
+    && values[0] === '005_add_outings_expense_category'
+  )));
+  assert.equal(queries.filter(({ sql }) => sql === 'COMMIT').length, 1);
+});
+
 test('listExpenses uses parameterized filters and preserves bigint ids', async t => {
   stubQuery(t, async (sql, values) => {
     assert.match(sql, /spent_on >= \$1::date/);
