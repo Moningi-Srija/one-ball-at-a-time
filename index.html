@@ -80,6 +80,24 @@
 
   <!-- BOARD -->
   <section id="tab-board" class="tab-panel active">
+    <section class="winter-arc-section" id="winterArcSection" aria-labelledby="winterArcTitle" hidden>
+      <article class="winter-arc-card" id="winterArcCard">
+        <div class="winter-arc-copy">
+          <p class="winter-arc-kicker" id="winterArcKicker"></p>
+          <h2 id="winterArcTitle"></h2>
+          <p id="winterArcMessage"></p>
+        </div>
+        <div class="winter-arc-checks" id="winterArcChecks" role="list" aria-label="Today’s Winter Arc promises"></div>
+        <div class="winter-arc-timeline" id="winterArcTimeline" role="progressbar" aria-label="Winter Arc calendar progress">
+          <span id="winterArcTimelineFill"></span>
+        </div>
+        <div class="winter-arc-footer">
+          <strong id="winterArcShowedUp"></strong>
+          <span id="winterArcSummary"></span>
+        </div>
+      </article>
+    </section>
+
     <section class="frog-section" aria-labelledby="frogTitle">
       <div class="section-head">
         <h2 id="frogTitle">Eat the Frog</h2>
@@ -571,7 +589,7 @@
   <section id="tab-targets" class="tab-panel">
     <div class="section-head">
       <h2>Targets</h2>
-      <span class="hint">Set a points goal for each timeframe.</span>
+      <span class="hint">Set your points goals and shape your Winter Arc.</span>
     </div>
     <div class="targets-form" id="targetsForm"></div>
   </section>
@@ -775,6 +793,7 @@
   </div>
 </div>
 
+<script src="/winter-arc-logic.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

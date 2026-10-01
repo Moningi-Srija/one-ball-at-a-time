@@ -8,6 +8,7 @@ const db = require('./db');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
 const { validateCountdowns } = require('./countdown-validation');
 const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
+const { validateWinterArcSettings } = require('./winter-arc-logic');
 const {
   validateEmptyAction,
   validateFocusFilters,
@@ -155,6 +156,24 @@ app.put('/api/targets', requireAuth, async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'failed to save targets' });
+  }
+});
+
+app.put('/api/winter-arc', requireAuth, async (req, res) => {
+  const result = validateWinterArcSettings(req.body);
+  if (!result.ok) {
+    return res.status(400).json({
+      error: 'invalid_winter_arc_settings',
+      field: result.field,
+      message: result.error,
+    });
+  }
+  try {
+    await db.setState('winterArc', result.value);
+    return res.json({ settings: result.value });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'failed_to_save_winter_arc' });
   }
 });
 
@@ -390,6 +409,7 @@ app.get(['/', '/index.html', '/demo'], sendIndex);
 app.get('/demo/', (req, res) => res.redirect(308, '/demo'));
 app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css')));
 app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
+app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'winter-arc-logic.js')));
 app.get('/manifest.webmanifest', (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'manifest.webmanifest'));

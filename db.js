@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { defaultWinterArcSettings } = require('./winter-arc-logic');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -29,6 +30,7 @@ async function init() {
       log: [],
       countdowns: [],
       targets: { day: 25, week: 150, weekend: 50, month: 600 },
+      winterArc: defaultWinterArcSettings(),
       frog: null,
     };
     for (const [key, value] of Object.entries(defaults)) {

@@ -1,5 +1,7 @@
 const DEMO_MODE = window.location.pathname.replace(/\/+$/, '') === '/demo';
 const DEMO_STORAGE_KEY = 'one-ball-at-a-time-demo-v1';
+const WinterArc = window.WinterArcLogic;
+if (!WinterArc) throw new Error('Winter Arc logic failed to load.');
 
 // ---------- Data ----------
 
@@ -155,6 +157,7 @@ let active = [];   // up to 5 tasks on the board
 let log = [];      // finished tasks
 let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
+let winterArcSettings = WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone());
 let frog = null;   // today's deliberately chosen hardest/most important task
 let expenses = []; // normalized expense records; PostgreSQL-backed outside the public demo
 let expenseLoadError = '';
@@ -393,6 +396,7 @@ function createDemoState() {
       }
     ],
     targets: { ...DEFAULT_TARGETS },
+    winterArc: WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone()),
     expenses: createDemoExpenses(),
     focusSessions: createDemoFocusSessions(),
     activeFocusSession: null,
@@ -412,7 +416,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 5, active, log, countdowns, targets, frog, expenses, focusSessions, activeFocusSession }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 6, active, log, countdowns, targets, winterArc: winterArcSettings, frog, expenses, focusSessions, activeFocusSession }));
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
@@ -443,6 +447,10 @@ function saveTargets() {
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/targets', targets).catch(handleSaveError);
 }
+function saveWinterArcSettings() {
+  if (DEMO_MODE) return persistDemoState();
+  return apiPut('/api/winter-arc', winterArcSettings).catch(handleSaveError);
+}
 function saveFrog() {
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/frog', frog).catch(handleSaveError);
@@ -464,6 +472,7 @@ async function loadState() {
       log = state.log;
       countdowns = state.countdowns;
       targets = state.targets;
+      winterArcSettings = WinterArc.normalizeWinterArcSettings(state.winterArc, new Date(), browserTimeZone());
       frog = state.frog;
       expenses = state.expenses;
       focusSessions = state.focusSessions;
@@ -496,6 +505,10 @@ async function loadState() {
   log = Array.isArray(state.log) ? state.log : [];
   countdowns = Array.isArray(state.countdowns) ? state.countdowns : [];
   targets = { ...DEFAULT_TARGETS, ...(state.targets || {}) };
+  const winterArcValidation = WinterArc.validateWinterArcSettings(state.winterArc);
+  winterArcSettings = winterArcValidation.ok
+    ? winterArcValidation.value
+    : WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone());
   frog = state.frog || null;
   if (DEMO_MODE) {
     const hadExpenses = Array.isArray(state.expenses);
@@ -519,7 +532,7 @@ async function loadState() {
       }
     }
     activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
-    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory) persistDemoState();
+    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory || !winterArcValidation.ok) persistDemoState();
   } else {
     expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
     const loadedFocusSessions = Array.isArray(focusPayload?.sessions) ? focusPayload.sessions : [];
@@ -617,6 +630,14 @@ function localDateKey(d = new Date()) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function browserTimeZone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
 }
 
 function timeLeftToday() {
@@ -1354,6 +1375,133 @@ function renderUrgencyBanner() {
   document.getElementById('cdText').textContent = text;
 }
 
+function winterArcDateLabel(dateKey) {
+  const [year, month, day] = String(dateKey).split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: year === new Date().getFullYear() ? undefined : 'numeric',
+  });
+}
+
+function winterArcPointLabel(value) {
+  return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function renderWinterArc() {
+  const section = document.getElementById('winterArcSection');
+  if (!section) return;
+  if (!winterArcSettings.enabled) {
+    section.hidden = true;
+    return;
+  }
+
+  let summary;
+  try {
+    summary = WinterArc.summarizeWinterArc({
+      settings: winterArcSettings,
+      log,
+      dailyTarget: Number(targets.day),
+      now: new Date(),
+      timeZone: browserTimeZone(),
+    });
+  } catch (error) {
+    console.error('Could not render Winter Arc.', error);
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  const card = document.getElementById('winterArcCard');
+  const kicker = document.getElementById('winterArcKicker');
+  const title = document.getElementById('winterArcTitle');
+  const message = document.getElementById('winterArcMessage');
+  const checks = document.getElementById('winterArcChecks');
+  const showedUp = document.getElementById('winterArcShowedUp');
+  const recap = document.getElementById('winterArcSummary');
+  const timeline = document.getElementById('winterArcTimeline');
+  const timelineFill = document.getElementById('winterArcTimelineFill');
+  const isSecuredToday = summary.phase === 'active' && summary.today.secured;
+  card.classList.toggle('is-secured', isSecuredToday);
+  card.classList.toggle('is-upcoming', summary.phase === 'upcoming');
+  card.classList.toggle('is-finished', summary.phase === 'finished');
+
+  if (summary.phase === 'upcoming') {
+    kicker.textContent = `❄️ WINTER ARC · STARTS IN ${summary.daysUntilStart} ${summary.daysUntilStart === 1 ? 'DAY' : 'DAYS'}`;
+    title.textContent = 'Your quiet season is getting ready.';
+    message.textContent = 'Start small. The goal is to keep showing up, not become perfect overnight.';
+  } else if (summary.phase === 'finished') {
+    kicker.textContent = '❄️ WINTER ARC · COMPLETE';
+    title.textContent = 'You built proof, not perfection.';
+    message.textContent = `${summary.showedUpDays} ${summary.showedUpDays === 1 ? 'day' : 'days'} of choosing your life on purpose.`;
+  } else if (isSecuredToday) {
+    kicker.textContent = `❄️ WINTER ARC · DAY ${summary.dayNumber} OF ${summary.totalDays}`;
+    title.textContent = 'Winter Arc day secured ❄️';
+    message.textContent = 'You kept your promise to yourself.';
+  } else {
+    kicker.textContent = `❄️ WINTER ARC · DAY ${summary.dayNumber} OF ${summary.totalDays}`;
+    title.textContent = 'Your life changes in days like this.';
+    message.textContent = 'Quiet consistency. Don’t disappear from your own life today.';
+  }
+
+  checks.innerHTML = '';
+  const addCheck = (label, done = false) => {
+    const item = document.createElement('div');
+    item.className = `winter-arc-check${done ? ' is-done' : ''}`;
+    item.setAttribute('role', 'listitem');
+    item.setAttribute('aria-label', `${label}: ${done ? 'done' : 'not done'}`);
+    const mark = document.createElement('span');
+    mark.setAttribute('aria-hidden', 'true');
+    mark.textContent = done ? '✓' : '○';
+    const text = document.createElement('span');
+    text.textContent = label;
+    item.append(mark, text);
+    checks.appendChild(item);
+  };
+
+  if (summary.phase === 'active') {
+    checks.setAttribute('aria-label', 'Today’s Winter Arc promises');
+    addCheck('Move your body', summary.today.bodyDone);
+    addCheck(DEMO_MODE ? 'Future-building move' : 'Quant Dev prep', summary.today.careerDone);
+    addCheck(
+      summary.today.needsTarget
+        ? 'Set a daily points target'
+        : `${winterArcPointLabel(summary.today.points)} / ${winterArcPointLabel(summary.today.dailyTarget)} pts`,
+      summary.today.pointsDone
+    );
+  } else if (summary.phase === 'upcoming') {
+    checks.setAttribute('aria-label', 'Upcoming Winter Arc promises');
+    addCheck('Move your body');
+    addCheck(DEMO_MODE ? 'Future-building move' : 'Quant Dev prep');
+    addCheck(Number(targets.day) > 0 ? `${winterArcPointLabel(targets.day)}-point day` : 'Set a daily points target');
+  } else {
+    checks.setAttribute('aria-label', 'Completed Winter Arc summary');
+    addCheck(`${summary.showedUpDays} ${summary.showedUpDays === 1 ? 'day' : 'days'} showed up`, summary.showedUpDays > 0);
+    addCheck(`${summary.securedDays} fully secured`, summary.securedDays > 0);
+    addCheck(`${summary.totalDays} calendar days`, true);
+  }
+
+  showedUp.textContent = `${summary.showedUpDays} ${summary.showedUpDays === 1 ? 'day' : 'days'} you showed up`;
+  if (summary.phase === 'upcoming') {
+    recap.textContent = `${winterArcDateLabel(summary.startDate)} – ${winterArcDateLabel(summary.endDate)}`;
+  } else if (summary.phase === 'finished') {
+    recap.textContent = `${summary.securedDays} fully secured · arc complete`;
+  } else {
+    recap.textContent = `${summary.securedDays} fully secured · ${summary.daysRemaining} ${summary.daysRemaining === 1 ? 'day' : 'days'} still yours`;
+  }
+
+  const progress = summary.phase === 'upcoming'
+    ? 0
+    : (summary.phase === 'finished' ? 100 : (summary.dayNumber / summary.totalDays) * 100);
+  timelineFill.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+  timeline.setAttribute('aria-valuemin', '0');
+  timeline.setAttribute('aria-valuemax', String(summary.totalDays));
+  timeline.setAttribute('aria-valuenow', String(summary.phase === 'upcoming' ? 0 : summary.dayNumber));
+  timeline.setAttribute('aria-valuetext', summary.phase === 'upcoming'
+    ? `Starts in ${summary.daysUntilStart} ${summary.daysUntilStart === 1 ? 'day' : 'days'}`
+    : `Day ${summary.dayNumber} of ${summary.totalDays}`);
+}
+
 function renderBoard() {
   const board = document.getElementById('board');
   board.innerHTML = '';
@@ -1378,6 +1526,7 @@ function renderBoard() {
   board.appendChild(renderBodySlot(bodyTask, now));
   board.appendChild(renderCareerSlot(careerTask, now));
 
+  renderWinterArc();
   renderTodayProgress();
   renderFrog();
 }
@@ -1604,6 +1753,8 @@ function finishTask(id) {
     note: task.note || '',
     category: task.category,
     points: task.points,
+    bodySlot: Boolean(task.bodySlot),
+    careerSlot: Boolean(task.careerSlot),
     startedAt: task.startedAt,
     completedAt,
     duration: completedAt - task.startedAt
@@ -1832,8 +1983,23 @@ setInterval(() => {
 }, 1000);
 
 setInterval(() => {
-  if (document.getElementById('tab-board').classList.contains('active')) renderTodayProgress();
+  if (document.getElementById('tab-board').classList.contains('active')) {
+    document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    renderTodayProgress();
+    renderWinterArc();
+  }
 }, 60 * 1000);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.getElementById('tab-board').classList.contains('active')) {
+    renderBoard();
+    document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+});
 
 // ---------- Add Task Modal ----------
 
@@ -5370,6 +5536,13 @@ function renderGuide() {
 function renderTargets() {
   const form = document.getElementById('targetsForm');
   form.innerHTML = '';
+  const pointCard = document.createElement('section');
+  pointCard.className = 'target-settings-card';
+  const pointTitle = document.createElement('h3');
+  pointTitle.textContent = 'Points goals';
+  const pointHelp = document.createElement('p');
+  pointHelp.textContent = 'Your daily goal automatically becomes the third Winter Arc promise.';
+  pointCard.append(pointTitle, pointHelp);
   ['day', 'week', 'weekend', 'month'].forEach(period => {
     const wrapper = document.createElement('label');
     wrapper.textContent = PERIOD_LABELS[period] + ' target (points)';
@@ -5380,11 +5553,87 @@ function renderTargets() {
     input.addEventListener('change', () => {
       targets[period] = Math.max(0, parseInt(input.value, 10) || 0);
       saveTargets();
-      if (period === 'day') renderTodayProgress();
+      if (period === 'day') {
+        renderTodayProgress();
+        renderWinterArc();
+      }
     });
     wrapper.appendChild(input);
-    form.appendChild(wrapper);
+    pointCard.appendChild(wrapper);
   });
+
+  const arcCard = document.createElement('section');
+  arcCard.className = 'target-settings-card winter-arc-settings';
+  const arcHeading = document.createElement('div');
+  arcHeading.className = 'winter-arc-settings-heading';
+  const arcTitle = document.createElement('h3');
+  arcTitle.textContent = '❄️ Winter Arc';
+  const toggleLabel = document.createElement('label');
+  toggleLabel.className = 'winter-arc-toggle';
+  const toggle = document.createElement('input');
+  toggle.type = 'checkbox';
+  toggle.checked = winterArcSettings.enabled;
+  const toggleText = document.createElement('span');
+  toggleText.textContent = 'Show on Board';
+  toggleLabel.append(toggle, toggleText);
+  arcHeading.append(arcTitle, toggleLabel);
+
+  const arcHelp = document.createElement('p');
+  arcHelp.textContent = `Uses your Body slot, ${DEMO_MODE ? 'Future-building slot' : 'Quant Dev slot'} and current daily points target—nothing extra to log.`;
+  const dates = document.createElement('div');
+  dates.className = 'winter-arc-date-grid';
+  const startLabel = document.createElement('label');
+  startLabel.textContent = 'Starts';
+  const startInput = document.createElement('input');
+  startInput.type = 'date';
+  startInput.value = winterArcSettings.startDate;
+  const endLabel = document.createElement('label');
+  endLabel.textContent = 'Ends';
+  const endInput = document.createElement('input');
+  endInput.type = 'date';
+  endInput.value = winterArcSettings.endDate;
+  endInput.min = winterArcSettings.startDate;
+  startLabel.appendChild(startInput);
+  endLabel.appendChild(endInput);
+  dates.append(startLabel, endLabel);
+  const error = document.createElement('p');
+  error.className = 'winter-arc-settings-error';
+  error.setAttribute('role', 'alert');
+
+  const syncDisabledState = () => {
+    startInput.disabled = !toggle.checked;
+    endInput.disabled = !toggle.checked;
+  };
+  const commitSettings = candidate => {
+    const validation = WinterArc.validateWinterArcSettings(candidate);
+    if (!validation.ok) {
+      error.textContent = validation.error;
+      startInput.value = winterArcSettings.startDate;
+      endInput.value = winterArcSettings.endDate;
+      endInput.min = winterArcSettings.startDate;
+      return false;
+    }
+    winterArcSettings = validation.value;
+    error.textContent = '';
+    endInput.min = winterArcSettings.startDate;
+    saveWinterArcSettings();
+    renderWinterArc();
+    return true;
+  };
+
+  toggle.addEventListener('change', () => {
+    if (commitSettings({ ...winterArcSettings, enabled: toggle.checked })) syncDisabledState();
+  });
+  startInput.addEventListener('change', () => {
+    commitSettings({ ...winterArcSettings, startDate: startInput.value });
+  });
+  endInput.addEventListener('change', () => {
+    commitSettings({ ...winterArcSettings, endDate: endInput.value });
+  });
+
+  syncDisabledState();
+  arcCard.append(arcHeading, arcHelp, dates, error);
+  form.append(pointCard, arcCard);
 }
 
 // ---------- Auth + Init ----------
