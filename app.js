@@ -139,7 +139,7 @@ const EXPENSE_CATEGORIES = [
   { id: 'trips', label: 'Trips', icon: '✈️', color: '#a66b2b' },
   { id: 'outings', label: 'Outings', icon: '🎟️', color: '#c24f8d' },
   { id: 'home_rent', label: 'Home & Rent', icon: '🏠', color: '#5968a8' },
-  { id: 'family_support', label: 'Personal Transfers', icon: '🗝️', color: '#5f9872' },
+  { id: 'family_support', label: 'Buying Peace', icon: '🌿', color: '#5f9872' },
   { id: 'miscellaneous', label: 'Miscellaneous', icon: '🧾', color: '#8b8490' },
 ];
 const expenseCategoryById = id => EXPENSE_CATEGORIES.find(category => category.id === id)
