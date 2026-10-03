@@ -5579,7 +5579,7 @@ function renderTargets() {
   arcHeading.append(arcTitle, toggleLabel);
 
   const arcHelp = document.createElement('p');
-  arcHelp.textContent = `Uses your Body slot, ${DEMO_MODE ? 'Future-building slot' : 'Quant Dev slot'} and current daily points target—nothing extra to log.`;
+  arcHelp.textContent = `Counts any finished ${catById('glow_up').label} task, any finished ${catById('empire_building').label} task and your current daily points target—nothing extra to log.`;
   const dates = document.createElement('div');
   dates.className = 'winter-arc-date-grid';
   const startLabel = document.createElement('label');

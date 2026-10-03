@@ -24,7 +24,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Records completed tasks with category, points, timestamps, duration, and notes.
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
-- Adds a configurable **Winter Arc** card that automatically tracks the protected Body slot, Quant Dev slot, daily points goal, total days shown up, and fully secured days without a resettable streak.
+- Adds a configurable **Winter Arc** card that automatically tracks finished Glow Up and Jenny Humphrey Hustle tasks, protected-slot completions, the daily points goal, total days shown up, and fully secured days without a resettable streak.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
 - Includes a refresh-safe **Focus Room** with stopwatch, 10/25/50/90-minute presets, and custom 1–720-minute countdowns that never log more than their chosen duration, plus pause/resume, an optional always-on-top floating timer, optional tags and focus-quality notes, editable/deletable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
 - Includes a PostgreSQL-backed expense tracker with exact paise storage, editable/deletable daily entries, Food/Clothes/Transport/Trips/Outings/Home & Rent/Buying Peace/Miscellaneous categories, and Day/Week/Month/All Time analysis.

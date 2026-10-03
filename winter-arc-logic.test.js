@@ -97,8 +97,8 @@ test('maps instants to the correct local date in different time zones', () => {
 
 test('checks body, Quant Dev, and the exact daily point threshold independently', () => {
   const log = [
-    completed('2026-10-01', { bodySlot: true, category: 'glow_up', points: 4 }),
-    completed('2026-10-01', { careerSlot: true, category: 'empire_building', points: 20.75 }),
+    completed('2026-10-01', { bodySlot: false, category: 'glow_up', points: 4 }),
+    completed('2026-10-01', { careerSlot: false, category: 'empire_building', points: 20.75 }),
   ];
   const status = getWinterArcTodayStatus({ log, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' });
   assert.equal(status.bodyDone, true);
@@ -111,19 +111,41 @@ test('checks body, Quant Dev, and the exact daily point threshold independently'
   assert.equal(getWinterArcTodayStatus({ log, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' }).secured, true);
 });
 
-test('legacy categories count only when protected-slot flags are absent', () => {
-  const legacy = [
-    completed('2026-10-01', { category: 'glow_up', points: 4, bodySlot: undefined }),
-    completed('2026-10-01', { category: 'empire_building', points: 21, careerSlot: undefined }),
+test('category completions count regardless of protected-slot flags', () => {
+  const categorized = [
+    completed('2026-10-01', { category: 'glow_up', points: 4, bodySlot: false }),
+    completed('2026-10-01', { category: 'empire_building', points: 21, careerSlot: false }),
   ];
-  const legacyStatus = getWinterArcTodayStatus({ log: legacy, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' });
-  assert.equal(legacyStatus.secured, true);
+  const categorizedStatus = getWinterArcTodayStatus({ log: categorized, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' });
+  assert.equal(categorizedStatus.bodyDone, true);
+  assert.equal(categorizedStatus.careerDone, true);
+  assert.equal(categorizedStatus.secured, true);
 
-  const explicitFlexible = legacy.map(task => ({ ...task, bodySlot: false, careerSlot: false }));
-  const explicitStatus = getWinterArcTodayStatus({ log: explicitFlexible, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' });
-  assert.equal(explicitStatus.bodyDone, false);
-  assert.equal(explicitStatus.careerDone, false);
-  assert.equal(explicitStatus.secured, false);
+  const unrelated = categorized.map(task => ({ ...task, category: 'other' }));
+  const unrelatedStatus = getWinterArcTodayStatus({ log: unrelated, dateKey: '2026-10-01', dailyTarget: 25, timeZone: 'UTC' });
+  assert.equal(unrelatedStatus.bodyDone, false);
+  assert.equal(unrelatedStatus.careerDone, false);
+  assert.equal(unrelatedStatus.secured, false);
+});
+
+test('each matching category completes only its own Winter Arc promise', () => {
+  const bodyStatus = getWinterArcTodayStatus({
+    log: [completed('2026-10-01', { category: 'glow_up', points: 0, bodySlot: false, careerSlot: false })],
+    dateKey: '2026-10-01',
+    dailyTarget: 25,
+    timeZone: 'UTC',
+  });
+  assert.equal(bodyStatus.bodyDone, true);
+  assert.equal(bodyStatus.careerDone, false);
+
+  const careerStatus = getWinterArcTodayStatus({
+    log: [completed('2026-10-01', { category: 'empire_building', points: 0, bodySlot: false, careerSlot: false })],
+    dateKey: '2026-10-01',
+    dailyTarget: 25,
+    timeZone: 'UTC',
+  });
+  assert.equal(careerStatus.bodyDone, false);
+  assert.equal(careerStatus.careerDone, true);
 });
 
 test('ignores invalid points and never treats a missing target as complete', () => {
@@ -132,6 +154,8 @@ test('ignores invalid points and never treats a missing target as complete', () 
     completed('2026-10-01', { points: 'nope', careerSlot: true }),
   ];
   const status = getWinterArcTodayStatus({ log, dateKey: '2026-10-01', dailyTarget: 0, timeZone: 'UTC' });
+  assert.equal(status.bodyDone, true);
+  assert.equal(status.careerDone, true);
   assert.equal(status.points, 0);
   assert.equal(status.needsTarget, true);
   assert.equal(status.pointsDone, false);
@@ -143,8 +167,8 @@ test('counts compassionate show-up days and fully secured days without a reset',
     completed('2026-09-30', { points: 99 }),
     completed('2026-10-01', { points: 1 }),
     completed('2026-10-01', { points: 2 }),
-    completed('2026-10-03', { bodySlot: true, points: 4 }),
-    completed('2026-10-03', { careerSlot: true, points: 21 }),
+    completed('2026-10-03', { category: 'glow_up', bodySlot: false, points: 4 }),
+    completed('2026-10-03', { category: 'empire_building', careerSlot: false, points: 21 }),
     completed('2026-12-31', { points: 10 }),
     completed('2027-01-01', { points: 99 }),
   ];

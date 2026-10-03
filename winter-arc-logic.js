@@ -123,13 +123,11 @@
   }
 
   function hasBodyPromise(task) {
-    if (task?.bodySlot === true) return true;
-    return task?.bodySlot == null && task?.category === 'glow_up';
+    return task?.bodySlot === true || task?.category === 'glow_up';
   }
 
   function hasCareerPromise(task) {
-    if (task?.careerSlot === true) return true;
-    return task?.careerSlot == null && task?.category === 'empire_building';
+    return task?.careerSlot === true || task?.category === 'empire_building';
   }
 
   function statusFromTasks(tasks, dailyTarget) {
