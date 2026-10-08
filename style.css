@@ -1775,11 +1775,10 @@ body.chart-expanded-open { overflow: hidden; }
   display: none;
   position: fixed; inset: 0;
   background: rgba(3, 16, 26, 0.76);
-  backdrop-filter: blur(3px);
   align-items: center; justify-content: center;
   z-index: 50;
 }
-.modal-backdrop.open { display: flex; animation: fade .2s ease; }
+.modal-backdrop.open { display: flex; animation: modalBackdropFade .18s ease; }
 .modal {
   background: linear-gradient(160deg, var(--panel-hi), var(--panel));
   border: 1.5px solid var(--border-strong);
@@ -1795,9 +1794,12 @@ body.chart-expanded-open { overflow: hidden; }
   flex-direction: column;
   gap: 15px;
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 93, 168, 0.12);
-  animation: modalPop .22s ease;
+  /* Keep the modal itself transform-free. Native select menus can fail to open
+     in macOS Firefox while an ancestor is being scaled or translated. */
+  animation: modalPop .18s ease;
 }
-@keyframes modalPop { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes modalPop { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalBackdropFade { from { opacity: 0; } to { opacity: 1; } }
 .modal h3 { margin: 0; font-family: var(--serif); font-size: 21px; color: var(--text); }
 .modal label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text-dim); font-weight: 600; }
 .modal input, .modal select, .modal textarea {
