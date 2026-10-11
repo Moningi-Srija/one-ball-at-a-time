@@ -2,6 +2,8 @@ const DEMO_MODE = window.location.pathname.replace(/\/+$/, '') === '/demo';
 const DEMO_STORAGE_KEY = 'one-ball-at-a-time-demo-v1';
 const WinterArc = window.WinterArcLogic;
 if (!WinterArc) throw new Error('Winter Arc logic failed to load.');
+const GoalCalendar = window.GoalCalendarLogic;
+if (!GoalCalendar) throw new Error('Goal Calendar logic failed to load.');
 
 // ---------- Data ----------
 
@@ -158,6 +160,7 @@ let log = [];      // finished tasks
 let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
 let winterArcSettings = WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone());
+let goalCalendar = GoalCalendar.defaultGoalCalendarState(new Date(), browserTimeZone());
 let frog = null;   // today's deliberately chosen hardest/most important task
 let expenses = []; // normalized expense records; PostgreSQL-backed outside the public demo
 let expenseLoadError = '';
@@ -286,6 +289,40 @@ function createDemoFocusSessions() {
   });
 }
 
+function createDemoGoalCalendar() {
+  const state = GoalCalendar.defaultGoalCalendarState(new Date(), browserTimeZone());
+  const now = Date.now();
+  const tomorrow = GoalCalendar.addDays(state.startDate, 1);
+  const weekend = GoalCalendar.addDays(state.startDate, 3);
+  state.goals = [
+    {
+      id: 'demo-goal-foundation',
+      date: state.startDate,
+      title: 'Review one important concept for 30 minutes',
+      completed: false,
+      createdAt: now - 90_000,
+      completedAt: null,
+    },
+    {
+      id: 'demo-goal-practice',
+      date: tomorrow,
+      title: 'Solve three practice problems without chasing perfection',
+      completed: false,
+      createdAt: now - 60_000,
+      completedAt: null,
+    },
+    {
+      id: 'demo-goal-revision',
+      date: weekend,
+      title: 'Make a one-page revision sheet',
+      completed: false,
+      createdAt: now - 30_000,
+      completedAt: null,
+    },
+  ];
+  return state;
+}
+
 function createDemoState() {
   const frogTask = {
     id: 'demo-frog',
@@ -397,6 +434,7 @@ function createDemoState() {
     ],
     targets: { ...DEFAULT_TARGETS },
     winterArc: WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone()),
+    goalCalendar: createDemoGoalCalendar(),
     expenses: createDemoExpenses(),
     focusSessions: createDemoFocusSessions(),
     activeFocusSession: null,
@@ -416,10 +454,12 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 6, active, log, countdowns, targets, winterArc: winterArcSettings, frog, expenses, focusSessions, activeFocusSession }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 7, active, log, countdowns, targets, winterArc: winterArcSettings, goalCalendar, frog, expenses, focusSessions, activeFocusSession }));
+    return true;
   } catch (err) {
     console.error(err);
     showToast("Demo changes couldn't be saved in this browser.");
+    return false;
   }
 }
 
@@ -451,6 +491,45 @@ function saveWinterArcSettings() {
   if (DEMO_MODE) return persistDemoState();
   return apiPut('/api/winter-arc', winterArcSettings).catch(handleSaveError);
 }
+let goalCalendarSaveQueue = Promise.resolve();
+function saveGoalCalendar() {
+  if (DEMO_MODE) {
+    const saved = persistDemoState();
+    return Promise.resolve(saved ? { goalCalendar } : null);
+  }
+  goalCalendarSaveQueue = goalCalendarSaveQueue
+    .then(async () => {
+      // Build this only when its queued turn begins, so rapid local edits use the
+      // revision returned by the save immediately before them.
+      const snapshot = {
+        revision: goalCalendar.revision,
+        startDate: goalCalendar.startDate,
+        endDate: goalCalendar.endDate,
+        goals: goalCalendar.goals.map(goal => ({ ...goal })),
+      };
+      const response = await apiPut('/api/goal-calendar', snapshot);
+      const saved = GoalCalendar.validateGoalCalendar(response.goalCalendar);
+      if (!saved.ok) throw new Error('server returned an invalid goal calendar');
+      // A newer edit may already be visible while this request is in flight.
+      // Advance only its revision; the next queued save carries the newer goals.
+      goalCalendar = { ...goalCalendar, revision: saved.value.revision };
+      return response;
+    })
+    .catch(error => {
+      if (error?.status === 409) {
+        const current = GoalCalendar.validateGoalCalendar(error.payload?.goalCalendar);
+        if (current.ok) {
+          goalCalendar = current.value;
+          renderGoalCalendar();
+          showToast('This calendar changed on another device, so I refreshed it. Please make your change again.');
+          return null;
+        }
+      }
+      handleSaveError(error);
+      return null;
+    });
+  return goalCalendarSaveQueue;
+}
 function saveFrog() {
   if (DEMO_MODE) return persistDemoState();
   apiPut('/api/frog', frog).catch(handleSaveError);
@@ -473,6 +552,7 @@ async function loadState() {
       countdowns = state.countdowns;
       targets = state.targets;
       winterArcSettings = WinterArc.normalizeWinterArcSettings(state.winterArc, new Date(), browserTimeZone());
+      goalCalendar = GoalCalendar.normalizeGoalCalendar(state.goalCalendar, new Date(), browserTimeZone());
       frog = state.frog;
       expenses = state.expenses;
       focusSessions = state.focusSessions;
@@ -509,6 +589,11 @@ async function loadState() {
   winterArcSettings = winterArcValidation.ok
     ? winterArcValidation.value
     : WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone());
+  const goalCalendarValidation = GoalCalendar.validateGoalCalendar(state.goalCalendar);
+  goalCalendar = goalCalendarValidation.ok
+    ? goalCalendarValidation.value
+    : GoalCalendar.defaultGoalCalendarState(new Date(), browserTimeZone());
+  if (!DEMO_MODE && !goalCalendarValidation.ok) await saveGoalCalendar();
   frog = state.frog || null;
   if (DEMO_MODE) {
     const hadExpenses = Array.isArray(state.expenses);
@@ -532,7 +617,7 @@ async function loadState() {
       }
     }
     activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
-    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory || !winterArcValidation.ok) persistDemoState();
+    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory || !winterArcValidation.ok || !goalCalendarValidation.ok) persistDemoState();
   } else {
     expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
     const loadedFocusSessions = Array.isArray(focusPayload?.sessions) ? focusPayload.sessions : [];
@@ -811,6 +896,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'board') renderBoard();
+    if (btn.dataset.tab === 'goal-calendar') renderGoalCalendar();
     if (btn.dataset.tab === 'countdowns') renderCountdowns();
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
@@ -827,7 +913,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (!['board', 'countdowns', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
+  if (!['board', 'goal-calendar', 'countdowns', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
@@ -841,6 +927,506 @@ function applyDeepLinkFromQuery() {
     card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 }
+
+// ---------- Goal Calendar ----------
+
+const GOAL_WEEK_STARTS_ON = 1; // Monday
+const GOAL_WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+let selectedGoalDate = null;
+let editingGoalId = null;
+let editingGoalDate = null;
+let goalModalReturnFocus = null;
+
+function goalTodayKey() {
+  return GoalCalendar.dateKeyInTimeZone(new Date(), browserTimeZone());
+}
+
+function formatGoalDate(dateKey, options) {
+  const date = GoalCalendar.parseDateKey(dateKey);
+  if (!date) return dateKey;
+  return date.toLocaleDateString(undefined, { timeZone: 'UTC', ...options });
+}
+
+function goalMonthKeys() {
+  const start = GoalCalendar.parseDateKey(goalCalendar.startDate);
+  const end = GoalCalendar.parseDateKey(goalCalendar.endDate);
+  if (!start || !end) return [];
+  const keys = [];
+  let cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), 1));
+  const finalMonth = Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1);
+  while (cursor.getTime() <= finalMonth) {
+    keys.push(`${cursor.getUTCFullYear()}-${String(cursor.getUTCMonth() + 1).padStart(2, '0')}-01`);
+    cursor = new Date(Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth() + 1, 1));
+  }
+  return keys;
+}
+
+function goalDayCount() {
+  const start = GoalCalendar.parseDateKey(goalCalendar.startDate);
+  const end = GoalCalendar.parseDateKey(goalCalendar.endDate);
+  if (!start || !end) return 0;
+  return Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+}
+
+function goalsForDate(dateKey) {
+  return goalCalendar.goals
+    .filter(goal => goal.date === dateKey)
+    .sort((a, b) => a.createdAt - b.createdAt || a.id.localeCompare(b.id));
+}
+
+function goalIsInRange(dateKey) {
+  return dateKey >= goalCalendar.startDate && dateKey <= goalCalendar.endDate;
+}
+
+function buildGoalItem(goal, scope) {
+  const item = document.createElement('li');
+  item.className = `goal-item${goal.completed ? ' is-complete' : ''}`;
+  item.dataset.goalId = goal.id;
+
+  const checkLabel = document.createElement('label');
+  checkLabel.className = 'goal-item-check';
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = goal.completed;
+  checkbox.dataset.toggleGoalId = goal.id;
+  checkbox.dataset.goalScope = scope;
+  checkbox.setAttribute('aria-label', `${goal.completed ? 'Mark incomplete' : 'Mark complete'}: ${goal.title}`);
+  const title = document.createElement('span');
+  title.className = 'goal-item-title';
+  title.textContent = goal.title;
+  checkLabel.append(checkbox, title);
+
+  const actions = document.createElement('span');
+  actions.className = 'goal-item-actions';
+  const edit = document.createElement('button');
+  edit.type = 'button';
+  edit.className = 'goal-icon-button';
+  edit.dataset.editGoalId = goal.id;
+  edit.textContent = '✎';
+  edit.setAttribute('aria-label', `Edit ${goal.title}`);
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'goal-icon-button is-delete';
+  remove.dataset.deleteGoalId = goal.id;
+  remove.textContent = '×';
+  remove.setAttribute('aria-label', `Delete ${goal.title}`);
+  actions.append(edit, remove);
+  item.append(checkLabel, actions);
+  return item;
+}
+
+function appendGoalList(container, dateKey, scope) {
+  const goals = goalsForDate(dateKey);
+  if (goals.length) {
+    const list = document.createElement('ul');
+    list.className = 'goal-list';
+    goals.forEach(goal => list.appendChild(buildGoalItem(goal, scope)));
+    container.appendChild(list);
+  } else {
+    const empty = document.createElement('p');
+    empty.className = 'goal-day-empty';
+    empty.textContent = 'No goals yet.';
+    container.appendChild(empty);
+  }
+
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'goal-add-day';
+  add.dataset.addGoalDate = dateKey;
+  add.textContent = goals.length ? '+ Add another goal' : '+ Add a study goal';
+  add.setAttribute('aria-label', `Add a study goal for ${formatGoalDate(dateKey, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}`);
+  container.appendChild(add);
+}
+
+function renderGoalMonth(monthKey) {
+  const month = document.createElement('article');
+  month.className = 'goal-month';
+  month.id = `goal-month-${monthKey.slice(0, 7)}`;
+  month.dataset.goalMonth = monthKey.slice(0, 7);
+
+  const monthGoals = goalCalendar.goals.filter(goal => goal.date.slice(0, 7) === monthKey.slice(0, 7));
+  const monthComplete = monthGoals.filter(goal => goal.completed).length;
+  const header = document.createElement('header');
+  header.className = 'goal-month-header';
+  const title = document.createElement('h3');
+  title.textContent = formatGoalDate(monthKey, { month: 'long', year: 'numeric' });
+  const progress = document.createElement('span');
+  progress.className = 'goal-month-progress';
+  progress.textContent = monthGoals.length
+    ? `${monthComplete} of ${monthGoals.length} checked`
+    : 'ready for your plan';
+  header.append(title, progress);
+
+  const grid = document.createElement('div');
+  grid.className = 'goal-month-grid';
+  grid.setAttribute('role', 'grid');
+  grid.setAttribute('aria-label', title.textContent);
+  const weekdayRow = document.createElement('div');
+  weekdayRow.className = 'goal-grid-row';
+  weekdayRow.setAttribute('role', 'row');
+  GOAL_WEEKDAYS.forEach(day => {
+    const weekday = document.createElement('div');
+    weekday.className = 'goal-weekday';
+    weekday.setAttribute('role', 'columnheader');
+    weekday.textContent = day;
+    weekdayRow.appendChild(weekday);
+  });
+  grid.appendChild(weekdayRow);
+
+  const today = goalTodayKey();
+  let calendarRow = null;
+  GoalCalendar.monthGrid(monthKey, GOAL_WEEK_STARTS_ON).forEach((cell, index) => {
+    if (index % 7 === 0) {
+      calendarRow = document.createElement('div');
+      calendarRow.className = 'goal-grid-row';
+      calendarRow.setAttribute('role', 'row');
+      grid.appendChild(calendarRow);
+    }
+    const inRange = goalIsInRange(cell.date);
+    const dayGoals = cell.inMonth && inRange ? goalsForDate(cell.date) : [];
+    const completed = dayGoals.filter(goal => goal.completed).length;
+    const day = document.createElement('div');
+    day.className = [
+      'goal-day',
+      cell.inMonth ? '' : 'is-outside-month',
+      inRange && cell.inMonth ? '' : 'is-outside-range',
+      cell.inMonth && inRange && cell.date === today ? 'is-today' : '',
+      cell.inMonth && inRange && cell.date === selectedGoalDate ? 'is-selected' : '',
+    ].filter(Boolean).join(' ');
+    day.setAttribute('role', 'gridcell');
+
+    const dayButton = document.createElement('button');
+    dayButton.type = 'button';
+    dayButton.className = 'goal-day-button';
+    dayButton.disabled = !cell.inMonth || !inRange;
+    dayButton.dataset.goalDate = cell.date;
+    dayButton.setAttribute('aria-pressed', cell.inMonth && inRange && cell.date === selectedGoalDate ? 'true' : 'false');
+    if (cell.inMonth && inRange && cell.date === today) dayButton.setAttribute('aria-current', 'date');
+    const fullDate = formatGoalDate(cell.date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    dayButton.setAttribute('aria-label', `${fullDate}. ${completed} of ${dayGoals.length} goals complete.`);
+    const number = document.createElement('span');
+    number.textContent = String(cell.day);
+    dayButton.appendChild(number);
+    if (cell.date === today && cell.inMonth && inRange) {
+      const stamp = document.createElement('span');
+      stamp.className = 'goal-today-stamp';
+      stamp.textContent = 'Today';
+      dayButton.appendChild(stamp);
+    }
+    if (dayGoals.length) {
+      const count = document.createElement('span');
+      count.className = 'goal-day-mobile-count';
+      count.textContent = `${completed}/${dayGoals.length}`;
+      dayButton.appendChild(count);
+    }
+    day.appendChild(dayButton);
+
+    if (cell.inMonth && inRange) {
+      const desktop = document.createElement('div');
+      desktop.className = 'goal-day-desktop';
+      appendGoalList(desktop, cell.date, `desktop-${monthKey}`);
+      day.appendChild(desktop);
+    }
+    calendarRow.appendChild(day);
+  });
+
+  month.append(header, grid);
+
+  const selectedBelongsHere = selectedGoalDate
+    && selectedGoalDate.slice(0, 7) === monthKey.slice(0, 7)
+    && goalIsInRange(selectedGoalDate);
+  const mobilePlan = document.createElement('section');
+  mobilePlan.className = 'goal-mobile-plan';
+  mobilePlan.hidden = !selectedBelongsHere;
+  if (selectedBelongsHere) {
+    const mobileHead = document.createElement('div');
+    mobileHead.className = 'goal-mobile-plan-head';
+    const mobileTitle = document.createElement('h4');
+    mobileTitle.textContent = formatGoalDate(selectedGoalDate, { weekday: 'long', month: 'long', day: 'numeric' });
+    const selectedGoals = goalsForDate(selectedGoalDate);
+    const mobileProgress = document.createElement('span');
+    mobileProgress.textContent = `${selectedGoals.filter(goal => goal.completed).length} / ${selectedGoals.length} done`;
+    mobileHead.append(mobileTitle, mobileProgress);
+    mobilePlan.appendChild(mobileHead);
+    appendGoalList(mobilePlan, selectedGoalDate, `mobile-${monthKey}`);
+  }
+  month.appendChild(mobilePlan);
+  return month;
+}
+
+function renderGoalCalendar() {
+  const startInput = document.getElementById('goalCalendarStartDate');
+  const endInput = document.getElementById('goalCalendarEndDate');
+  startInput.value = goalCalendar.startDate;
+  endInput.value = goalCalendar.endDate;
+  endInput.min = goalCalendar.startDate;
+  document.getElementById('saveGoalCalendarRange').textContent = 'Update dates';
+  document.getElementById('goalCalendarRangeError').textContent = '';
+
+  if (!selectedGoalDate || !goalIsInRange(selectedGoalDate)) {
+    const today = goalTodayKey();
+    selectedGoalDate = goalIsInRange(today) ? today : goalCalendar.startDate;
+  }
+
+  const completed = goalCalendar.goals.filter(goal => goal.completed).length;
+  const summary = document.getElementById('goalCalendarSummary');
+  summary.textContent = '';
+  const strong = document.createElement('strong');
+  strong.textContent = `${goalDayCount()} days`;
+  const goalLabel = goalCalendar.goals.length === 1 ? 'goal' : 'goals';
+  summary.append(strong, document.createTextNode(` · ${goalCalendar.goals.length} ${goalLabel} · ${completed} checked`));
+
+  const jump = document.getElementById('goalCalendarJumpToday');
+  const todayInRange = goalIsInRange(goalTodayKey());
+  jump.disabled = !todayInRange;
+  jump.title = todayInRange ? 'Select today in this calendar' : 'Today is outside this study plan';
+
+  const months = document.getElementById('goalCalendarMonths');
+  months.textContent = '';
+  const keys = goalMonthKeys();
+  if (!keys.length) {
+    const empty = document.createElement('div');
+    empty.className = 'goal-empty-range';
+    empty.textContent = 'Choose a valid start and end date to build your study calendar.';
+    months.appendChild(empty);
+    return;
+  }
+  keys.forEach(key => months.appendChild(renderGoalMonth(key)));
+}
+
+function commitGoalCalendar(nextState, successMessage) {
+  const result = GoalCalendar.validateGoalCalendar(nextState);
+  if (!result.ok) {
+    showToast(result.error || 'That calendar change is not valid.');
+    return false;
+  }
+  goalCalendar = result.value;
+  renderGoalCalendar();
+  saveGoalCalendar().then(saved => {
+    if (saved && successMessage) showToast(successMessage);
+  });
+  return true;
+}
+
+function openGoalModal(dateKey, goalId = null) {
+  if (!goalIsInRange(dateKey)) return;
+  const goal = goalId ? goalCalendar.goals.find(item => item.id === goalId) : null;
+  if (goalId && !goal) return;
+  editingGoalId = goal?.id || null;
+  editingGoalDate = goal?.date || dateKey;
+  selectedGoalDate = editingGoalDate;
+  goalModalReturnFocus = document.activeElement;
+  document.getElementById('goalModalTitle').textContent = goal ? 'Edit Study Goal' : 'Add a Study Goal';
+  document.getElementById('goalModalDate').textContent = formatGoalDate(editingGoalDate, {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+  });
+  document.getElementById('goalText').value = goal?.title || '';
+  document.getElementById('goalFormError').textContent = '';
+  document.getElementById('saveGoal').textContent = goal ? 'Save changes' : 'Add goal';
+  const backdrop = document.getElementById('goalModalBackdrop');
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  setTimeout(() => document.getElementById('goalText').focus(), 40);
+}
+
+function closeGoalModal({ restoreFocus = true } = {}) {
+  const backdrop = document.getElementById('goalModalBackdrop');
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  document.getElementById('goalFormError').textContent = '';
+  editingGoalId = null;
+  editingGoalDate = null;
+  if (restoreFocus && goalModalReturnFocus instanceof HTMLElement) goalModalReturnFocus.focus();
+  goalModalReturnFocus = null;
+}
+
+document.getElementById('goalCalendarRangeForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const startDate = document.getElementById('goalCalendarStartDate').value;
+  const endDate = document.getElementById('goalCalendarEndDate').value;
+  const error = document.getElementById('goalCalendarRangeError');
+  error.textContent = '';
+  const start = GoalCalendar.parseDateKey(startDate);
+  const end = GoalCalendar.parseDateKey(endDate);
+  if (!start || !end) {
+    error.textContent = 'Choose a real start and end date.';
+    return;
+  }
+  const rangeValidation = GoalCalendar.validateGoalCalendar({ startDate, endDate, goals: [] });
+  if (!rangeValidation.ok) {
+    error.textContent = rangeValidation.error;
+    return;
+  }
+  const outside = goalCalendar.goals.filter(goal => goal.date < startDate || goal.date > endDate);
+  if (outside.length) {
+    error.textContent = `This range would leave ${outside.length} planned ${outside.length === 1 ? 'goal' : 'goals'} outside the calendar. Delete ${outside.length === 1 ? 'it' : 'them'} first, or keep the current range.`;
+    return;
+  }
+  const candidate = { ...goalCalendar, startDate, endDate };
+  const result = GoalCalendar.validateGoalCalendar(candidate);
+  if (!result.ok) {
+    error.textContent = result.error;
+    return;
+  }
+  selectedGoalDate = selectedGoalDate && selectedGoalDate >= startDate && selectedGoalDate <= endDate
+    ? selectedGoalDate
+    : startDate;
+  commitGoalCalendar(result.value, 'Study calendar dates updated.');
+});
+
+document.getElementById('goalCalendarStartDate').addEventListener('input', event => {
+  document.getElementById('goalCalendarEndDate').min = event.currentTarget.value;
+  document.getElementById('goalCalendarRangeError').textContent = '';
+});
+document.getElementById('goalCalendarEndDate').addEventListener('input', () => {
+  document.getElementById('goalCalendarRangeError').textContent = '';
+});
+
+document.getElementById('goalCalendarJumpToday').addEventListener('click', () => {
+  const today = goalTodayKey();
+  if (!goalIsInRange(today)) return;
+  selectedGoalDate = today;
+  renderGoalCalendar();
+  requestAnimationFrame(() => {
+    const month = document.getElementById(`goal-month-${today.slice(0, 7)}`);
+    month?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    month?.querySelector(`[data-goal-date="${today}"]`)?.focus({ preventScroll: true });
+  });
+});
+
+document.getElementById('goalCalendarMonths').addEventListener('click', event => {
+  const dateButton = event.target.closest('[data-goal-date]');
+  if (dateButton && !dateButton.disabled) {
+    selectedGoalDate = dateButton.dataset.goalDate;
+    renderGoalCalendar();
+    requestAnimationFrame(() => {
+      const visibleButton = [...document.querySelectorAll(`[data-goal-date="${selectedGoalDate}"]`)]
+        .find(button => !button.disabled);
+      visibleButton?.focus({ preventScroll: true });
+    });
+    return;
+  }
+  const addButton = event.target.closest('[data-add-goal-date]');
+  if (addButton) {
+    openGoalModal(addButton.dataset.addGoalDate);
+    return;
+  }
+  const editButton = event.target.closest('[data-edit-goal-id]');
+  if (editButton) {
+    const goal = goalCalendar.goals.find(item => item.id === editButton.dataset.editGoalId);
+    if (goal) openGoalModal(goal.date, goal.id);
+    return;
+  }
+  const deleteButton = event.target.closest('[data-delete-goal-id]');
+  if (!deleteButton) return;
+  const goal = goalCalendar.goals.find(item => item.id === deleteButton.dataset.deleteGoalId);
+  if (!goal || !window.confirm(`Delete “${goal.title}” from ${formatGoalDate(goal.date, { month: 'long', day: 'numeric' })}?`)) return;
+  const dateKey = goal.date;
+  const next = { ...goalCalendar, goals: goalCalendar.goals.filter(item => item.id !== goal.id) };
+  if (commitGoalCalendar(next, 'Study goal deleted.')) {
+    requestAnimationFrame(() => {
+      const target = [...document.querySelectorAll(`[data-add-goal-date="${dateKey}"]`)]
+        .find(button => button.offsetParent !== null);
+      target?.focus({ preventScroll: true });
+    });
+  }
+});
+
+document.getElementById('goalCalendarMonths').addEventListener('change', event => {
+  const checkbox = event.target.closest('[data-toggle-goal-id]');
+  if (!checkbox) return;
+  const goal = goalCalendar.goals.find(item => item.id === checkbox.dataset.toggleGoalId);
+  if (!goal) return;
+  const completed = checkbox.checked;
+  const completedAt = completed ? Math.max(Date.now(), goal.createdAt) : null;
+  const next = {
+    ...goalCalendar,
+    goals: goalCalendar.goals.map(item => item.id === goal.id ? { ...item, completed, completedAt } : item),
+  };
+  if (commitGoalCalendar(next, completed ? 'Goal checked off.' : 'Goal marked unfinished.')) {
+    requestAnimationFrame(() => {
+      const target = [...document.querySelectorAll('[data-toggle-goal-id]')]
+        .find(input => input.dataset.toggleGoalId === goal.id && input.offsetParent !== null);
+      target?.focus({ preventScroll: true });
+    });
+  } else {
+    checkbox.checked = goal.completed;
+  }
+});
+
+document.getElementById('goalForm').addEventListener('submit', event => {
+  event.preventDefault();
+  const titleInput = document.getElementById('goalText');
+  const title = titleInput.value.trim();
+  const error = document.getElementById('goalFormError');
+  error.textContent = '';
+  if (!title) {
+    error.textContent = 'Write the study goal you want to finish.';
+    titleInput.focus();
+    return;
+  }
+  if (title.length > GoalCalendar.MAX_TITLE_LENGTH) {
+    error.textContent = `Keep the goal to ${GoalCalendar.MAX_TITLE_LENGTH} characters or fewer.`;
+    titleInput.focus();
+    return;
+  }
+
+  let goals;
+  if (editingGoalId) {
+    goals = goalCalendar.goals.map(goal => goal.id === editingGoalId ? { ...goal, title } : goal);
+  } else {
+    const now = Date.now();
+    let id = uid();
+    while (goalCalendar.goals.some(goal => goal.id === id)) id = uid();
+    goals = [...goalCalendar.goals, {
+      id,
+      date: editingGoalDate,
+      title,
+      completed: false,
+      createdAt: now,
+      completedAt: null,
+    }];
+  }
+  const wasEditing = Boolean(editingGoalId);
+  const next = { ...goalCalendar, goals };
+  if (!GoalCalendar.validateGoalCalendar(next).ok) {
+    error.textContent = 'That goal could not be saved. Check the wording and try again.';
+    return;
+  }
+  closeGoalModal({ restoreFocus: false });
+  if (commitGoalCalendar(next, wasEditing ? 'Study goal updated.' : 'Study goal added.')) {
+    requestAnimationFrame(() => {
+      const target = [...document.querySelectorAll(`[data-add-goal-date="${selectedGoalDate}"]`)]
+        .find(button => button.offsetParent !== null);
+      target?.focus({ preventScroll: true });
+    });
+  }
+});
+
+document.getElementById('cancelGoal').addEventListener('click', () => closeGoalModal());
+document.getElementById('goalModalBackdrop').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeGoalModal();
+});
+document.addEventListener('keydown', event => {
+  const backdrop = document.getElementById('goalModalBackdrop');
+  if (!backdrop.classList.contains('open')) return;
+  if (event.key === 'Escape') {
+    closeGoalModal();
+    return;
+  }
+  if (event.key !== 'Tab') return;
+  const focusable = [...document.getElementById('goalForm').querySelectorAll('input, button:not([disabled])')];
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+});
 
 // ---------- Countdowns ----------
 

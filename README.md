@@ -20,6 +20,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 ## What it does
 
 - Keeps a focused board of five: three flexible priorities plus protected body and future-building slots.
+- Adds a persistent **Study Goal Calendar** with a custom date range and per-day advance checklists.
 - Tracks an **Eat the Frog** task, notes, quarter-point values, priority quadrants, and live task timers.
 - Records completed tasks with category, points, timestamps, duration, and notes.
 - Shows today's progress against a configurable daily goal.
@@ -126,7 +127,7 @@ Keep private or personally identifying copy out of the demo constants and sample
 
 ## Data and privacy model
 
-The private app stores six shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, `winterArc`, and `frog`. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, a cap that prevents finished countdowns from exceeding their planned duration, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
+The private app stores seven shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, `winterArc`, `goalCalendar`, and `frog`. Goal Calendar saves use a revision check so a stale tab or device cannot silently overwrite a newer plan. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, a cap that prevents finished countdowns from exceeding their planned duration, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
 
 The login throttle is intentionally simple and in-memory. It is per server instance and resets when the service restarts; use an edge/platform rate limiter as well if you expect meaningful public traffic.
 
@@ -138,7 +139,7 @@ The demo does not call those private task-state API routes. It uses the browser 
 npm test
 ```
 
-The current automated tests cover countdown and expense validation, parameterized persistence, focus-session validation and lifecycle transitions, concurrency safeguards, timing-safe PIN comparison, and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
+The current automated tests cover countdown, expense, and Goal Calendar validation; parameterized persistence; calendar revision conflicts; focus-session validation and lifecycle transitions; concurrency safeguards; timing-safe PIN comparison; and login throttling. Before changing persistence or timer behavior, also test the private and demo routes in a browser.
 
 ## Product notes
 

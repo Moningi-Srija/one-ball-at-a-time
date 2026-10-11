@@ -1,8 +1,9 @@
-const CACHE_NAME = 'one-ball-shell-v7';
+const CACHE_NAME = 'one-ball-shell-v8';
 const SHELL_FILES = [
   '/offline.html',
   '/style.css',
   '/winter-arc-logic.js',
+  '/goal-calendar-logic.js',
   '/app.js',
   '/assets/app-icon-192.png',
   '/assets/app-icon-512.png'

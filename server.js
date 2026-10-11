@@ -8,6 +8,7 @@ const db = require('./db');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
 const { validateCountdowns } = require('./countdown-validation');
 const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
+const { validateGoalCalendar } = require('./goal-calendar-logic');
 const { validateWinterArcSettings } = require('./winter-arc-logic');
 const {
   validateEmptyAction,
@@ -37,7 +38,12 @@ if (isProduction && !ACCESS_PIN) {
 
 app.disable('x-powered-by');
 app.enable('strict routing');
-app.use(express.json({ limit: '100kb' }));
+const standardJsonParser = express.json({ limit: '100kb' });
+app.use((req, res, next) => {
+  // The authenticated calendar route installs its larger parser after access is checked.
+  if (req.path === '/api/goal-calendar') return next();
+  return standardJsonParser(req, res, next);
+});
 app.set('trust proxy', trustProxy);
 app.use((req, res, next) => {
   res.set({
@@ -176,6 +182,37 @@ app.put('/api/winter-arc', requireAuth, async (req, res) => {
     return res.status(500).json({ error: 'failed_to_save_winter_arc' });
   }
 });
+
+app.put(
+  '/api/goal-calendar',
+  requireAuth,
+  // A fully populated 1,000-goal calendar can be larger than the app's normal API payloads.
+  express.json({ limit: '1mb' }),
+  async (req, res) => {
+    const result = validateGoalCalendar(req.body);
+    if (!result.ok) {
+      return res.status(400).json({
+        error: 'invalid_goal_calendar',
+        field: result.field,
+        message: result.error,
+      });
+    }
+    try {
+      const saved = await db.compareAndSetGoalCalendar(result.value.revision, result.value);
+      if (!saved.ok) {
+        return res.status(409).json({
+          error: 'goal_calendar_conflict',
+          message: 'This goal calendar changed in another tab or device. Reload the latest version and try again.',
+          goalCalendar: saved.current,
+        });
+      }
+      return res.json({ goalCalendar: saved.value });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: 'failed_to_save_goal_calendar' });
+    }
+  }
+);
 
 app.put('/api/frog', requireAuth, async (req, res) => {
   try {
@@ -410,6 +447,7 @@ app.get('/demo/', (req, res) => res.redirect(308, '/demo'));
 app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css')));
 app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'winter-arc-logic.js')));
+app.get('/goal-calendar-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'goal-calendar-logic.js')));
 app.get('/manifest.webmanifest', (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'manifest.webmanifest'));

@@ -65,6 +65,7 @@
       </div>
       <nav class="tabs">
         <button class="tab-btn active" data-tab="board">Board</button>
+        <button class="tab-btn" data-tab="goal-calendar">Goal Calendar</button>
         <button class="tab-btn" data-tab="countdowns">Countdowns</button>
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
@@ -119,6 +120,45 @@
       <span class="hint" id="activeBoardHint">Three priorities + two protected promises: your body and your quant-dev future.</span>
     </div>
     <div class="board-grid" id="board"></div>
+  </section>
+
+  <!-- GOAL CALENDAR -->
+  <section id="tab-goal-calendar" class="tab-panel goal-calendar-panel">
+    <div class="section-head goal-calendar-heading">
+      <div>
+        <p class="goal-calendar-kicker">Give tomorrow a clear target</p>
+        <h2>Study Goal Calendar</h2>
+        <p class="goal-calendar-intro">Plan each day before it arrives. Check it off when the promise is kept.</p>
+      </div>
+      <span class="goal-calendar-note">A visible plan is easier to begin.</span>
+    </div>
+
+    <form class="goal-range-card" id="goalCalendarRangeForm" novalidate>
+      <div class="goal-range-copy">
+        <span class="goal-range-number">01</span>
+        <div>
+          <h3>Your study runway</h3>
+          <p>Choose the first and last day you want to plan. Both dates are included.</p>
+        </div>
+      </div>
+      <div class="goal-range-fields">
+        <label for="goalCalendarStartDate">Plan from
+          <input type="date" id="goalCalendarStartDate" required>
+        </label>
+        <label for="goalCalendarEndDate">Plan through
+          <input type="date" id="goalCalendarEndDate" required>
+        </label>
+        <button class="btn primary" id="saveGoalCalendarRange" type="submit">Show calendar</button>
+      </div>
+      <p class="goal-range-error" id="goalCalendarRangeError" role="alert"></p>
+    </form>
+
+    <div class="goal-calendar-toolbar">
+      <div class="goal-calendar-summary" id="goalCalendarSummary" aria-live="polite"></div>
+      <button class="link-btn" id="goalCalendarJumpToday" type="button">Jump to today</button>
+    </div>
+
+    <div class="goal-calendar-months" id="goalCalendarMonths"></div>
   </section>
 
   <!-- COUNTDOWNS -->
@@ -609,6 +649,25 @@
 
 </div>
 
+<!-- Add / Edit Calendar Goal Modal -->
+<div class="modal-backdrop" id="goalModalBackdrop" aria-hidden="true">
+  <form class="modal goal-modal" id="goalForm" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle" aria-describedby="goalModalDate">
+    <div class="goal-modal-heading">
+      <span class="goal-modal-sticker" aria-hidden="true">day promise</span>
+      <h3 id="goalModalTitle">Add a Study Goal</h3>
+      <p id="goalModalDate"></p>
+    </div>
+    <label for="goalText">What do you want to finish?
+      <input type="text" id="goalText" maxlength="160" autocomplete="off" placeholder="e.g. Finish graph algorithms revision" required>
+    </label>
+    <p class="goal-form-error" id="goalFormError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelGoal" type="button">Cancel</button>
+      <button class="btn primary" id="saveGoal" type="submit">Add goal</button>
+    </div>
+  </form>
+</div>
+
 <!-- Finish Focus Session Modal -->
 <div class="modal-backdrop" id="focusFinishBackdrop" aria-hidden="true">
   <form class="modal focus-modal" id="focusFinishForm" role="dialog" aria-modal="true" aria-labelledby="focusFinishTitle">
@@ -794,6 +853,7 @@
 </div>
 
 <script src="/winter-arc-logic.js"></script>
+<script src="/goal-calendar-logic.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

@@ -31,6 +31,8 @@ async function init() {
       countdowns: [],
       targets: { day: 25, week: 150, weekend: 50, month: 600 },
       winterArc: defaultWinterArcSettings(),
+      // The first browser visit initializes this from the owner's local calendar day.
+      goalCalendar: null,
       frog: null,
     };
     for (const [key, value] of Object.entries(defaults)) {
@@ -232,6 +234,58 @@ async function setState(key, value) {
      ON CONFLICT (key) DO UPDATE SET value = $2`,
     [key, JSON.stringify(value)]
   );
+}
+
+async function compareAndSetGoalCalendar(expectedRevision, value) {
+  if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+    throw new TypeError('expectedRevision must be a nonnegative safe integer');
+  }
+  if (expectedRevision === Number.MAX_SAFE_INTEGER) {
+    throw new RangeError('Goal calendar revision cannot be incremented safely');
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    // Ensure the row exists before locking it. This also serializes two first saves.
+    await client.query(
+      `INSERT INTO app_state (key, value) VALUES ('goalCalendar', 'null'::jsonb)
+       ON CONFLICT (key) DO NOTHING`
+    );
+    const { rows } = await client.query(
+      `SELECT value FROM app_state WHERE key = 'goalCalendar' FOR UPDATE`
+    );
+    const current = rows[0]?.value ?? null;
+    const currentRevision = (
+      current
+      && typeof current === 'object'
+      && !Array.isArray(current)
+      && Number.isSafeInteger(current.revision)
+      && current.revision >= 0
+    ) ? current.revision : 0;
+
+    if (currentRevision !== expectedRevision) {
+      await client.query('COMMIT');
+      return { ok: false, current };
+    }
+
+    const saved = { ...value, revision: expectedRevision + 1 };
+    await client.query(
+      `UPDATE app_state SET value = $1::jsonb WHERE key = 'goalCalendar'`,
+      [JSON.stringify(saved)]
+    );
+    await client.query('COMMIT');
+    return { ok: true, value: saved };
+  } catch (error) {
+    try {
+      await client.query('ROLLBACK');
+    } catch (rollbackError) {
+      console.error('Failed to roll back goal calendar save:', rollbackError);
+    }
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 const EXPENSE_COLUMNS = `
@@ -581,6 +635,7 @@ module.exports = {
   init,
   getState,
   setState,
+  compareAndSetGoalCalendar,
   listExpenses,
   createExpense,
   updateExpense,
