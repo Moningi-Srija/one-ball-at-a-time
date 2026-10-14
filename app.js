@@ -1970,10 +1970,6 @@ function winterArcDateLabel(dateKey) {
   });
 }
 
-function winterArcPointLabel(value) {
-  return Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
 function renderWinterArc() {
   const section = document.getElementById('winterArcSection');
   if (!section) return;
@@ -1987,7 +1983,6 @@ function renderWinterArc() {
     summary = WinterArc.summarizeWinterArc({
       settings: winterArcSettings,
       log,
-      dailyTarget: Number(targets.day),
       now: new Date(),
       timeZone: browserTimeZone(),
     });
@@ -2049,17 +2044,10 @@ function renderWinterArc() {
     checks.setAttribute('aria-label', 'Today’s Winter Arc promises');
     addCheck('Move your body', summary.today.bodyDone);
     addCheck(DEMO_MODE ? 'Future-building move' : 'Quant Dev prep', summary.today.careerDone);
-    addCheck(
-      summary.today.needsTarget
-        ? 'Set a daily points target'
-        : `${winterArcPointLabel(summary.today.points)} / ${winterArcPointLabel(summary.today.dailyTarget)} pts`,
-      summary.today.pointsDone
-    );
   } else if (summary.phase === 'upcoming') {
     checks.setAttribute('aria-label', 'Upcoming Winter Arc promises');
     addCheck('Move your body');
     addCheck(DEMO_MODE ? 'Future-building move' : 'Quant Dev prep');
-    addCheck(Number(targets.day) > 0 ? `${winterArcPointLabel(targets.day)}-point day` : 'Set a daily points target');
   } else {
     checks.setAttribute('aria-label', 'Completed Winter Arc summary');
     addCheck(`${summary.showedUpDays} ${summary.showedUpDays === 1 ? 'day' : 'days'} showed up`, summary.showedUpDays > 0);
@@ -6127,7 +6115,7 @@ function renderTargets() {
   const pointTitle = document.createElement('h3');
   pointTitle.textContent = 'Points goals';
   const pointHelp = document.createElement('p');
-  pointHelp.textContent = 'Your daily goal automatically becomes the third Winter Arc promise.';
+  pointHelp.textContent = 'Your points goals track overall progress separately from Winter Arc.';
   pointCard.append(pointTitle, pointHelp);
   ['day', 'week', 'weekend', 'month'].forEach(period => {
     const wrapper = document.createElement('label');
@@ -6141,7 +6129,6 @@ function renderTargets() {
       saveTargets();
       if (period === 'day') {
         renderTodayProgress();
-        renderWinterArc();
       }
     });
     wrapper.appendChild(input);
@@ -6165,7 +6152,7 @@ function renderTargets() {
   arcHeading.append(arcTitle, toggleLabel);
 
   const arcHelp = document.createElement('p');
-  arcHelp.textContent = `Counts any finished ${catById('glow_up').label} task, any finished ${catById('empire_building').label} task and your current daily points target—nothing extra to log.`;
+  arcHelp.textContent = `Secure the day with any finished ${catById('glow_up').label} task and any finished ${catById('empire_building').label} task—no points target required.`;
   const dates = document.createElement('div');
   dates.className = 'winter-arc-date-grid';
   const startLabel = document.createElement('label');

@@ -130,29 +130,18 @@
     return task?.careerSlot === true || task?.category === 'empire_building';
   }
 
-  function statusFromTasks(tasks, dailyTarget) {
-    let points = 0;
+  function statusFromTasks(tasks) {
     let bodyDone = false;
     let careerDone = false;
     (Array.isArray(tasks) ? tasks : []).forEach(task => {
-      const value = Number(task?.points);
-      if (Number.isFinite(value) && value > 0) points += value;
       bodyDone = bodyDone || hasBodyPromise(task);
       careerDone = careerDone || hasCareerPromise(task);
     });
-    points = Math.round(points * 100) / 100;
-    const parsedTarget = Number(dailyTarget);
-    const target = Number.isFinite(parsedTarget) && parsedTarget > 0 ? parsedTarget : null;
-    const pointsDone = target !== null && points >= target;
     return {
       bodyDone,
       careerDone,
-      points,
-      dailyTarget: target,
-      pointsDone,
-      needsTarget: target === null,
-      showedUp: bodyDone || careerDone || points > 0,
-      secured: bodyDone && careerDone && pointsDone,
+      showedUp: bodyDone || careerDone,
+      secured: bodyDone && careerDone,
     };
   }
 
@@ -166,13 +155,13 @@
     }
   }
 
-  function getWinterArcTodayStatus({ log, dateKey, dailyTarget, timeZone = 'UTC' }) {
+  function getWinterArcTodayStatus({ log, dateKey, timeZone = 'UTC' }) {
     if (!parseDateKey(dateKey)) throw new TypeError('dateKey must be a real date in YYYY-MM-DD format');
     const tasks = (Array.isArray(log) ? log : []).filter(task => completedTaskDate(task, timeZone) === dateKey);
-    return statusFromTasks(tasks, dailyTarget);
+    return statusFromTasks(tasks);
   }
 
-  function summarizeWinterArc({ settings, log, dailyTarget, now = new Date(), timeZone = 'UTC' }) {
+  function summarizeWinterArc({ settings, log, now = new Date(), timeZone = 'UTC' }) {
     const validation = validateWinterArcSettings(settings);
     if (!validation.ok) throw new TypeError(validation.error);
     const normalized = validation.value;
@@ -198,7 +187,7 @@
     let showedUpDays = 0;
     let securedDays = 0;
     grouped.forEach(tasks => {
-      const status = statusFromTasks(tasks, dailyTarget);
+      const status = statusFromTasks(tasks);
       if (status.showedUp) showedUpDays += 1;
       if (status.secured) securedDays += 1;
     });
@@ -211,7 +200,7 @@
       todayDate,
       showedUpDays,
       securedDays,
-      today: getWinterArcTodayStatus({ log, dateKey: todayDate, dailyTarget, timeZone }),
+      today: getWinterArcTodayStatus({ log, dateKey: todayDate, timeZone }),
     };
   }
 
