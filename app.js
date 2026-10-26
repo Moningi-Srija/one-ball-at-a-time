@@ -4,6 +4,8 @@ const WinterArc = window.WinterArcLogic;
 if (!WinterArc) throw new Error('Winter Arc logic failed to load.');
 const GoalCalendar = window.GoalCalendarLogic;
 if (!GoalCalendar) throw new Error('Goal Calendar logic failed to load.');
+const NotesToSelf = window.NotesToSelf;
+if (!NotesToSelf) throw new Error('Notes to self logic failed to load.');
 
 // ---------- Data ----------
 
@@ -161,6 +163,7 @@ let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
 let winterArcSettings = WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone());
 let goalCalendar = GoalCalendar.defaultGoalCalendarState(new Date(), browserTimeZone());
+let reminders = NotesToSelf.defaultReminders();
 let frog = null;   // today's deliberately chosen hardest/most important task
 let expenses = []; // normalized expense records; PostgreSQL-backed outside the public demo
 let expenseLoadError = '';
@@ -435,6 +438,7 @@ function createDemoState() {
     targets: { ...DEFAULT_TARGETS },
     winterArc: WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone()),
     goalCalendar: createDemoGoalCalendar(),
+    reminders: NotesToSelf.defaultReminders(),
     expenses: createDemoExpenses(),
     focusSessions: createDemoFocusSessions(),
     activeFocusSession: null,
@@ -454,7 +458,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 7, active, log, countdowns, targets, winterArc: winterArcSettings, goalCalendar, frog, expenses, focusSessions, activeFocusSession }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 8, active, log, countdowns, targets, winterArc: winterArcSettings, goalCalendar, reminders, frog, expenses, focusSessions, activeFocusSession }));
     return true;
   } catch (err) {
     console.error(err);
@@ -553,6 +557,7 @@ async function loadState() {
       targets = state.targets;
       winterArcSettings = WinterArc.normalizeWinterArcSettings(state.winterArc, new Date(), browserTimeZone());
       goalCalendar = GoalCalendar.normalizeGoalCalendar(state.goalCalendar, new Date(), browserTimeZone());
+      reminders = state.reminders;
       frog = state.frog;
       expenses = state.expenses;
       focusSessions = state.focusSessions;
@@ -594,6 +599,8 @@ async function loadState() {
     ? goalCalendarValidation.value
     : GoalCalendar.defaultGoalCalendarState(new Date(), browserTimeZone());
   if (!DEMO_MODE && !goalCalendarValidation.ok) await saveGoalCalendar();
+  const remindersValidation = NotesToSelf.validateReminders(state.reminders);
+  reminders = remindersValidation.ok ? remindersValidation.value : NotesToSelf.defaultReminders();
   frog = state.frog || null;
   if (DEMO_MODE) {
     const hadExpenses = Array.isArray(state.expenses);
@@ -617,7 +624,7 @@ async function loadState() {
       }
     }
     activeFocusSession = activeFocusSession ? syncFocusSession(activeFocusSession) : null;
-    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory || !winterArcValidation.ok || !goalCalendarValidation.ok) persistDemoState();
+    if (!hadExpenses || !hadFocusSessions || repairedFocusHistory || !winterArcValidation.ok || !goalCalendarValidation.ok || !remindersValidation.ok) persistDemoState();
   } else {
     expenses = Array.isArray(expensePayload?.expenses) ? expensePayload.expenses : [];
     const loadedFocusSessions = Array.isArray(focusPayload?.sessions) ? focusPayload.sessions : [];
@@ -706,6 +713,7 @@ function renderDayClock() {
   const timeLeft = timeLeftToday().replace(' left today', '');
   clock.textContent = timeLeft;
   clock.parentElement.setAttribute('aria-label', `${timeLeft} left today`);
+  if (reminderDayKey && reminderDayKey !== localDateKey()) renderReminders();
 }
 
 function startOfDay(d) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
@@ -1428,6 +1436,211 @@ document.addEventListener('keydown', event => {
   }
 });
 
+// ---------- Notes to self ----------
+
+let reminderSaving = false;
+let editingReminderId = null;
+let reminderReturnFocus = null;
+let reminderDayKey = '';
+let reminderFeaturedId = null;
+
+function syncReminderBusyState() {
+  document.querySelectorAll('#remindersSection button, #reminderForm button, #reminderForm input, #reminderForm textarea')
+    .forEach(control => { control.disabled = reminderSaving; });
+  document.getElementById('addReminder').disabled = reminderSaving || reminders.notes.length >= 30;
+  document.getElementById('shuffleReminder').disabled = reminderSaving || reminders.notes.length < 2;
+  document.getElementById('remindersSection').setAttribute('aria-busy', String(reminderSaving));
+  document.getElementById('saveReminder').textContent = reminderSaving ? 'Saving…' : (editingReminderId ? 'Save note' : 'Stick it up');
+}
+
+function renderReminders() {
+  const today = localDateKey();
+  if (reminderDayKey !== today) reminderFeaturedId = null;
+  reminderDayKey = today;
+  const featured = reminders.notes.find(note => note.id === reminderFeaturedId)
+    || NotesToSelf.featuredNote(reminders.notes, today);
+  const featuredCard = document.getElementById('reminderFeatured');
+  featuredCard.hidden = !featured;
+  featuredCard.dataset.color = featured?.color || 'pink';
+  document.getElementById('reminderFeaturedText').textContent = featured?.text || '';
+  document.getElementById('remindersEmpty').hidden = reminders.notes.length > 0;
+  document.getElementById('remindersWall').hidden = reminders.notes.length === 0;
+  document.getElementById('remindersWallSummary').textContent = `My sticky-note wall · ${reminders.notes.length} ${reminders.notes.length === 1 ? 'note' : 'notes'}`;
+  const grid = document.getElementById('remindersGrid');
+  grid.replaceChildren();
+  [...reminders.notes].sort((a, b) => Number(b.pinned) - Number(a.pinned)).forEach(note => {
+    const card = document.createElement('article');
+    card.className = `reminder-note${note.pinned ? ' is-pinned' : ''}`;
+    card.dataset.color = note.color;
+    const kicker = document.createElement('p');
+    kicker.className = 'reminder-note-kicker';
+    kicker.textContent = note.pinned ? '📌 In my daily rotation' : 'A memo from me';
+    const text = document.createElement('p');
+    text.className = 'reminder-note-text';
+    text.textContent = note.text;
+    const actions = document.createElement('div');
+    actions.className = 'reminder-note-actions';
+    for (const [action, label] of [['pin', note.pinned ? 'Unpin' : 'Pin'], ['edit', 'Edit'], ['delete', 'Delete']]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.reminderAction = action;
+      button.dataset.reminderId = note.id;
+      button.textContent = label;
+      button.setAttribute('aria-label', `${label} note: ${note.text}`);
+      if (action === 'pin') button.setAttribute('aria-pressed', String(note.pinned));
+      actions.appendChild(button);
+    }
+    card.append(kicker, text, actions);
+    grid.appendChild(card);
+  });
+  syncReminderBusyState();
+}
+
+async function commitReminders(notes, successMessage) {
+  if (reminderSaving) return false;
+  const validated = NotesToSelf.validateReminders({ revision: reminders.revision, notes });
+  const errorElement = document.getElementById('reminderFormError');
+  const reportError = message => { errorElement.textContent = message; showToast(message); };
+  if (!validated.ok) { reportError(validated.error); return false; }
+  reminderSaving = true;
+  syncReminderBusyState();
+  try {
+    if (DEMO_MODE) {
+      const previous = reminders;
+      reminders = { ...validated.value, revision: reminders.revision + 1 };
+      if (!persistDemoState()) {
+        reminders = previous;
+        throw new Error('Could not save this note in your browser. Please try again.');
+      }
+    } else {
+      const response = await apiPut('/api/reminders', validated.value);
+      const saved = NotesToSelf.validateReminders(response.reminders);
+      if (!saved.ok) throw new Error('Could not confirm the save. Refresh before trying again.');
+      reminders = saved.value;
+    }
+    reminderFeaturedId = null;
+    renderReminders();
+    showToast(successMessage);
+    return true;
+  } catch (error) {
+    if (error.status === 409) {
+      const current = NotesToSelf.validateReminders(error.payload?.reminders);
+      if (current.ok) reminders = current.value;
+      renderReminders();
+      reportError('Your notes changed on another device. The latest wall is loaded; your draft is still here. Try again.');
+    } else if (error.status === 401) {
+      // Dismiss the editor so the sign-in screen is reachable.
+      reminderSaving = false;
+      closeReminderModal();
+      handleSaveError(error);
+    } else {
+      reportError(error.message || 'Could not save. Please try again.');
+    }
+    return false;
+  } finally {
+    reminderSaving = false;
+    syncReminderBusyState();
+  }
+}
+
+function openReminderModal(id = null) {
+  if (reminderSaving) return;
+  const note = id ? reminders.notes.find(item => item.id === id) : null;
+  if (id && !note) return;
+  if (!note && reminders.notes.length >= 30) { showToast('Your wall has 30 notes. Edit or remove one to make room.'); return; }
+  editingReminderId = note?.id || null;
+  reminderReturnFocus = document.activeElement;
+  document.getElementById('reminderModalTitle').textContent = note ? 'Edit your note' : 'Add a note to self';
+  document.getElementById('reminderText').value = note?.text || '';
+  document.getElementById('reminderPinned').checked = note?.pinned || false;
+  document.querySelectorAll('input[name="reminderColor"]').forEach(input => { input.checked = input.value === (note?.color || 'pink'); });
+  document.getElementById('reminderFormError').textContent = '';
+  const backdrop = document.getElementById('reminderModalBackdrop');
+  backdrop.classList.add('open');
+  backdrop.setAttribute('aria-hidden', 'false');
+  syncReminderBusyState();
+  document.getElementById('reminderText').focus();
+}
+
+function closeReminderModal() {
+  if (reminderSaving) return;
+  const backdrop = document.getElementById('reminderModalBackdrop');
+  backdrop.classList.remove('open');
+  backdrop.setAttribute('aria-hidden', 'true');
+  const editedButton = [...document.querySelectorAll('#remindersGrid button[data-reminder-action="edit"]')]
+    .find(button => button.dataset.reminderId === editingReminderId);
+  const addButton = document.getElementById('addReminder');
+  if (reminderReturnFocus?.isConnected && !reminderReturnFocus.disabled) reminderReturnFocus.focus();
+  else (editedButton || (addButton.disabled ? document.getElementById('remindersWallSummary') : addButton)).focus();
+  editingReminderId = null;
+  reminderReturnFocus = null;
+}
+
+document.getElementById('addReminder').addEventListener('click', () => openReminderModal());
+document.getElementById('shuffleReminder').addEventListener('click', () => {
+  const current = reminders.notes.find(note => note.id === reminderFeaturedId)
+    || NotesToSelf.featuredNote(reminders.notes, localDateKey());
+  const index = reminders.notes.findIndex(note => note.id === current?.id);
+  reminderFeaturedId = reminders.notes[(index + 1) % reminders.notes.length]?.id || null;
+  renderReminders();
+});
+document.getElementById('remindersGrid').addEventListener('click', async event => {
+  const button = event.target.closest('button[data-reminder-action]');
+  if (!button || reminderSaving) return;
+  const note = reminders.notes.find(item => item.id === button.dataset.reminderId);
+  if (!note) return;
+  const action = button.dataset.reminderAction;
+  if (action === 'edit') { openReminderModal(note.id); return; }
+  if (action === 'delete' && !window.confirm(`Remove this note from your wall?\n\n${note.text}`)) return;
+  const nextNotes = action === 'pin'
+    ? reminders.notes.map(item => item.id === note.id ? { ...item, pinned: !item.pinned } : item)
+    : reminders.notes.filter(item => item.id !== note.id);
+  const saved = await commitReminders(nextNotes, action === 'pin'
+    ? (note.pinned ? 'Back with the rest of your notes.' : 'Pinned to your daily rotation 📌')
+    : 'Note removed.');
+  if (saved || !button.isConnected) {
+    const replacement = [...document.querySelectorAll('#remindersGrid button')]
+      .find(item => item.dataset.reminderId === note.id && item.dataset.reminderAction === action);
+    (replacement || document.getElementById('addReminder')).focus({ preventScroll: true });
+  }
+});
+document.getElementById('reminderForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (reminderSaving) return;
+  const existing = reminders.notes.find(note => note.id === editingReminderId);
+  if (editingReminderId && !existing) {
+    document.getElementById('reminderFormError').textContent = 'This note was removed on another device. Copy your draft and add it as a new note.';
+    return;
+  }
+  const note = {
+    id: existing?.id || uid(),
+    text: document.getElementById('reminderText').value.trim(),
+    color: document.querySelector('input[name="reminderColor"]:checked').value,
+    pinned: document.getElementById('reminderPinned').checked,
+    createdAt: existing?.createdAt ?? Date.now(),
+  };
+  const notes = existing ? reminders.notes.map(item => item.id === existing.id ? note : item) : [...reminders.notes, note];
+  if (await commitReminders(notes, existing ? 'Note refreshed ♡' : 'A little reminder, stuck up for future you ♡')) {
+    document.getElementById('remindersWall').open = true;
+    closeReminderModal();
+  }
+});
+document.getElementById('cancelReminder').addEventListener('click', closeReminderModal);
+document.getElementById('reminderModalBackdrop').addEventListener('click', event => {
+  if (event.target === event.currentTarget) closeReminderModal();
+});
+document.addEventListener('keydown', event => {
+  if (!document.getElementById('reminderModalBackdrop').classList.contains('open')) return;
+  if (event.key === 'Escape') { event.preventDefault(); closeReminderModal(); return; }
+  if (event.key !== 'Tab') return;
+  const controls = [...document.querySelectorAll('#reminderForm textarea:not(:disabled), #reminderForm input:not(:disabled), #reminderForm button:not(:disabled)')];
+  if (!controls.length) { event.preventDefault(); return; }
+  const first = controls[0];
+  const last = controls[controls.length - 1];
+  if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
+
 // ---------- Countdowns ----------
 
 const COUNTDOWN_STYLE_CLASS = {
@@ -2101,6 +2314,7 @@ function renderBoard() {
   board.appendChild(renderCareerSlot(careerTask, now));
 
   renderWinterArc();
+  renderReminders();
   renderTodayProgress();
   renderFrog();
 }

@@ -9,6 +9,7 @@ const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security'
 const { validateCountdowns } = require('./countdown-validation');
 const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
 const { validateGoalCalendar } = require('./goal-calendar-logic');
+const { validateReminders } = require('./notes-logic');
 const { validateWinterArcSettings } = require('./winter-arc-logic');
 const {
   validateEmptyAction,
@@ -180,6 +181,31 @@ app.put('/api/winter-arc', requireAuth, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'failed_to_save_winter_arc' });
+  }
+});
+
+app.put('/api/reminders', requireAuth, async (req, res) => {
+  const result = validateReminders(req.body);
+  if (!result.ok) {
+    return res.status(400).json({
+      error: 'invalid_reminders',
+      field: result.field,
+      message: result.error,
+    });
+  }
+  try {
+    const saved = await db.compareAndSetReminders(result.value.revision, result.value);
+    if (!saved.ok) {
+      return res.status(409).json({
+        error: 'reminders_conflict',
+        message: 'Your notes changed in another tab or device. The latest version has been loaded; try your change again.',
+        reminders: saved.current,
+      });
+    }
+    return res.json({ reminders: saved.value });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'failed_to_save_reminders' });
   }
 });
 
@@ -448,6 +474,7 @@ app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css
 app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'winter-arc-logic.js')));
 app.get('/goal-calendar-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'goal-calendar-logic.js')));
+app.get('/notes-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'notes-logic.js')));
 app.get('/manifest.webmanifest', (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'manifest.webmanifest'));

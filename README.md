@@ -21,6 +21,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 
 - Keeps a focused board of five: three flexible priorities plus protected body and future-building slots.
 - Adds a persistent **Study Goal Calendar** with a custom date range and per-day advance checklists.
+- Adds **Notes to self** on the Board: editable pink, butter, and lilac sticky notes, a daily featured reminder, and pinned favourites. Private notes sync across devices; the public demo saves them in the browser.
 - Tracks an **Eat the Frog** task, notes, quarter-point values, priority quadrants, and live task timers.
 - Records completed tasks with category, points, timestamps, duration, and notes.
 - Shows today's progress against a configurable daily goal.
@@ -127,7 +128,7 @@ Keep private or personally identifying copy out of the demo constants and sample
 
 ## Data and privacy model
 
-The private app stores seven shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, `winterArc`, `goalCalendar`, and `frog`. Goal Calendar saves use a revision check so a stale tab or device cannot silently overwrite a newer plan. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, a cap that prevents finished countdowns from exceeding their planned duration, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
+The private app stores eight shared JSON records in PostgreSQL: `active`, `log`, `countdowns`, `targets`, `winterArc`, `goalCalendar`, `reminders`, and `frog`. Goal Calendar and Notes to self saves use a revision check so a stale tab or device cannot silently overwrite newer changes. Expenses use their own normalized PostgreSQL table with integer-paise amounts, calendar dates, database constraints, indexes, and record-level CRUD. Focus sessions use a normalized table with server-authoritative elapsed seconds, atomic lifecycle transitions, a cap that prevents finished countdowns from exceeding their planned duration, and a database guarantee that only one focus session can be running or paused at a time. Login sessions are also stored in PostgreSQL. API routes require an authenticated session, and repeated failed PIN attempts are rate-limited.
 
 The login throttle is intentionally simple and in-memory. It is per server instance and resets when the service restarts; use an edge/platform rate limiter as well if you expect meaningful public traffic.
 

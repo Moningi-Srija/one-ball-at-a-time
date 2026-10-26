@@ -99,6 +99,31 @@
       </article>
     </section>
 
+    <section class="reminders-section" id="remindersSection" aria-labelledby="remindersTitle">
+      <div class="section-head">
+        <div>
+          <h2 id="remindersTitle">Notes to self ♡</h2>
+          <p class="hint">A tiny pep talk from you, to you.</p>
+        </div>
+        <div class="reminders-heading-actions">
+          <button class="btn ghost small" id="addReminder" type="button">＋ Add a note</button>
+        </div>
+      </div>
+      <div class="reminder-featured" id="reminderFeatured">
+        <div>
+          <p class="reminder-kicker">Today’s little nudge</p>
+          <p class="reminder-featured-text" id="reminderFeaturedText" aria-live="polite"></p>
+          <p class="reminder-featured-hint">A fresh line each day. Pin your favourites to keep them in rotation.</p>
+        </div>
+        <button class="btn ghost small reminder-shuffle" id="shuffleReminder" type="button">Another nudge ↻</button>
+      </div>
+      <p class="reminders-empty" id="remindersEmpty" hidden>Your future self called. She wants a little reminder here. ♡</p>
+      <details class="reminders-wall" id="remindersWall">
+        <summary id="remindersWallSummary">My sticky-note wall</summary>
+        <div class="reminders-grid" id="remindersGrid"></div>
+      </details>
+    </section>
+
     <section class="frog-section" aria-labelledby="frogTitle">
       <div class="section-head">
         <h2 id="frogTitle">Eat the Frog</h2>
@@ -649,6 +674,31 @@
 
 </div>
 
+<!-- Add / Edit Note to Self Modal -->
+<div class="modal-backdrop" id="reminderModalBackdrop" aria-hidden="true">
+  <form class="modal reminder-modal" id="reminderForm" role="dialog" aria-modal="true" aria-labelledby="reminderModalTitle">
+    <div class="reminder-editor-header">
+      <p class="reminder-kicker">Dear future me…</p>
+      <h3 id="reminderModalTitle">Add a note to self</h3>
+    </div>
+    <label for="reminderText">What do you want to remember?
+      <textarea id="reminderText" rows="3" maxlength="200" placeholder="e.g. One problem before one more scroll." required></textarea>
+    </label>
+    <fieldset class="reminder-color-options">
+      <legend>Pick your paper</legend>
+      <label class="reminder-color-option" data-color="pink"><input type="radio" name="reminderColor" value="pink" checked> Pink</label>
+      <label class="reminder-color-option" data-color="butter"><input type="radio" name="reminderColor" value="butter"> Butter</label>
+      <label class="reminder-color-option" data-color="lilac"><input type="radio" name="reminderColor" value="lilac"> Lilac</label>
+    </fieldset>
+    <label class="reminder-pin-toggle"><input type="checkbox" id="reminderPinned"> Pin this to my daily rotation</label>
+    <p class="reminder-form-error" id="reminderFormError" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn ghost" id="cancelReminder" type="button">Cancel</button>
+      <button class="btn primary" id="saveReminder" type="submit">Stick it up</button>
+    </div>
+  </form>
+</div>
+
 <!-- Add / Edit Calendar Goal Modal -->
 <div class="modal-backdrop" id="goalModalBackdrop" aria-hidden="true">
   <form class="modal goal-modal" id="goalForm" role="dialog" aria-modal="true" aria-labelledby="goalModalTitle" aria-describedby="goalModalDate">
@@ -854,6 +904,7 @@
 
 <script src="/winter-arc-logic.js"></script>
 <script src="/goal-calendar-logic.js"></script>
+<script src="/notes-logic.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>
