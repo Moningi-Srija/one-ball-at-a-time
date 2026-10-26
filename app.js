@@ -906,6 +906,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === 'board') renderBoard();
     if (btn.dataset.tab === 'goal-calendar') renderGoalCalendar();
     if (btn.dataset.tab === 'countdowns') renderCountdowns();
+    if (btn.dataset.tab === 'notes') {
+      renderReminders();
+      document.getElementById('remindersWall').open = true;
+    }
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'focus') renderFocus();
@@ -921,7 +925,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (!['board', 'goal-calendar', 'countdowns', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
+  if (!['board', 'goal-calendar', 'countdowns', 'notes', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
@@ -2314,7 +2318,6 @@ function renderBoard() {
   board.appendChild(renderCareerSlot(careerTask, now));
 
   renderWinterArc();
-  renderReminders();
   renderTodayProgress();
   renderFrog();
 }

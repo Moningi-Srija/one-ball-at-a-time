@@ -2808,6 +2808,7 @@ body.chart-expanded-open { overflow: hidden; }
 /* ---------- Notes to self ---------- */
 
 .reminders-section { margin: 34px 0; }
+.notes-panel .reminders-section { margin-top: 0; }
 .reminders-section > .section-head { align-items: center; gap: 14px; }
 .reminders-heading-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
 .reminder-featured {
