@@ -98,5 +98,12 @@
     return pool[((ordinal % pool.length) + pool.length) % pool.length];
   }
 
-  return { MAX_NOTES, MAX_TEXT_LENGTH, COLORS, defaultReminders, validateReminders, featuredNote };
+  function randomNote(notes, previousId = null) {
+    if (!Array.isArray(notes) || notes.length === 0) return null;
+    const alternatives = notes.filter(note => note.id !== previousId);
+    const pool = alternatives.length ? alternatives : notes;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  return { MAX_NOTES, MAX_TEXT_LENGTH, COLORS, defaultReminders, validateReminders, featuredNote, randomNote };
 });

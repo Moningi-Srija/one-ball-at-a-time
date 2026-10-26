@@ -21,7 +21,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 
 - Keeps a focused board of five: three flexible priorities plus protected body and future-building slots.
 - Adds a persistent **Study Goal Calendar** with a custom date range and per-day advance checklists.
-- Adds a dedicated **Notes to self** tab: editable pink, butter, and lilac sticky notes, a daily featured reminder, and pinned favourites. Private notes sync across devices; the public demo saves them in the browser.
+- Adds a dedicated **Notes to self** tab: editable pink, butter, and lilac sticky notes, a daily featured reminder, and pinned favourites. A random saved note appears at the top of the Board each visit. Private notes sync across devices; the public demo saves them in the browser.
 - Tracks an **Eat the Frog** task, notes, quarter-point values, priority quadrants, and live task timers.
 - Records completed tasks with category, points, timestamps, duration, and notes.
 - Shows today's progress against a configurable daily goal.

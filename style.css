@@ -2830,6 +2830,7 @@ body.chart-expanded-open { overflow: hidden; }
 .reminder-featured[data-color="butter"] { background-color: #fff6d9; }
 .reminder-featured[data-color="lilac"] { background-color: #f3ebfc; }
 .reminder-featured > div { display: grid; gap: 7px; }
+.board-reminder { margin-top: 10px; }
 .reminders-wall > summary { width: fit-content; margin: 0 0 22px; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; }
 .reminders-wall > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 .reminder-featured::before {

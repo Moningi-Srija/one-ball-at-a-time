@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { MAX_NOTES, MAX_TEXT_LENGTH, defaultReminders, validateReminders, featuredNote } = require('./notes-logic');
+const { MAX_NOTES, MAX_TEXT_LENGTH, defaultReminders, validateReminders, featuredNote, randomNote } = require('./notes-logic');
 
 const createdAt = Date.UTC(2026, 9, 26, 12);
 
@@ -81,4 +81,21 @@ test('daily rotation favors pinned notes and handles dates before the epoch', ()
   for (const date of ['2026-02-30', '26-10-2026', null]) {
     assert.throws(() => featuredNote(notes, date), TypeError);
   }
+});
+
+test('random Board notes handle empty and single-note walls', () => {
+  assert.equal(randomNote([]), null);
+  const only = note();
+  assert.equal(randomNote([only], only.id), only);
+});
+
+test('random Board notes include unpinned notes and avoid the previous note', t => {
+  const notes = [note(), note({ id: 'pinned', pinned: true }), note({ id: 'other' })];
+  t.mock.method(Math, 'random', () => 0);
+  assert.equal(randomNote(notes), notes[0]);
+  assert.equal(randomNote(notes, notes[0].id), notes[1]);
+  Math.random.mock.mockImplementation(() => 0.999);
+  assert.equal(randomNote(notes), notes[2]);
+  assert.equal(randomNote(notes, notes[2].id), notes[1]);
+  assert.equal(randomNote(notes, 'deleted-note'), notes[2]);
 });

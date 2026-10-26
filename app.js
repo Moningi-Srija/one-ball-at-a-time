@@ -903,7 +903,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'board') renderBoard();
+    if (btn.dataset.tab === 'board') renderBoard(true);
     if (btn.dataset.tab === 'goal-calendar') renderGoalCalendar();
     if (btn.dataset.tab === 'countdowns') renderCountdowns();
     if (btn.dataset.tab === 'notes') {
@@ -1447,6 +1447,18 @@ let editingReminderId = null;
 let reminderReturnFocus = null;
 let reminderDayKey = '';
 let reminderFeaturedId = null;
+let boardReminderId = null;
+
+function renderBoardReminder(refresh = false) {
+  // Board timers rerender frequently; keep the nudge still until the next visit.
+  const current = reminders.notes.find(note => note.id === boardReminderId);
+  const note = !refresh && current ? current : NotesToSelf.randomNote(reminders.notes, boardReminderId);
+  boardReminderId = note?.id || null;
+  const card = document.getElementById('boardReminder');
+  card.hidden = !note;
+  card.dataset.color = note?.color || 'pink';
+  document.getElementById('boardReminderText').textContent = note?.text || '';
+}
 
 function syncReminderBusyState() {
   document.querySelectorAll('#remindersSection button, #reminderForm button, #reminderForm input, #reminderForm textarea')
@@ -1458,6 +1470,7 @@ function syncReminderBusyState() {
 }
 
 function renderReminders() {
+  renderBoardReminder();
   const today = localDateKey();
   if (reminderDayKey !== today) reminderFeaturedId = null;
   reminderDayKey = today;
@@ -1580,6 +1593,9 @@ function closeReminderModal() {
   reminderReturnFocus = null;
 }
 
+document.getElementById('openBoardNotes').addEventListener('click', () => {
+  document.querySelector('.tab-btn[data-tab="notes"]').click();
+});
 document.getElementById('addReminder').addEventListener('click', () => openReminderModal());
 document.getElementById('shuffleReminder').addEventListener('click', () => {
   const current = reminders.notes.find(note => note.id === reminderFeaturedId)
@@ -2293,7 +2309,8 @@ function renderWinterArc() {
     : `Day ${summary.dayNumber} of ${summary.totalDays}`);
 }
 
-function renderBoard() {
+function renderBoard(refreshReminder = false) {
+  renderBoardReminder(refreshReminder);
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = Date.now();
