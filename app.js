@@ -1449,6 +1449,11 @@ let reminderDayKey = '';
 let reminderFeaturedId = null;
 let boardReminderId = null;
 
+function reminderLessonLabel(id) {
+  const index = reminders.notes.findIndex(note => note.id === id);
+  return index < 0 ? '' : `Life lesson No. ${String(index + 1).padStart(2, '0')}`;
+}
+
 function renderBoardReminder(refresh = false) {
   // Board timers rerender frequently; keep the nudge still until the next visit.
   const current = reminders.notes.find(note => note.id === boardReminderId);
@@ -1458,6 +1463,7 @@ function renderBoardReminder(refresh = false) {
   card.hidden = !note;
   card.dataset.color = note?.color || 'pink';
   document.getElementById('boardReminderText').textContent = note?.text || '';
+  document.getElementById('boardReminderNumber').textContent = reminderLessonLabel(note?.id);
 }
 
 function syncReminderBusyState() {
@@ -1466,7 +1472,7 @@ function syncReminderBusyState() {
   document.getElementById('addReminder').disabled = reminderSaving || reminders.notes.length >= 30;
   document.getElementById('shuffleReminder').disabled = reminderSaving || reminders.notes.length < 2;
   document.getElementById('remindersSection').setAttribute('aria-busy', String(reminderSaving));
-  document.getElementById('saveReminder').textContent = reminderSaving ? 'Saving…' : (editingReminderId ? 'Save note' : 'Stick it up');
+  document.getElementById('saveReminder').textContent = reminderSaving ? 'Saving…' : (editingReminderId ? 'Save lesson' : 'Add to my journal');
 }
 
 function renderReminders() {
@@ -1480,9 +1486,10 @@ function renderReminders() {
   featuredCard.hidden = !featured;
   featuredCard.dataset.color = featured?.color || 'pink';
   document.getElementById('reminderFeaturedText').textContent = featured?.text || '';
+  document.getElementById('reminderFeaturedNumber').textContent = reminderLessonLabel(featured?.id);
   document.getElementById('remindersEmpty').hidden = reminders.notes.length > 0;
   document.getElementById('remindersWall').hidden = reminders.notes.length === 0;
-  document.getElementById('remindersWallSummary').textContent = `My sticky-note wall · ${reminders.notes.length} ${reminders.notes.length === 1 ? 'note' : 'notes'}`;
+  document.getElementById('remindersWallSummary').textContent = `The collected wisdom · ${reminders.notes.length} life ${reminders.notes.length === 1 ? 'lesson' : 'lessons'}`;
   const grid = document.getElementById('remindersGrid');
   grid.replaceChildren();
   [...reminders.notes].sort((a, b) => Number(b.pinned) - Number(a.pinned)).forEach(note => {
@@ -1491,7 +1498,7 @@ function renderReminders() {
     card.dataset.color = note.color;
     const kicker = document.createElement('p');
     kicker.className = 'reminder-note-kicker';
-    kicker.textContent = note.pinned ? '📌 In my daily rotation' : 'A memo from me';
+    kicker.textContent = `${reminderLessonLabel(note.id)}${note.pinned ? ' · Pinned' : ''}`;
     const text = document.createElement('p');
     text.className = 'reminder-note-text';
     text.textContent = note.text;
@@ -1544,7 +1551,7 @@ async function commitReminders(notes, successMessage) {
       const current = NotesToSelf.validateReminders(error.payload?.reminders);
       if (current.ok) reminders = current.value;
       renderReminders();
-      reportError('Your notes changed on another device. The latest wall is loaded; your draft is still here. Try again.');
+      reportError('Your notes changed on another device. The latest journal is loaded; your draft is still here. Try again.');
     } else if (error.status === 401) {
       // Dismiss the editor so the sign-in screen is reachable.
       reminderSaving = false;
@@ -1564,10 +1571,10 @@ function openReminderModal(id = null) {
   if (reminderSaving) return;
   const note = id ? reminders.notes.find(item => item.id === id) : null;
   if (id && !note) return;
-  if (!note && reminders.notes.length >= 30) { showToast('Your wall has 30 notes. Edit or remove one to make room.'); return; }
+  if (!note && reminders.notes.length >= 30) { showToast('Your journal has 30 lessons. Edit or remove one to make room.'); return; }
   editingReminderId = note?.id || null;
   reminderReturnFocus = document.activeElement;
-  document.getElementById('reminderModalTitle').textContent = note ? 'Edit your note' : 'Add a note to self';
+  document.getElementById('reminderModalTitle').textContent = note ? 'Edit your life lesson' : 'Add a life lesson';
   document.getElementById('reminderText').value = note?.text || '';
   document.getElementById('reminderPinned').checked = note?.pinned || false;
   document.querySelectorAll('input[name="reminderColor"]').forEach(input => { input.checked = input.value === (note?.color || 'pink'); });
@@ -1611,7 +1618,7 @@ document.getElementById('remindersGrid').addEventListener('click', async event =
   if (!note) return;
   const action = button.dataset.reminderAction;
   if (action === 'edit') { openReminderModal(note.id); return; }
-  if (action === 'delete' && !window.confirm(`Remove this note from your wall?\n\n${note.text}`)) return;
+  if (action === 'delete' && !window.confirm(`Remove this lesson from your journal?\n\n${note.text}`)) return;
   const nextNotes = action === 'pin'
     ? reminders.notes.map(item => item.id === note.id ? { ...item, pinned: !item.pinned } : item)
     : reminders.notes.filter(item => item.id !== note.id);
@@ -1640,7 +1647,7 @@ document.getElementById('reminderForm').addEventListener('submit', async event =
     createdAt: existing?.createdAt ?? Date.now(),
   };
   const notes = existing ? reminders.notes.map(item => item.id === existing.id ? note : item) : [...reminders.notes, note];
-  if (await commitReminders(notes, existing ? 'Note refreshed ♡' : 'A little reminder, stuck up for future you ♡')) {
+  if (await commitReminders(notes, existing ? 'Life lesson updated ♡' : 'Another page of wisdom. Very you. ♡')) {
     document.getElementById('remindersWall').open = true;
     closeReminderModal();
   }

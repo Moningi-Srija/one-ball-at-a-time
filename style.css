@@ -2811,40 +2811,56 @@ body.chart-expanded-open { overflow: hidden; }
 .notes-panel .reminders-section { margin-top: 0; }
 .reminders-section > .section-head { align-items: center; gap: 14px; }
 .reminders-heading-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 9px; }
+.journal-cover {
+  position: relative;
+  padding: 30px 34px 30px 48px;
+  border: 1px solid #71384c;
+  border-radius: 5px 12px 12px 5px;
+  color: #fff4df;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255, 240, 218, .035) 3px 4px), #814358;
+  box-shadow: inset 9px 0 0 #663346, inset 12px 0 0 #a66678, 3px 4px 0 #e9ddcd, 4px 5px 0 #ad8490;
+}
+.journal-cover::after { content: ''; position: absolute; inset: 11px 12px 11px 24px; border: 1px solid #c99f91; border-radius: 2px 6px 6px 2px; pointer-events: none; }
+.journal-cover-kicker { margin: 0 0 6px; color: #f0d5b7; font-size: 10px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase; }
+.journal-cover h2 { margin: 0; color: #fff4df; font-size: clamp(30px, 4vw, 44px); line-height: 1.2; }
+.journal-cover .hint { margin: 8px 0 0; color: #f1dbc9; font-family: var(--serif); font-size: 15px; font-style: italic; }
+.journal-cover .btn { color: #653346; background: #fff4e1; border-color: #f0d5b7; box-shadow: 2px 3px 0 #592b3e; }
+.journal-cover .btn:hover { background: #ffead1; }
 .reminder-featured {
+  --journal-paper: #fffaf0;
+  --journal-ribbon: #ae5e79;
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px 22px;
   margin: 22px 0 25px;
-  padding: 24px 27px 22px;
-  border: 1.5px solid var(--border-strong);
-  border-left: 6px solid var(--accent);
-  border-radius: 3px;
-  background-color: #fff3f7;
-  background-image: repeating-linear-gradient(0deg, transparent 0 27px, rgba(184, 77, 118, .065) 27px 28px);
-  box-shadow: 5px 6px 0 rgba(184, 77, 118, .12);
+  padding: 28px 35px 25px 48px;
+  border: 1px solid #cfbca9;
+  border-radius: 4px 10px 10px 4px;
+  background-color: var(--journal-paper);
+  background-image: linear-gradient(90deg, transparent 31px, rgba(174, 94, 121, .22) 31px 32px, transparent 32px), repeating-linear-gradient(0deg, transparent 0 31px, rgba(126, 109, 87, .08) 31px 32px);
+  box-shadow: inset 5px 0 9px rgba(107, 76, 57, .07), 2px 3px 0 #f9efe0, 3px 4px 0 #cfbca9, 5px 6px 0 #f9efe0, 6px 7px 0 #cfbca9;
 }
 .reminder-featured[hidden] { display: none; }
-.reminder-featured[data-color="butter"] { background-color: #fff6d9; }
-.reminder-featured[data-color="lilac"] { background-color: #f3ebfc; }
+.reminder-featured[data-color="butter"] { --journal-paper: #fff8e7; --journal-ribbon: #a6813d; }
+.reminder-featured[data-color="lilac"] { --journal-paper: #faf6fc; --journal-ribbon: #90729f; }
 .reminder-featured > div { display: grid; gap: 7px; }
 .board-reminder { margin-top: 10px; }
+.journal-entry-number { margin: 4px 0 0; color: #876650; font-family: var(--serif); font-size: 12px; font-style: italic; }
+.journal-colophon { margin: 27px 0 0; color: var(--text-dim); text-align: center; font-family: var(--serif); font-size: 14px; font-style: italic; }
 .reminders-wall > summary { width: fit-content; margin: 0 0 22px; color: var(--accent); font-size: 12px; font-weight: 600; cursor: pointer; }
 .reminders-wall > summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
 .reminder-featured::before {
   content: '';
   position: absolute;
-  top: -9px;
-  left: 26px;
-  width: 75px;
-  height: 18px;
-  border-inline: 1px dashed rgba(160, 56, 94, .27);
-  background: rgba(244, 158, 188, .68);
-  transform: rotate(-3deg);
+  inset: -1px auto -1px -1px;
+  width: 10px;
+  border-radius: 4px 0 0 4px;
+  background: linear-gradient(90deg, #663346, #9b5d70);
   pointer-events: none;
 }
+.reminder-featured::after { content: ''; position: absolute; top: -1px; right: 30px; width: 16px; height: 22px; background: var(--journal-ribbon); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%); pointer-events: none; }
 .reminder-kicker,
 .reminder-note-kicker {
   margin: 0;
@@ -2862,45 +2878,45 @@ body.chart-expanded-open { overflow: hidden; }
   font-family: var(--serif);
   font-size: clamp(22px, 2.5vw, 30px);
   font-weight: 700;
+  font-style: italic;
   line-height: 1.4;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 .reminder-featured-hint { grid-column: 1; margin: 0; color: var(--text-dim); font-size: 11px; line-height: 1.5; }
 .reminder-shuffle { grid-column: 2; align-self: center; white-space: nowrap; }
-.reminders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 23px 18px; align-items: stretch; }
+.reminders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px 18px; align-items: stretch; }
 .reminder-note {
-  --note-paper: #ffe5ee;
+  --note-paper: #fff8f3;
   --note-line: rgba(172, 69, 104, .09);
   --note-edge: #d896ae;
-  --note-tape: rgba(238, 162, 188, .7);
+  --note-ribbon: #ae5e79;
   position: relative;
   display: flex;
   min-width: 0;
   flex-direction: column;
-  min-height: 205px;
-  padding: 23px 19px 13px;
+  min-height: 220px;
+  padding: 23px 24px 16px 31px;
   border: 1px solid var(--note-edge);
-  border-radius: 2px 2px 12px 2px;
+  border-radius: 2px 7px 7px 2px;
   background-color: var(--note-paper);
-  background-image: repeating-linear-gradient(0deg, transparent 0 25px, var(--note-line) 25px 26px);
-  box-shadow: 4px 5px 0 rgba(111, 68, 85, .11);
+  background-image: linear-gradient(90deg, transparent 18px, rgba(174, 94, 121, .2) 18px 19px, transparent 19px), repeating-linear-gradient(0deg, transparent 0 29px, var(--note-line) 29px 30px);
+  box-shadow: 2px 3px 0 #fff6e9, 3px 4px 0 var(--note-edge);
 }
-.reminder-note[data-color="butter"] { --note-paper: #fff1c9; --note-edge: #c6ab6a; --note-tape: rgba(225, 197, 121, .68); --note-line: rgba(142, 107, 39, .08); }
-.reminder-note[data-color="lilac"] { --note-paper: #efe5fb; --note-edge: #bda1cf; --note-tape: rgba(191, 162, 217, .68); --note-line: rgba(112, 76, 143, .08); }
+.reminder-note[data-color="butter"] { --note-paper: #fff8e7; --note-edge: #c6ab6a; --note-ribbon: #a6813d; --note-line: rgba(142, 107, 39, .08); }
+.reminder-note[data-color="lilac"] { --note-paper: #faf6fc; --note-edge: #bda1cf; --note-ribbon: #90729f; --note-line: rgba(112, 76, 143, .08); }
 .reminder-note::before {
   content: '';
   position: absolute;
-  top: -9px;
-  left: calc(50% - 32px);
-  width: 64px;
-  height: 18px;
-  border-inline: 1px dashed rgba(85, 47, 64, .2);
-  background: var(--note-tape);
-  transform: rotate(2deg);
+  top: -1px;
+  right: 14px;
+  width: 12px;
+  height: 23px;
+  background: var(--note-ribbon);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 75%, 0 100%);
   pointer-events: none;
 }
-.reminder-note.is-pinned { border-top: 3px solid var(--accent); padding-top: 21px; }
+.reminder-note.is-pinned { border-top: 3px solid var(--note-ribbon); padding-top: 21px; }
 .reminder-note-kicker { color: #6c4555; font-size: 9px; letter-spacing: .08em; }
 .reminder-note-text {
   flex: 1;
@@ -2950,7 +2966,9 @@ body.chart-expanded-open { overflow: hidden; }
 @media (max-width: 560px) {
   .reminders-section > .section-head { align-items: flex-start; flex-direction: column; }
   .reminders-heading-actions { width: 100%; justify-content: flex-start; }
-  .reminder-featured { grid-template-columns: 1fr; gap: 9px; padding: 22px 19px 18px; }
+  .journal-cover { padding: 25px 25px 25px 35px; }
+  .journal-cover::after { left: 20px; }
+  .reminder-featured { grid-template-columns: 1fr; gap: 9px; padding: 27px 20px 20px 39px; }
   .reminder-shuffle { grid-column: 1; grid-row: auto; justify-self: start; margin-top: 4px; }
   .reminders-grid { grid-template-columns: minmax(0, 1fr); }
   .reminder-note { min-height: 180px; }
