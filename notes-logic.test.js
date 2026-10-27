@@ -33,6 +33,22 @@ test('preserves line breaks in note text while rejecting unsafe control characte
   assert.equal(validateReminders(state({ notes: [note({ text: 'One\u0000step.' })] })).ok, false);
 });
 
+test('accepts longer multiline reminders without shortening them', () => {
+  const text = Array.from({ length: 6 }, (_, i) => `Line ${i + 1}: A reminder can include the full thought, in my own words.`).join('\n');
+  assert.ok(text.length > 200);
+  const original = state({ notes: [note({ text })] });
+  assert.deepEqual(validateReminders(original), { ok: true, value: original });
+});
+
+test('supports 1000 characters and keeps the editor limit in sync', () => {
+  assert.equal(MAX_TEXT_LENGTH, 1000);
+  const html = require('node:fs').readFileSync(require('node:path').join(__dirname, 'index.html'), 'utf8');
+  const limit = html.match(/<textarea id="reminderText"[^>]*maxlength="(\d+)"/);
+  assert.equal(Number(limit?.[1]), MAX_TEXT_LENGTH);
+  assert.equal(validateReminders(state({ notes: [note({ text: 'x'.repeat(1000) })] })).ok, true);
+  assert.equal(validateReminders(state({ notes: [note({ text: 'x'.repeat(1001) })] })).ok, false);
+});
+
 test('rejects invalid state revisions, collections, and unknown fields', () => {
   for (const candidate of [
     null, [], {}, state({ revision: -1 }), state({ revision: '0' }),

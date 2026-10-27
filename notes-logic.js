@@ -4,7 +4,7 @@
   if (root) root.NotesToSelf = api;
 })(typeof window !== 'undefined' ? window : null, function createNotesLogic() {
   const MAX_NOTES = 30;
-  const MAX_TEXT_LENGTH = 200;
+  const MAX_TEXT_LENGTH = 1000;
   const MAX_ID_LENGTH = 100;
   const MAX_EPOCH_MS = 8_640_000_000_000_000;
   const COLORS = ['pink', 'butter', 'lilac'];
