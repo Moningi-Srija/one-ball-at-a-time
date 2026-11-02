@@ -44,13 +44,27 @@ test('CP import keeps stable IDs, strips provenance, and preserves text/code lit
   assert.equal(project([fixture({ title: 'Improved wording' })]).data.notes[0].id, note.id);
 });
 
-test('CP import filters archived and needs-review entries before publication', () => {
+test('CP import includes review-flagged notes with their caveats and excludes all archived notes', () => {
+  const uncertain = fixture({
+    id: 'uncertain',
+    tags: ['binary-search', 'needs-review'],
+    details: 'Keep the invariant explicit.\n\nREVIEW NEEDED: Check whether equality belongs to the boundary.\n\nOriginal wording provenance: private draft.\n\nSaved-note sources: https://app.notion.com/p/private',
+  });
+  const before = JSON.stringify(uncertain);
   const { data, counts } = project([
     fixture(), fixture({ id: 'retired', archived: true }),
-    fixture({ id: 'uncertain', tags: ['needs-review'] }),
+    uncertain,
+    fixture({ id: 'retired-uncertain', archived: true, tags: ['needs-review'] }),
   ]);
-  assert.deepEqual(data.notes.map(note => note.id), ['binary-search-boundary']);
-  assert.deepEqual(counts, { total: 3, archived: 1, needsReview: 1, omittedSourceLinks: 0, included: 1 });
+  assert.deepEqual(data.notes.map(note => note.id), ['binary-search-boundary', 'uncertain']);
+  assert.deepEqual(counts, { total: 4, archived: 2, needsReview: 1, omittedSourceLinks: 0, included: 2 });
+  assert.deepEqual(data.notes[1].tags, uncertain.tags);
+  assert.equal(data.notes[1].details, 'Keep the invariant explicit.\n\nREVIEW NEEDED: Check whether equality belongs to the boundary.');
+  assert.equal(data.notes[1].code, uncertain.code);
+  assert.equal(data.notes[1].language, uncertain.language);
+  assert.equal('original' in data.notes[1], false);
+  assert.doesNotMatch(JSON.stringify(data), /notion|provenance|private draft/i);
+  assert.equal(JSON.stringify(uncertain), before, 'including a flagged note must not change its master');
 });
 
 test('CP import rejects invalid schema contracts, duplicate IDs and malformed entries', () => {
@@ -75,14 +89,34 @@ test('CP import fails closed on private identifiers or unsupported links in any 
     ['details', 'See https://internal.example.test/proprietary'],
     ['takeaway', 'See https://leetcode.com/problems/test/?token=private'],
     ['takeaway', '/Users/example/private-notes.txt'],
-    ['details', 'REVIEW NEEDED: do not publish yet'],
   ]) {
-    assert.throws(() => project([fixture({ [field]: value })]), error => {
-      assert.match(error.message, /Private reference remains/);
-      assert.equal(error.message.includes(value), false);
-      return true;
-    });
+    for (const tags of [['binary-search'], ['binary-search', 'needs-review']]) {
+      assert.throws(() => project([fixture({ [field]: value, tags })]), error => {
+        assert.match(error.message, /Private reference remains/);
+        assert.equal(error.message.includes(value), false);
+        return true;
+      });
+    }
   }
+});
+
+test('CP review caveats do not bypass private-reference checks or source URL filtering', () => {
+  assert.throws(() => project([fixture({
+    tags: ['needs-review'],
+    details: 'This claim still needs a specific explanation of its uncertainty.',
+  })]), /display contract/);
+  assert.throws(() => project([fixture({
+    tags: ['needs-review'],
+    details: 'REVIEW NEEDED: Check the proof at https://app.notion.com/p/private',
+  })]), /Private reference remains/);
+  const { data, counts } = project([fixture({
+    tags: ['needs-review'],
+    details: 'REVIEW NEEDED: Check the proof before relying on this claim.',
+    sourceUrl: 'https://app.notion.com/p/private',
+  })]);
+  assert.equal(data.notes[0].sourceUrl, null);
+  assert.equal(counts.omittedSourceLinks, 1);
+  assert.match(data.notes[0].details, /^REVIEW NEEDED:/);
 });
 
 test('CP public source allowlist retains learning links but drops private routes and tracking', () => {

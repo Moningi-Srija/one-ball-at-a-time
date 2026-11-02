@@ -33,8 +33,9 @@
           || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(note.id) || ids.has(note.id)
           || !['id', 'title', 'takeaway', 'details'].every(key => typeof note[key] === 'string')
           || !note.title.trim() || !note.takeaway.trim()
-          || !Array.isArray(note.tags) || note.tags.some(tag => typeof tag !== 'string' || !/^[a-z][a-z-]*$/.test(tag) || tag === 'needs-review')
+          || !Array.isArray(note.tags) || note.tags.some(tag => typeof tag !== 'string' || !/^[a-z][a-z-]*$/.test(tag))
           || new Set(note.tags).size !== note.tags.length
+          || (note.tags.includes('needs-review') && !/REVIEW NEEDED:/i.test(note.details))
           || !(note.code === null ? note.language === null : typeof note.code === 'string' && typeof note.language === 'string' && note.language.trim())
           || !(note.sourceUrl === null || safeSource(note.sourceUrl))) {
         throw new Error('Invalid notebook entry.');
@@ -92,6 +93,7 @@
       byId('cpFeaturedTitle').textContent = note.title;
       byId('cpFeaturedText').textContent = note.takeaway;
       byId('cpFeaturedMeta').textContent = `${note.id} · ${note.tags.map(topicLabel).join(' / ') || 'Notebook idea'}`;
+      byId('cpFeaturedReview').hidden = !note.tags.includes('needs-review');
       byId('cpTurnPage').disabled = pool.length < 2;
     }
 
@@ -109,12 +111,15 @@
       el.setAttribute('aria-labelledby', title.id);
       el.append(title, element('p', 'cp-card-takeaway', note.takeaway));
       const tags = element('div', 'cp-tags');
-      for (const tag of note.tags) tags.append(element('span', 'cp-tag', topicLabel(tag)));
+      for (const tag of note.tags) tags.append(element('span', tag === 'needs-review' ? 'cp-tag cp-tag-review' : 'cp-tag', topicLabel(tag)));
       el.append(tags);
+      if (note.tags.includes('needs-review')) {
+        el.append(element('p', 'cp-review-notice', 'Read the caveats below before relying on this idea.'));
+      }
       const source = safeSource(note.sourceUrl);
       if (note.details || note.code || source) {
         const disclosure = element('details', 'cp-card-details');
-        const summary = element('summary', '', note.code ? 'Read idea + example' : 'Read the idea');
+        const summary = element('summary', '', note.tags.includes('needs-review') ? 'Read caveats + idea' : note.code ? 'Read idea + example' : 'Read the idea');
         summary.setAttribute('aria-label', `Read ${note.title}`);
         disclosure.append(summary);
         if (note.details) disclosure.append(element('p', 'cp-detail-text', note.details));

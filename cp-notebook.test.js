@@ -30,13 +30,27 @@ test('browser accepts only the derived public schema, with stable unique IDs', (
   for (const invalid of [
     payload([note(), note()]), payload([note('bad id')]),
     payload([note('one', { original: 'Private original' })]),
-    payload([note('one', { tags: ['needs-review'] })]),
+    payload([note('one', { tags: ['needs_review'] })]),
     payload([note('one', { archived: true })]),
     payload([note('one', { code: 'x', language: null })]),
     payload([note('one', { sourceUrl: 'javascript:alert(1)' })]),
     { ...payload([]), generatedAt: 'bad date' },
     { ...payload([]), provenance: 'internal' },
   ]) assert.throws(() => validatePayload(invalid));
+});
+
+test('review-tagged ideas remain visible and searchable with their caveats', () => {
+  const review = note('review-idea', {
+    tags: ['greedy', 'needs-review'],
+    details: 'REVIEW NEEDED: This guarantee applies only to the even-pile variant.',
+  });
+  const notes = validatePayload(payload([note(), review])).notes;
+  assert.equal(notes.length, 2);
+  assert.deepEqual(filterNotes(notes, '', 'needs-review'), [review]);
+  assert.deepEqual(filterNotes(notes, 'needs review'), [review]);
+  assert.deepEqual(filterNotes(notes, 'even-pile'), [review]);
+  assert.equal(topicLabel('needs-review'), 'Needs review');
+  assert.throws(() => validatePayload(payload([note('unexplained-review', { tags: ['needs-review'] })])));
 });
 
 test('source links reject private hosts, URL credentials, non-HTTPS and lookalike domains', () => {

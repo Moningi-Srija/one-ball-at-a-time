@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T14:08:39.959Z",
+  "generatedAt": "2026-11-02T19:07:03.734Z",
   "notes": [
     {
       "id": "DP037",
@@ -1910,6 +1910,21 @@
       "sourceUrl": "https://codeforces.com/contest/2230/problem/F"
     },
     {
+      "id": "trees_a_037",
+      "title": "Locating Boundaries of Small Range Answers",
+      "takeaway": "A monotone answer with only K possible values is a staircase: find its change boundaries instead of recomputing every step.",
+      "details": "If answers across an ordered sequence of updates are monotone and take only a small number of distinct values, many adjacent queries share one result. Search for change boundaries or use divide-and-conquer to identify constant intervals, accounting separately for the cost of each answer evaluation.\n\nREVIEW NEEDED: Verify the exact source's claimed bound of at most 17 steps or boundaries against the allowed answer values, including −1. The general monotone-small-range takeaway does not depend on that numeric bound; evaluation-call counts and total runtime should also be distinguished.",
+      "tags": [
+        "binary-search",
+        "dynamic-programming",
+        "complexity",
+        "needs-review"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/F"
+    },
+    {
       "id": "trees_a_042",
       "title": "Ranking Perfect Subtrees by Height",
       "takeaway": "If a quantity is a strictly increasing function of a cheaper representation, rank the representation and convert only the final answer.",
@@ -2183,6 +2198,19 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/candy/"
+    },
+    {
+      "id": "O12",
+      "title": "Order Tasks By Energy Buffer",
+      "takeaway": "For minimum initial energy, sort by minimum minus actual, descending: the buffer left after paying a task's cost matters, not its minimum alone.",
+      "details": "For each task, minimum minus actual measures the required buffer beyond its consumed energy. Process larger buffers first, then simulate the order by adding only the deficit needed before each task and subtracting its actual cost.\n\nREVIEW NEEDED: The source's surrounding prose reverses the ordering direction even though the takeaway, example, and algorithm specify descending minimum minus actual. Review that source wording before publication.",
+      "tags": [
+        "greedy",
+        "needs-review"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-initial-energy-to-finish-tasks/"
     },
     {
       "id": "O17",
@@ -2860,6 +2888,21 @@
       "sourceUrl": null
     },
     {
+      "id": "O33",
+      "title": "Cap Values At Their Saturation Threshold",
+      "takeaway": "If every value beyond a threshold has the same effect on all future operations, store the threshold sentinel instead of the exact huge value.",
+      "details": "When an LCM is used only in floor(m/lcm), every value above m produces the same zero contribution, so a sentinel m+1 is sufficient. For positive inputs and a representable m+1, divide by the gcd first and compare against cap/b before multiplying to avoid overflow.\n\nREVIEW NEEDED: The preserved C++ comment claims (a/g)*b < (a*b)/g, but the expressions are mathematically equal; dividing first reduces the intermediate product, not the exact result. The cap implementation also assumes positive inputs and a representable m+1.",
+      "tags": [
+        "math",
+        "cpp",
+        "debugging",
+        "needs-review"
+      ],
+      "code": "ll lcm_cap(ll a, ll b, ll cap){      // cap = m+1\n    ll g = gcd(a,b);\n    ll x = a/g;                      // divide FIRST: (a/g)*b < (a*b)/g, less overflow\n    if(x > cap/b) return cap;        // would x*b exceed cap? check BEFORE multiplying\n    ll r = x*b;\n    return r > cap ? cap : r;\n}\n",
+      "language": "cpp",
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
       "id": "trees_a_054",
       "title": "Bound Intermediate Width Arithmetic Separately",
       "takeaway": "A bounded final answer does not imply bounded intermediate arithmetic.",
@@ -2922,6 +2965,20 @@
         "dynamic-programming",
         "game-theory",
         "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/stone-game/description/"
+    },
+    {
+      "id": "DP061",
+      "title": "Parity Strategies Give A Lower Bound",
+      "takeaway": "In the even-pile Stone Game, equal parity sums guarantee a tie strategy—not that optimal play must tie.",
+      "details": "In an even-pile variant allowing equal even-index and odd-index totals, committing to either parity guarantees at least a tie. That guarantee does not rule out a better strategy that wins, so parity equality alone does not determine the optimal result.\n\nREVIEW NEEDED: Equal parity sums imply an even total, so this case lies outside the standard Stone Game odd-total guarantee. Present it as variant analysis rather than as a valid input under that guarantee.",
+      "tags": [
+        "game-theory",
+        "greedy",
+        "needs-review"
       ],
       "code": null,
       "language": null,

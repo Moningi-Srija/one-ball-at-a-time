@@ -74,9 +74,14 @@ update production by themselves. The Mac's master path is never needed on Render
   importer update, not silent acceptance of unknown fields.
 - Every ID must be unique, including archived entries. Keep the same ID when
   changing wording; do not recycle an old ID for an unrelated insight.
-- `archived: true` and `needs-review` entries are excluded from the generated
-  JSON itself, not merely hidden in the page. Archiving removes an existing card
-  on the next import and deployment. Missing entries are likewise removed.
+- `archived: true` entries are excluded from the generated JSON itself, not
+  merely hidden in the page. Archiving removes an existing card on the next
+  import and deployment. Missing entries are likewise removed.
+- Unarchived `needs-review` entries are included, with their review tag and
+  `REVIEW NEEDED:` explanation intact. Cards show a distinct “Needs review”
+  badge and caveat reminder; featured ideas also show a warning. Use the
+  “Needs review” topic filter to find them. Inclusion is not technical approval.
+  A flagged entry without a review explanation fails display validation.
 - Only `id`, `title`, `takeaway`, `details`, `tags`, `code`, `language`, and
   `sourceUrl` are emitted. `original` is not published. The original wording
   remains available in the private master and authoring preview.
@@ -99,5 +104,7 @@ update production by themselves. The Mac's master path is never needed on Render
   included in the browser payload.
 
 The import sanitization is a publication safeguard, not a claim that every
-remaining technical idea has been independently reviewed. Review and tag doubtful
-material `needs-review` in the master before releasing a snapshot.
+remaining technical idea has been independently reviewed. Tag doubtful material
+`needs-review` and explain its caveats in the master; do not remove the flag just
+to display a card. Review warnings are public learning content, not private
+provenance, and remain subject to the same private-reference checks as other text.

@@ -13,7 +13,7 @@ const MAX_INPUT_BYTES = 10 * 1024 * 1024;
 const PROVENANCE_START = /^[ \t]*(?:Original wording provenance|Saved-note sources)\s*:/im;
 // Fail closed if a private source reference survives the explicit projection.
 // These checks run on every outgoing string, not just on sourceUrl.
-const PRIVATE_REFERENCE = /notion\.(?:so|com|site)|(?:original wording\s+)?provenance\s*:|saved-note sources\s*:|review needed\s*:|(?:chatgpt\.com|chat\.openai\.com)\/(?:c|g)\/|codex:\/\/|(?:\/Users\/|file:\/\/)|\b[0-9a-f]{32}\b|\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b/i;
+const PRIVATE_REFERENCE = /notion\.(?:so|com|site)|(?:original wording\s+)?provenance\s*:|saved-note sources\s*:|(?:chatgpt\.com|chat\.openai\.com)\/(?:c|g)\/|codex:\/\/|(?:\/Users\/|file:\/\/)|\b[0-9a-f]{32}\b|\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b/i;
 
 function readJson(filePath, maxBytes = MAX_INPUT_BYTES) {
   let input;
@@ -105,7 +105,9 @@ function buildPublicNotebook(master, schema, now = new Date()) {
     if (ids.has(note.id)) throw new Error(`Duplicate stable ID in note ${index + 1}. No output was changed.`);
     ids.add(note.id);
     if (note.archived) { counts.archived += 1; return; }
-    if (note.tags.includes('needs-review')) { counts.needsReview += 1; return; }
+    // Review status is visible context, not a privacy exclusion. Preserve the
+    // tag and its caveat while applying the same public projection/checks.
+    if (note.tags.includes('needs-review')) counts.needsReview += 1;
     const projected = {
       id: note.id,
       title: note.title,
@@ -188,7 +190,7 @@ function cliArguments(args) {
 if (require.main === module) {
   try {
     const result = importNotebook(cliArguments(process.argv.slice(2)));
-    console.log(`CP Notebook: ${result.included} included; ${result.archived} archived and ${result.needsReview} needs-review excluded; ${result.omittedSourceLinks} source links omitted.`);
+    console.log(`CP Notebook: ${result.included} included (${result.needsReview} flagged needs-review); ${result.archived} archived excluded; ${result.omittedSourceLinks} source links omitted.`);
     console.log(result.check ? (result.changed ? 'Generated snapshot is out of date. Run the import before previewing or deploying.' : 'Generated snapshot is current.') : (result.changed ? 'Generated local snapshot updated. Nothing was committed, deployed or published.' : 'No content changes. Existing timestamp preserved.'));
     if (result.check && result.changed) process.exitCode = 1;
   } catch (error) {
