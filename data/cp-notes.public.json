@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T20:06:40.399Z",
+  "generatedAt": "2026-11-02T20:29:58.866Z",
   "notes": [
     {
       "id": "DP037",
@@ -3036,6 +3036,37 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/generate-parentheses/description/"
+    },
+    {
+      "id": "catalan-choose-the-index",
+      "title": "Choosing the Right Catalan Index",
+      "takeaway": "Match the problem's size to the Catalan index: m matrices → C_(m-1), v polygon vertices → C_(v-2), and N total nodes in an ordered full binary tree → C_((N-1)/2) when N is odd.",
+      "details": "A Catalan formula is useful only after identifying what its index counts.\n\n• m matrices or operands, m ≥ 1: C_(m-1) full binary parenthesizations, preserving their order. This counts the possible groupings; it does not find the minimum matrix-multiplication cost.\n• A convex polygon with v ≥ 3 fixed vertices: C_(v-2) triangulations using noncrossing diagonals. The vertices are distinguished; do not identify answers under rotation or reflection.\n• An ordered full binary tree with N ≥ 1 total nodes: if N is odd, the count is C_((N-1)/2); if N is even, the count is zero. Every internal node has exactly two children, so I internal nodes imply I+1 leaves and N=2I+1. Left and right children are distinguished; this counts shapes, not arbitrary node labelings.\n\nQuick checks: 4 matrices → C_3=5; a pentagon → C_3=5; 7 total nodes in a full binary tree → C_3=5. A single-node tree corresponds to C_0=1.",
+      "tags": [
+        "math",
+        "counting",
+        "trees",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "catalan-formulas-and-common-uses",
+      "title": "Catalan Numbers — Formulas and Common Uses",
+      "takeaway": "C_n = binom(2n,n)/(n+1), with C_0=1. Look for a unique root or matching pair that splits an object into two independent smaller Catalan objects.",
+      "details": "FORMULAS\nFor integer n ≥ 0:\nC_n = binom(2n,n)/(n+1) = (2n)! / [n! × (n+1)!].\nC_0 = 1. For n ≥ 1: C_n = Σ from k=0 to n-1 of C_k × C_(n-1-k).\nSuccessive values: C_(n+1) = C_n × 2(2n+1)/(n+2).\nC_0 through C_7: 1, 1, 2, 5, 14, 42, 132, 429.\n\nCOMMON OBJECTS COUNTED BY C_n\n• Well-formed parentheses strings with n pairs, using one bracket type.\n• Structurally different BSTs on n fixed, distinct keys. Each shape has one BST-valid labeling; insertion orders are not counted.\n• Binary-tree shapes with n nodes, distinguishing left from right, including a left-only child versus a right-only child.\n• Full ordered binary-tree shapes with n internal nodes and n+1 leaves: every internal node has exactly two children.\n• Full binary parenthesizations of n+1 operands or matrices, preserving their order.\n• Triangulations of a convex polygon with n+2 fixed vertices (n ≥ 1).\n• Dyck paths with n upward and n downward steps, never below the starting height.\n• Noncrossing perfect pairings/handshakes among 2n fixed points around a circle.\n• Valid operation sequences containing n stack pushes and n pops, never popping an empty stack.\n\nWHY THE RECURRENCE APPEARS\nA unique root or matching pair leaves sizes k and n-1-k. Multiply independent choices for the two parts, then sum over disjoint splits. The decomposition must be complete and unique; a familiar-looking split alone is not a proof.\n\nWATCH OUT\nThese are common Catalan families, not every possible application. Left/right order, fixed labels/positions, and noncrossing or prefix-validity conditions matter. Full is not the same as complete or perfect. Stack rows count push/pop patterns, not arbitrary permutations of input values. C_0=1 represents an empty or trivial object as appropriate. The factorial formula can overflow even when the final answer fits; use suitable exact arithmetic, and do not perform ordinary division modulo a number without justification. Counting objects is different from generating them: returning C_n strings of length 2n requires Ω(n × C_n) time and output space.",
+      "tags": [
+        "math",
+        "counting",
+        "dynamic-programming",
+        "trees",
+        "strings"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
     }
   ]
 }
