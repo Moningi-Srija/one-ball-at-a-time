@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T19:07:03.734Z",
+  "generatedAt": "2026-11-02T20:06:40.399Z",
   "notes": [
     {
       "id": "DP037",
@@ -3022,6 +3022,20 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/divisible-game/"
+    },
+    {
+      "id": "parentheses-inside-outside-unique",
+      "title": "Generate Parentheses Without Duplicates",
+      "takeaway": "Building answers as (inside)outside avoids duplicates: the closing bracket matching the first opening bracket fixes exactly where the inside ends and the outside begins.",
+      "details": "For Generate Parentheses, inside and outside must each be valid parentheses strings. With n pairs, choose x pairs inside and n - x - 1 pairs outside, for every x from 0 to n - 1. Combine them as \"(\" + inside + \")\" + outside. The base list f(0) contains one empty string.\n\nWhy no duplicates: scan a finished string from its first opening bracket. The first point where opening and closing counts balance identifies that opening bracket's matching close, not necessarily the first closing bracket in the string. That position uniquely fixes inside, outside, and x. Different splits therefore cannot produce the same finished string. This relies on the smaller lists containing no duplicates and each inside/outside combination being generated once. A deduplication set is not needed for this construction.",
+      "tags": [
+        "dynamic-programming",
+        "recursion",
+        "strings"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/generate-parentheses/description/"
     }
   ]
 }
