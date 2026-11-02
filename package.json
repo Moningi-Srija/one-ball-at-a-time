@@ -5,6 +5,8 @@
   "main": "server.js",
   "scripts": {
     "test": "node --test",
+    "import:cp": "node scripts/import-cp-notes.js",
+    "preview:cp": "node scripts/preview-cp-notebook.js",
     "start": "node server.js"
   },
   "keywords": [
@@ -25,5 +27,8 @@
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

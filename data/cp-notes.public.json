@@ -1,0 +1,2970 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-02T14:08:39.959Z",
+  "notes": [
+    {
+      "id": "DP037",
+      "title": "Count True Values in Ranges",
+      "takeaway": "“does this range contain any true?” into “is this range’s count of true values greater than zero?”",
+      "details": "For a Boolean range, existence is equivalent to a positive count of true entries. A prefix- or suffix-count difference can answer that question without scanning the range.",
+      "tags": [
+        "prefix-sums",
+        "counting",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/jump-game/description/"
+    },
+    {
+      "id": "DP069",
+      "title": "Optimize the Transition Lookup",
+      "takeaway": "Sometimes the DP state is already good—the expensive part is how we look up its transitions.",
+      "details": "A correct DP state need not change merely because its implementation is slow. Check whether repeatedly searching its candidate transitions is the expensive part before redesigning the state.",
+      "tags": [
+        "dynamic-programming",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/jump-game/description/"
+    },
+    {
+      "id": "DP047",
+      "title": "Minimum Tail for Each Length",
+      "takeaway": "Instead of asking for the longest sequence ending at each index, ask for the smallest ending value achievable at each length.",
+      "details": "For increasing subsequences, tails[i] records the smallest ending value found for length i + 1. This changes what the state represents; it is not just a compressed version of the longest-subsequence-ending-at-index DP.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "O18",
+      "title": "Farthest Reach by Refuel Count",
+      "takeaway": "When farther progress dominates, turn 'minimum actions to reach the target' into 'farthest progress possible with k actions'; find the first k that reaches the target.",
+      "details": "For refueling stops, retain the farthest distance reachable with exactly k refuels, since farther reach dominates at the same count. Process each station's count updates backward to use it once, then take the first count that reaches the target.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-number-of-refueling-stops/"
+    },
+    {
+      "id": "O31",
+      "title": "Count Pairs by Exact GCD",
+      "takeaway": "Instead of computing the GCD of every pair, count how many pairs have each possible GCD.",
+      "details": "Count values divisible by each d to obtain pairs whose GCD is a multiple of d. Processing d downward and subtracting counts for larger multiples yields exact GCD counts; cumulative counts then support kth-pair queries.",
+      "tags": [
+        "math",
+        "counting",
+        "prefix-sums",
+        "binary-search"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/sorted-gcd-pair-queries/"
+    },
+    {
+      "id": "TB47",
+      "title": "Fix the Path Ending Node",
+      "takeaway": "Instead of fixing a start and searching for endings, fix an ending and count the starts that work.",
+      "details": "For downward target-sum paths, consider each node as the endpoint and count compatible starting positions on its ancestor chain. This reverses the viewpoint of launching a fresh endpoint search from every possible start.",
+      "tags": [
+        "trees",
+        "prefix-sums",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/path-sum-iii/description/"
+    },
+    {
+      "id": "TB50",
+      "title": "Count Each Node's Path Contribution",
+      "takeaway": "Sum each whole path—or let each node contribute its value times the number of paths containing it.",
+      "details": "The total over root-to-leaf path sums can be computed by adding completed path sums at leaves. Equivalently, each node contributes its value multiplied by the number of those paths containing it.",
+      "tags": [
+        "trees",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/path-sum-iv/description/"
+    },
+    {
+      "id": "O35",
+      "title": "Enumerate the Smaller Digit Sum",
+      "takeaway": "Guess the small unknown and derive the large one. The first number may have 100,000 digits, but its digit sum is small and fixes the rest of the chain.",
+      "details": "In a chain of repeated digit sums, choosing the second number determines the entire remaining tail, even when the first number has up to 100,000 digits. Check the tail against the available digit counts and require the leftover digits to sum to the chosen second number.",
+      "tags": [
+        "math",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "O09",
+      "title": "Required Health on Cell Entry",
+      "takeaway": "A path's final sum cannot tell you whether you survived every earlier cell. Store the health needed on entry, and work backward.",
+      "details": "Dungeon survival requires health to stay at least one at every cell, so a final path sum loses essential information. Work backward with the minimum entry health: subtract the current cell from the better right/down requirement, then clamp the result to at least one.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/dungeon-game/"
+    },
+    {
+      "id": "DP003",
+      "title": "Pair Each Sale With Earlier Minimum",
+      "takeaway": "Fix the selling day: every legal trade has one, and its best partner is the cheapest earlier buying day.",
+      "details": "For a single stock trade, the best purchase paired with a selling day is the cheapest legal earlier day. Considering every selling day covers every possible optimal trade.",
+      "tags": [
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock/description/"
+    },
+    {
+      "id": "DP042",
+      "title": "Search Only the Smaller Partition",
+      "takeaway": "Choose the smaller side of a partition to remove the absolute value: minimizing |S−2s| becomes maximizing reachable s at or below S/2.",
+      "details": "For a partition with total sum S, name the smaller side s so that s is at most floor(S/2). The difference is then S - 2s, so minimizing it means finding the largest reachable s in that range.",
+      "tags": [
+        "dynamic-programming",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/last-stone-weight-ii/description/"
+    },
+    {
+      "id": "DP064",
+      "title": "Triangle Continuations Simplify the Boundary",
+      "takeaway": "Reverse a path-DP question when it simplifies the boundary: in a triangle, 'best continuation from here' has two valid children at every nonterminal cell and one fixed answer at the apex.",
+      "details": "Define a triangle state as the best continuation from the current cell to the bottom. Every nonterminal cell has two valid children and the answer is at the apex; this simplifies boundaries without changing the asymptotic complexity of the alternative forward state.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/triangle/description/"
+    },
+    {
+      "id": "TB45",
+      "title": "Burn Time Is Minimized at Centers",
+      "takeaway": "The fastest burn start is the node minimizing its farthest distance—the center, not necessarily the root.",
+      "details": "When burning spreads across one edge per unit time, a starting node's completion time is its farthest distance to any node. Choosing the fastest start therefore means finding a tree center, which need not be the designated root.",
+      "tags": [
+        "trees",
+        "graphs"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "trees_a_002",
+      "title": "Farthest Distance From the Infection Start",
+      "takeaway": "Infection time is the farthest edge distance from the fixed start—not the tree’s diameter.",
+      "details": "With infection starting at minute zero and crossing one edge per minute, completion time is the maximum distance from that fixed start. The tree diameter can have different endpoints and is not generally the required answer.",
+      "tags": [
+        "trees",
+        "graphs"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/amount-of-time-for-binary-tree-to-be-infected/description/"
+    },
+    {
+      "id": "trees_a_046",
+      "title": "Align Ancestor Chains Before Walking",
+      "takeaway": "Parent pointers turn LCA into linked-list intersection: ancestor chains share a suffix, so align their lengths before walking together.",
+      "details": "With parent pointers, first raise the deeper node until both nodes have the same depth. Moving both upward together then reaches their lowest common ancestor simultaneously, just as aligned linked lists meet at their shared suffix.",
+      "tags": [
+        "trees",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree-iii/"
+    },
+    {
+      "id": "trees_a_034",
+      "title": "Leaf Removal Rounds Equal Subtree Height",
+      "takeaway": "Repeated leaf-removal rounds are subtree heights: a parent waits for its slower child branch, then disappears one round later.",
+      "details": "Use round zero for leaves and -1 for a null child. A node's removal round is one plus the larger child round because every child must disappear first; this is height in edges, not depth or distance to the nearest leaf.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/find-leaves-of-binary-tree/description/"
+    },
+    {
+      "id": "DP001",
+      "title": "Initialize Capacity and Exact Weight Differently",
+      "takeaway": "Initialization follows the question a state answers: the empty selection fits every at-most capacity, but reaches only exact weight zero.",
+      "details": "For maximum value within an at-most capacity, the empty selection gives value zero at every initial capacity. For exact weight, only weight zero is initially reachable; positive weights need an unreachable sentinel rather than zero.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/0-and-1-knapsack"
+    },
+    {
+      "id": "DP002",
+      "title": "Take and Skip Are Transitions",
+      "takeaway": "Take and skip are choices used to calculate a state; they do not automatically require separate state dimensions.",
+      "details": "In standard 0/1 knapsack, taking or skipping an item are alternatives used to calculate an item-and-capacity state. Those choices do not by themselves require separate included and excluded state arrays.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/0-and-1-knapsack"
+    },
+    {
+      "id": "DP004",
+      "title": "Charge Cash Only on Stock Trades",
+      "takeaway": "Holding is a state; buying is a transition. Charge the price when entering the state, not every day spent in it.",
+      "details": "A holding state describes whether a share is owned, while buying and selling are actions that change cash. Subtract the price only when buying and add it only when selling; merely remaining in either state does not change the balance.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/description/"
+    },
+    {
+      "id": "DP005",
+      "title": "Cash Balance Encodes the Purchase Cost",
+      "takeaway": "A cash-balance state already contains the purchase cost; remembering the purchase day or price separately adds no information.",
+      "details": "In the stock-trading cash-balance state, buying already subtracts the purchase price. For this formulation, retaining that price or purchase day separately adds no information needed by future transitions.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-ii/description/"
+    },
+    {
+      "id": "DP007",
+      "title": "Transaction Allowance Versus Exact Count",
+      "takeaway": "A count dimension can mean an allowance, not an exact count; aggregating 'at most k' histories can remove a final maximum over exact-count buckets.",
+      "details": "An at-most-k transaction state includes histories using fewer than k transactions. With consistent transitions and initialization, its final nonholding value already covers zero through k trades, avoiding a separate maximum over exact-count states.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/description/"
+    },
+    {
+      "id": "DP008",
+      "title": "Separate Count Meaning From Accounting Action",
+      "takeaway": "Which histories a state aggregates and which action changes its counter are separate design choices.",
+      "details": "Exact versus at-most defines which trading histories a state combines. Whether the transaction counter changes on buying or selling is a separate choice; the recurrence and base cases must consistently follow both decisions.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-iii/description/"
+    },
+    {
+      "id": "DP016",
+      "title": "Memo Keys Must Preserve Remaining Choices",
+      "takeaway": "Two calls may share a memo key only if they describe the same remaining subproblem—not merely the same remaining amount.",
+      "details": "For unlimited coin change, remaining amount alone can identify the subproblem when every denomination remains available. If items are usable only once, identical amounts may still have different remaining choices, so the memo key must preserve that distinction.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/coin-change/description/"
+    },
+    {
+      "id": "DP017",
+      "title": "Item Layers Survive Storage Compression",
+      "takeaway": "We removed the item dimension from storage, not from the algorithm's logic.",
+      "details": "In coin-outer tabulation, the outer loop still determines which denominations have been processed. Using one amount array removes the stored item dimension, not its role in the recurrence or update order.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/coin-change/description/"
+    },
+    {
+      "id": "DP032",
+      "title": "Merge Counters With a Proven Invariant",
+      "takeaway": "Two equal counters that must move in lockstep are one state variable, not two.",
+      "details": "For a still-valid Good Schedule segment, the two viewers have watched identical sets because earlier days selected the same episode for both or nothing for both. Their needed counters therefore remain equal and can be represented by one variable; the reduction depends on that invariant.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/D"
+    },
+    {
+      "id": "DP035",
+      "title": "Separate Floyd Endpoints From Allowed Intermediates",
+      "takeaway": "In reverse-deletion Floyd DP, inactive vertices may remain endpoints of stored distances; only allowed intermediates constrain the path, while active endpoints constrain the reported sum.",
+      "details": "In reverse-deletion Floyd DP, added vertices restrict intermediate path vertices, not the endpoints whose distances are stored. Update all endpoint pairs at each layer, and use active status only when summing distances between currently active endpoints.",
+      "tags": [
+        "graphs",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "DP045",
+      "title": "Substring States End at Current Characters",
+      "takeaway": "A common-substring state ends exactly at both current characters; on a mismatch it resets, unlike an LCS state that is best anywhere in the prefixes.",
+      "details": "A common-substring state measures a contiguous match ending at both current characters. A mismatch resets it to zero; copying from the top or left would import a match that does not satisfy that endpoint contract.",
+      "tags": [
+        "strings",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/longest-common-substring"
+    },
+    {
+      "id": "DP053",
+      "title": "Handled Endpoints Leave the Remaining Subproblem",
+      "takeaway": "Removing an endpoint from the remaining subproblem does not necessarily delete it from the solution; it may already be handled by an inserted partner.",
+      "details": "In minimum insertions for a palindrome, excluding an endpoint from the recursive interval does not mean deleting it. The extra insertion supplies its matching partner, so that endpoint is already handled while the smaller interval is solved.",
+      "tags": [
+        "strings",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-insertion-steps-to-make-a-string-palindrome/"
+    },
+    {
+      "id": "DP066",
+      "title": "Boundary Reachability Carries Past Obstacles",
+      "takeaway": "A free cell is not necessarily reachable; along a grid boundary, copying the previous path count carries earlier blockages forward.",
+      "details": "Along a grid's first row or first column, a free cell beyond an obstacle still has no path from the start. Copying the preceding path count propagates that zero reachability without treating every free boundary cell as reachable.",
+      "tags": [
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/unique-paths-ii/description/"
+    },
+    {
+      "id": "O10",
+      "title": "Remember the Last String's Chosen Form",
+      "takeaway": "If the next transition depends on whether the last string was reversed, the state must remember that final form—not just the best cost so far.",
+      "details": "When strings may be reversed to obtain a nondecreasing lexicographic sequence, future comparisons depend on the last string's selected form. Keep separate minimum costs for original and reversed forms, and mark impossible states as unreachable rather than zero-cost.",
+      "tags": [
+        "strings",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "O16",
+      "title": "Zeros Turn Fixed Sums Into Ranges",
+      "takeaway": "If a zero can become any positive integer, an array with a zero can realize every sum from its minimum upward; without a zero, its sum is fixed.",
+      "details": "Replacing each zero with a positive integer gives a minimum sum of the existing sum plus the zero count. An array containing a zero can reach every larger sum; an array without zeros has a fixed sum, which must fall within the other array's achievable range.",
+      "tags": [
+        "math",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-equal-sum-of-two-arrays-after-replacing-zeros/description/"
+    },
+    {
+      "id": "O28",
+      "title": "Preserve Unmatched Brackets for Segment Merges",
+      "takeaway": "A segment summary must retain what can interact across its boundary. For brackets, matched pairs alone are not enough; unmatched opens and closes are needed to merge.",
+      "details": "A bracket segment needs its matched-pair count plus unmatched opens and closes. Merging adjacent segments can pair left-side unmatched opens with right-side unmatched closes, so returning only the matched count from a partial query loses necessary boundary information.",
+      "tags": [
+        "strings",
+        "segment-tree",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/problemset/problem/380/C"
+    },
+    {
+      "id": "TB06",
+      "title": "Return Height or an Imbalance Sentinel",
+      "takeaway": "Return the useful result on success and an impossible result as failure; one bottom-up pass can carry both.",
+      "details": "A balanced-tree helper can return its subtree height on success and -1 when an imbalance is found. Because valid heights are nonnegative, the sentinel carries failure without a separate Boolean or repeated height computations.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/balanced-binary-tree/description/"
+    },
+    {
+      "id": "TB21",
+      "title": "Subtree Size Differs From Removal Score",
+      "takeaway": "The value returned to your parent and the answer computed at your node may describe different situations.",
+      "details": "Removing a node excludes that node from its score's components, but its parent still needs the size of the intact subtree. A leaf therefore returns size one upward even though its own removal leaves a component of size n - 1 when that component exists.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-nodes-with-the-highest-score/"
+    },
+    {
+      "id": "TB33",
+      "title": "Global Existence Does Not Imply Local Presence",
+      "takeaway": "A target can be guaranteed to exist globally and still be absent from the subtree this call is searching.",
+      "details": "A target guaranteed to occur somewhere in the tree may be absent from the subtree of a particular recursive call. The helper still needs a result that distinguishes local absence from a successful search.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/find-distance-in-a-binary-tree/description/"
+    },
+    {
+      "id": "TB54",
+      "title": "Store Frequency Parity for Palindrome Paths",
+      "takeaway": "If the answer only depends on odd versus even counts, store parity—not the full frequencies.",
+      "details": "For pseudo-palindromic paths, the relevant property of each value's count is whether it is odd or even. Retaining exact frequencies stores more information than the path-validity check needs.",
+      "tags": [
+        "trees",
+        "bit-manipulation",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/pseudo-palindromic-paths-in-a-binary-tree/"
+    },
+    {
+      "id": "trees_a_007",
+      "title": "Reset a Chain Without Pruning Descendants",
+      "takeaway": "A mismatch prevents extension, not traversal.",
+      "details": "In a consecutive parent-to-child path search, a child value that breaks the current chain cannot extend it. Its subtree must still be traversed because a new valid chain may begin at that child or farther below.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-longest-consecutive-sequence/description/"
+    },
+    {
+      "id": "trees_a_008",
+      "title": "Specify Which End the Path State Anchors",
+      "takeaway": "Top-down tracks a path ending here; bottom-up returns a path starting here.",
+      "details": "For consecutive parent-to-child paths, a top-down state describes a chain ending at the current node, while a bottom-up return describes one starting there. Both can visit each node once with O(h) recursion space; choosing a return contract changes the interface, not the asymptotic complexity.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-longest-consecutive-sequence/description/"
+    },
+    {
+      "id": "trees_a_017",
+      "title": "Track the Marginal Cost of Pushing Increments",
+      "takeaway": "A corrected value tells you how much is missing; a marginal push cost tells you where to send it.",
+      "details": "In the minimum-total-increments children-sum variant, corrected child values determine the missing amount but not where to send it. Track the extra cost of increasing each subtree root by one: propagation through the cheapest existing child gives one plus that child's push cost.",
+      "tags": [
+        "trees",
+        "greedy",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://www.youtube.com/watch?v=fnmisPM6cVo"
+    },
+    {
+      "id": "trees_a_019",
+      "title": "Preorder Consumption Encodes the Lower Constraint",
+      "takeaway": "A shared preorder index is not just bookkeeping: it records that earlier subtree regions have been completely consumed.",
+      "details": "For a guaranteed-valid BST preorder with distinct values, a shared advancing index ensures earlier subtree regions are consumed before the next region begins. This makes an upper-bound-only construction possible; arbitrary-input validation still needs lower-bound checks and verification that all input was consumed.",
+      "tags": [
+        "trees",
+        "binary-search-trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_027",
+      "title": "Root Detection Needs Only Child Membership",
+      "takeaway": "We do not need to remember who the parent is—only whether a parent exists.",
+      "details": "For valid parent-child descriptions, finding the root requires knowing which nodes appear as children, not remembering each child's parent. A child-membership set expresses that requirement directly; replacing a Boolean map with it is a semantic simplification, not an asymptotic improvement.",
+      "tags": [
+        "trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/create-binary-tree-from-descriptions/"
+    },
+    {
+      "id": "trees_a_039",
+      "title": "Robbery Exclusion Applies to Edges",
+      "takeaway": "A parent–child exclusion is an edge constraint, not an alternating-level constraint.",
+      "details": "House Robber III forbids selecting directly connected parent-child pairs, not all nodes on adjacent levels. Restricting the answer to either alternating-level sum misses legal choices such as the two endpoints of the chain 10 → 1 → 1 → 10.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/house-robber-iii/description/"
+    },
+    {
+      "id": "trees_a_040",
+      "title": "Add Independent Best Choices From Both Branches",
+      "takeaway": "Independent branches contribute a sum of their best choices—not one maximum across all choices.",
+      "details": "When the current node is not robbed, choose the better allowed result independently in each child subtree and add those results. Taking one maximum across both branches incorrectly discards a contribution, since siblings are not directly connected by the exclusion rule.",
+      "tags": [
+        "trees",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/house-robber-iii/description/"
+    },
+    {
+      "id": "trees_a_044",
+      "title": "Judge Candidate BST Subtrees Independently",
+      "takeaway": "An ancestor outside a candidate subtree must not disqualify that subtree.",
+      "details": "A candidate BST subtree need not obey value bounds imposed by ancestors outside that subtree. Return local validity, size, and extrema upward, and continue exploring below invalid ancestors so a valid descendant subtree is not rejected prematurely.",
+      "tags": [
+        "trees",
+        "binary-search-trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/largest-bst-in-binary-tree"
+    },
+    {
+      "id": "trees_a_048",
+      "title": "Combine Sums and Counts Before Averaging",
+      "takeaway": "To combine averages, return their ingredients—sum and count—not just the averages.",
+      "details": "Child subtrees can have different sizes, so taking an unweighted average of their averages is incorrect. Return each subtree's sum and count, combine those quantities, and calculate the resulting average from the combined totals.",
+      "tags": [
+        "trees",
+        "math",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-average-subtree/description/"
+    },
+    {
+      "id": "trees_a_049",
+      "title": "Keep Ancestor Differences on One Chain",
+      "takeaway": "Max minus min is a valid ancestor difference on one path, but not across a branching subtree: its extremes may be siblings.",
+      "details": "A root-to-node path's maximum and minimum belong to the same ancestor chain, so their difference is a legal ancestor-descendant difference. Extrema taken across a branching subtree may instead be siblings; root 5 with children 1 and 9 has maximum legal difference 4, not 8.",
+      "tags": [
+        "trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-difference-between-node-and-ancestor/"
+    },
+    {
+      "id": "trees_a_050",
+      "title": "Distinct Paths Need Compatibility Information",
+      "takeaway": "The best child sum is not enough when branches must also be compatible; you must know what values the chosen paths consume.",
+      "details": "For a path requiring distinct values, individually best child arms may share a value and be incompatible. A best sum alone loses the values consumed, and memoizing only by node is invalid when different used-value sets change the legal continuations.",
+      "tags": [
+        "trees",
+        "state-design",
+        "backtracking"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-distinct-path-sum-in-a-binary-tree/description/"
+    },
+    {
+      "id": "trees_a_052",
+      "title": "Allow the Empty BST When Initializing",
+      "takeaway": "Before seeding a maximum with negative infinity, check whether choosing nothing is a valid zero-valued answer.",
+      "details": "Maximum Sum BST permits choosing an empty BST with sum zero. Initialize the best answer to zero so all-negative inputs do not force a negative result; a null child also contributes a valid empty subtree with sum zero.",
+      "tags": [
+        "trees",
+        "binary-search-trees",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-sum-bst-in-binary-tree/"
+    },
+    {
+      "id": "trees_a_063",
+      "title": "Represent an Absent Previous Value Explicitly",
+      "takeaway": "“No previous value” is a state, not necessarily a special numeric value.",
+      "details": "INT_MIN is a legal node value, so using it as the previous inorder value can wrongly reject the first node. Use an explicit absent previous node or a genuinely wider sentinel; exclusive BST bounds must likewise lie outside the allowed node-value range.",
+      "tags": [
+        "binary-search-trees",
+        "pointers",
+        "cpp",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/validate-binary-search-tree/description/"
+    },
+    {
+      "id": "X02",
+      "title": "Lexicographic Order Can Reverse After Appending",
+      "takeaway": "Before keeping only the locally best partial answer, check whether it stays best after future extensions: a < ab, but az > abz.",
+      "details": "Keeping only the smallest unfinished leaf-to-node string is unsafe when later ancestors append a suffix. Prefix-related candidates can reverse order: a is smaller than ab, but az is larger than abz, so compare complete candidates or retain enough information to avoid discarding a future winner.",
+      "tags": [
+        "strings",
+        "trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/smallest-string-starting-from-leaf/"
+    },
+    {
+      "id": "X09",
+      "title": "BST Shape Counts Depend Only on Size",
+      "takeaway": "To count BST shapes on distinct sorted values, only the number of values matters—not the labels or interval endpoints.",
+      "details": "For distinct sorted values, relabeling preserves the possible BST shapes, so the count needs only the number of values. Splitting around each possible root multiplies independent left and right counts; an empty side contributes one valid choice.",
+      "tags": [
+        "binary-search-trees",
+        "dynamic-programming",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/unique-binary-search-trees/"
+    },
+    {
+      "id": "DP022",
+      "title": "Precompute the Predicate Behind the Count",
+      "takeaway": "DP can precompute an expensive predicate instead of the final answer.",
+      "details": "A DP table can store reusable answers to an expensive condition rather than directly store the final count. In a counting problem, this separates checking candidate validity from accumulating valid candidates.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-beautiful-splits-in-an-array/description/"
+    },
+    {
+      "id": "DP034",
+      "title": "Update Only the Changed DP Entries",
+      "takeaway": "A large DP layer can still have a cheap update: identify which entries actually change when one input element is introduced.",
+      "details": "In the Good Schedule transition from column L + 1 to L, only the entries indexed by a_L and b_L change. Sweep backward with one array and update those affected entries instead of rebuilding the entire layer.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/D"
+    },
+    {
+      "id": "DP038",
+      "title": "Memoization Still Pays Each State's Transition Cost",
+      "takeaway": "Memoization removes repeated state computation, not the work inside each state.",
+      "details": "Caching a state avoids solving that same state repeatedly. Its first evaluation still pays for all internal transition work, so counting memoized states alone does not establish the running time.",
+      "tags": [
+        "dynamic-programming",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/jump-game/description/"
+    },
+    {
+      "id": "DP051",
+      "title": "Generate Only Legal String Predecessors",
+      "takeaway": "When a state has few possible predecessors, generate them directly instead of testing every earlier candidate.",
+      "details": "A predecessor in a string chain is obtained by deleting one character from the current word. Generate those candidates and check which exist in the input, rather than comparing the word with every earlier word.",
+      "tags": [
+        "strings",
+        "dynamic-programming",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-string-chain/description/"
+    },
+    {
+      "id": "DP052",
+      "title": "Query Compatible Values Through Complement Submasks",
+      "takeaway": "'Shares no set bits with x' means 'is a submask of x's complement'; precompute the best value over each mask's submasks.",
+      "details": "For nonnegative values fitting a chosen finite bit width, y has no set bits in common with x exactly when y is a submask of fullMask XOR x. Precompute the largest input value contained in each mask so the best compatible value can be looked up directly.",
+      "tags": [
+        "bit-manipulation",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-product-of-two-integers-with-no-common-bits/description/"
+    },
+    {
+      "id": "DP055",
+      "title": "Enforce Index Order Before Querying Value Order",
+      "takeaway": "Process states in original index order to enforce 'earlier'; index the aggregate by value to query 'smaller'. The two constraints need not be handled by the same loop.",
+      "details": "For counting longest increasing subsequences, process elements in their original order so only earlier indices have been inserted. Querying the aggregate over strictly smaller value ranks then enforces the increasing-value condition separately from the index condition.",
+      "tags": [
+        "dynamic-programming",
+        "segment-tree",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "DP056",
+      "title": "Replace Repeated DP Scans With Range Queries",
+      "takeaway": "A DP scan over an ordered range can become a range query when its answers have an efficiently mergeable summary; the state itself can stay unchanged.",
+      "details": "If a DP transition repeatedly combines previous states in an ordered range, look for an efficiently mergeable summary. A range-query structure can replace that scan while leaving the meaning of the DP state unchanged.",
+      "tags": [
+        "dynamic-programming",
+        "segment-tree",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "DP062",
+      "title": "Shift Reachable Sums From the Previous Bitset",
+      "takeaway": "A bitset shift adds x to every old reachable sum at once; OR merges take with skip while preserving the same previous-state recurrence.",
+      "details": "For a nonnegative subset-sum item x, shifting the old reachability bitset by x represents adding that item to every previously reachable sum. OR merges take and skip; the shifted side must come from the pre-update bitset so the same item is not repeatedly reused.",
+      "tags": [
+        "dynamic-programming",
+        "bit-manipulation",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/subset-sum-equals-to-target"
+    },
+    {
+      "id": "O03",
+      "title": "Count Singleton Capacity Between Repeated Blocks",
+      "takeaway": "Separate what is always usable from what consumes a scarce capacity; then count the capacity instead of constructing every placement.",
+      "details": "In the circle arrangement where every three consecutive cards must contain an equal pair, values with frequency at least two provide usable blocks, while singleton values need supported gaps. Count how many singleton placements those blocks can host, accounting for whether there is one wrapping block or multiple bounded blocks, and require a circle of at least three cards.",
+      "tags": [
+        "counting",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/C"
+    },
+    {
+      "id": "O11",
+      "title": "Count Threshold Violations With Prefix Sums",
+      "takeaway": "A prefix sum can count a predicate. 'Is there a value greater than v in this rectangle?' becomes 'Is the count of values greater than v nonzero?'",
+      "details": "When values are bounded by a small V, build a two-dimensional prefix-count grid for each predicate value > v. A candidate's neighborhood has no larger value exactly when the queried count is zero, after handling clipped bounds and the problem's excluded corners.",
+      "tags": [
+        "prefix-sums",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "O14",
+      "title": "Compress Whole-Block Trades Into Runs",
+      "takeaway": "When an operation acts on whole equal-character blocks, compress the string into runs and work on run lengths.",
+      "details": "For a binary-string trade on whole runs, a 0|1|0 pattern's gain is determined by the two neighboring zero-run lengths. Run compression exposes those quantities directly; query-boundary candidates still need their zero runs clipped to the requested interval.",
+      "tags": [
+        "strings",
+        "segment-tree"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "O20",
+      "title": "Replace a Later-Prefix Search With Suffix Maxima",
+      "takeaway": "'Is any eligible later prefix balance at least B[p]?' becomes 'Is the suffix maximum over those eligible positions at least B[p]?'",
+      "details": "After expressing a segment condition as B[q] >= B[p], a suffix maximum can test whether a qualifying later cut q exists. Its range must include only eligible cuts and preserve a nonempty third segment; the first-cut condition remains a separate check.",
+      "tags": [
+        "prefix-sums"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2242/problem/B"
+    },
+    {
+      "id": "O22",
+      "title": "Count Tied Prefix Maxima Instead of Removals",
+      "takeaway": "To count repeated removals of the rightmost maximum and everything after it, count the positions that will be chosen: the prefix maxima, including ties.",
+      "details": "Repeatedly removing the rightmost maximum and everything after it selects exactly those positions at least as large as every earlier element. Count the first element and every later non-strict prefix maximum; tied maxima count separately, so the comparison is >= rather than >.",
+      "tags": [
+        "counting",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "O24",
+      "title": "Keep Only the Running Prefix Maximum",
+      "takeaway": "If future steps only need the running aggregate, keep the aggregate—not the entire prefix history.",
+      "details": "When counting selected positions in Right Maximum, each next decision needs only the maximum seen so far. A single running maximum replaces the stored prefix-max array because no later step needs an older prefix value.",
+      "tags": [
+        "space-optimization",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "trees_a_018",
+      "title": "Preprocess BST Values for Repeated Queries",
+      "takeaway": "After recognizing a familiar single-query task, check whether it repeats; many queries can justify preprocessing once.",
+      "details": "An inorder traversal already produces sorted BST values, so collect them once and binary-search each closest-node query. This gives O(n + q log n) time regardless of tree shape, but preprocessing is not automatically better for one query or a guaranteed-balanced tree.",
+      "tags": [
+        "binary-search-trees",
+        "binary-search",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/closest-nodes-queries-in-a-binary-search-tree/description/"
+    },
+    {
+      "id": "trees_a_020",
+      "title": "Find All Preorder Boundaries in One Pass",
+      "takeaway": "Finding each boundary separately may be quadratic; finding all boundaries together can be linear.",
+      "details": "Repeatedly scanning for the next greater value can revisit elements and become quadratic. A decreasing monotonic stack computes all next-greater positions in linear time because each index is pushed once and popped at most once; shared-index BST construction can avoid explicit splits altogether.",
+      "tags": [
+        "binary-search-trees",
+        "monotonic-stack",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_031",
+      "title": "Report a Duplicate at Its Second Occurrence",
+      "takeaway": "Report a duplicate exactly when its count becomes two; later occurrences need no separate deduplication.",
+      "details": "When counting occurrences of each subtree representation, add a representative exactly when its frequency reaches two. Later occurrences add nothing, which avoids a separate deduplication set or a second pass solely to identify duplicates.",
+      "tags": [
+        "trees",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/find-duplicate-subtrees/description/"
+    },
+    {
+      "id": "trees_a_055",
+      "title": "Update Maximum Frequency at the Changed Entry",
+      "takeaway": "When counts only increase and one entry changes at a time, only that changed entry can raise the running maximum.",
+      "details": "During subtree-sum counting, only the frequency just incremented can exceed the previous maximum. Update the running maximum immediately, then use one final map scan to collect all sums tied at that frequency.",
+      "tags": [
+        "trees",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/most-frequent-subtree-sum/"
+    },
+    {
+      "id": "trees_a_056",
+      "title": "Propagate Batched Subtree-Flip Parity Once",
+      "takeaway": "Batch subtree flips at their roots, then carry their combined parity down once instead of replaying every update.",
+      "details": "When all subtree-flip queries are known and only the final state matters, count requests at their roots instead of traversing a subtree for every query. A single downward traversal accumulates ancestor requests modulo two; for initially zero-valued nodes, that parity is the final value.",
+      "tags": [
+        "trees",
+        "bit-manipulation"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-nodes-with-value-one/description/"
+    },
+    {
+      "id": "TB22",
+      "title": "Separate Readiness Scheduling From Child Aggregates",
+      "takeaway": "The queue decides when a node is ready; the arrays remember what its finished children have already contributed.",
+      "details": "In bottom-up queue processing, the queue determines when a node's required child results are complete. Arrays can retain partial parent aggregates while another child is pending, so every node's final removal score need not be stored.",
+      "tags": [
+        "trees",
+        "graphs",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-nodes-with-the-highest-score/"
+    },
+    {
+      "id": "TB23",
+      "title": "Subtract the Sibling Group From Its Level",
+      "takeaway": "Sum the whole level, then subtract the sibling group: cousins are the complement of one local group.",
+      "details": "Nodes at the same depth are cousins except for those sharing a parent. For each child, subtract its original sibling-group sum from the original next-level total; all children of that parent receive the same replacement value.",
+      "tags": [
+        "trees"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/cousins-in-binary-tree-ii/description/"
+    },
+    {
+      "id": "DP015",
+      "title": "Layer Order Does Not Guarantee In-Place Safety",
+      "takeaway": "A valid order between DP layers does not guarantee a safe in-place order inside a layer; dependencies in both directions may still need separate buffers.",
+      "details": "Cherry Pickup II has a valid bottom-up row order, but each column-pair state reads neighboring pairs in both directions from the next row. Overwriting one shared layer can destroy still-needed values, so row ordering alone does not justify in-place updates.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/cherry-pickup-ii/description/"
+    },
+    {
+      "id": "DP018",
+      "title": "Amount Direction Determines Current-Coin Reuse",
+      "takeaway": "For coin-outer in-place DP, forward amounts read states that may already use this coin; backward amounts read the previous-item layer.",
+      "details": "With coins in the outer loop, increasing amounts can read smaller states already updated for the current denomination, allowing reuse. Decreasing amounts instead read the previous-item layer at the smaller amount, limiting the current item to one use.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/coin-change/description/"
+    },
+    {
+      "id": "DP031",
+      "title": "Reusing Circular DP Slots Safely",
+      "takeaway": "A circular DP slot is a reusable box, not a permanent distance into the past; overwrite it only after its old answer's last consumer has read it.",
+      "details": "In a k-jump recurrence, the slot holding dp[i−k] is still needed for the jump of length k. Compute every candidate before replacing that slot with dp[i]; its index does not permanently identify a fixed distance into the past.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/frog-jump-with-k-distances"
+    },
+    {
+      "id": "DP049",
+      "title": "Deriving Safe DP Update Order",
+      "takeaway": "Safety comes from which cells are read and overwritten, not a blanket backward-loop rule.",
+      "details": "Before compressing DP storage, identify which transitions require old values and which require updated values. Choose the loop direction from those dependencies; iterating backward is not a universal guarantee of safety.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "DP065",
+      "title": "Mixing Rows in Unique Paths",
+      "takeaway": "One array may correctly contain two DP layers at once: old vertical and updated horizontal values are intentional when the recurrence asks for exactly that mixture.",
+      "details": "For a grid cell, the path count uses the cell above from the previous row and the cell to its left from the current row. A left-to-right one-array update intentionally preserves exactly this mixture.",
+      "tags": [
+        "dynamic-programming",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/unique-paths/description/"
+    },
+    {
+      "id": "trees_a_006",
+      "title": "Freezing the Current BFS Level",
+      "takeaway": "If a loop must process the original batch, freeze its boundary before adding the next batch.",
+      "details": "Capture the queue size before processing a level, then process exactly that many nodes while appending their children. Rechecking a changing queue size can mix levels or end the current batch too early.",
+      "tags": [
+        "trees",
+        "graphs",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-level-order-traversal/"
+    },
+    {
+      "id": "TB16",
+      "title": "Shared Cursors Determine Recursion Order",
+      "takeaway": "Independent recursive ranges can be processed in either order; one shared cursor forces the order in which its stream is consumed.",
+      "details": "A shared cursor reading postorder backward consumes root, right subtree, then left subtree. Reconstruction must follow that order; independent explicit ranges do not impose the same cursor dependency.",
+      "tags": [
+        "trees",
+        "recursion",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-tree-from-inorder-and-postorder-traversal/description/"
+    },
+    {
+      "id": "TB51",
+      "title": "Using Next Links as Worklists",
+      "takeaway": "A completed level’s next links can become the worklist for building the next level.",
+      "details": "Once a level is connected by next pointers, traverse those links to discover its children. Append each existing left child before its right child to build the next level's chain.",
+      "tags": [
+        "trees",
+        "pointers",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/populating-next-right-pointers-in-each-node-ii/description/"
+    },
+    {
+      "id": "X15",
+      "title": "Tracking Asymmetric BST Preorder Bounds",
+      "takeaway": "In BST preorder verification, upper bounds tighten on descent and relax on return, so they need a stack. The lower bound only tightens, so one variable suffices.",
+      "details": "For distinct-key BST preorder verification, popping ancestors models leaving completed subtrees and releases their upper bounds. The last popped value becomes the strongest lower bound, preventing later values from returning to a finished left region.",
+      "tags": [
+        "binary-search-trees",
+        "monotonic-stack",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/verify-preorder-sequence-in-binary-search-tree/description/"
+    },
+    {
+      "id": "X16",
+      "title": "Counting Unfinished Tree Serialization Slots",
+      "takeaway": "To validate a null-marked binary-tree preorder, you do not need to store every unfinished child position—only how many remain.",
+      "details": "Start with one pending root slot; a non-null token consumes one slot and creates two, while a null token only consumes one. Require a positive count before every token and zero after the final token; total counts alone cannot reject every invalid ordering.",
+      "tags": [
+        "trees",
+        "counting",
+        "state-design",
+        "space-optimization"
+      ],
+      "code": "Input: 1,2,#,#,#\n\nBefore tokens: expect root                         slots = 1\nRead 1: fill root; expect 1.left and 1.right        slots = 2\nRead 2: fill 1.left; expect 2.left, 2.right, 1.right slots = 3\nRead #: fill 2.left with null                      slots = 2\nRead #: fill 2.right with null                     slots = 1\nRead #: fill 1.right with null                     slots = 0\n\nStart tree:      ?\nAfter 1:        1\n               / \\\n              ?   ?\nAfter 2:        1\n               / \\\n              2   ?\n             / \\\n            ?   ?\nEnd:            1\n               / \\\n              2   #\n             / \\\n            #   #\n",
+      "language": "text",
+      "sourceUrl": "https://leetcode.com/problems/verify-preorder-serialization-of-a-binary-tree/description/"
+    },
+    {
+      "id": "DP046",
+      "title": "Scanning Common Substrings by Diagonal",
+      "takeaway": "For longest common substring, each cell depends only on its preceding diagonal cell; scanning whole diagonals needs one streak instead of a row.",
+      "details": "Longest-common-substring states extend only the preceding diagonal match. Process one whole diagonal at a time, incrementing a streak on equality and resetting it on mismatch, while retaining the maximum streak across diagonals.",
+      "tags": [
+        "dynamic-programming",
+        "strings",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/longest-common-substring"
+    },
+    {
+      "id": "DP019",
+      "title": "Duplicate Paths Change Counting Results",
+      "takeaway": "Duplicate paths to the same choice do not change a minimum, but adding their counts overcounts the choice.",
+      "details": "In coin change, different orderings of the same combination may leave a minimum coin count unchanged. Adding those orderings as separate results overcounts when the required objects are combinations rather than sequences.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/coin-change-ii/description/"
+    },
+    {
+      "id": "DP020",
+      "title": "Canonical Denomination Order for Combinations",
+      "takeaway": "Count combinations by fixing a denomination order: every multiplicity choice has one ordered representative, without sorting the input.",
+      "details": "Process coin denominations in one fixed index order so each combination has one representative grouped by denomination. Numeric sorting is unnecessary; consistency of the denomination order is what removes permutation duplicates.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/coin-change-ii/description/"
+    },
+    {
+      "id": "DP023",
+      "title": "Counting a Subset and Its Complement",
+      "takeaway": "When choosing one side fixes its complement, count that choice once; multiplying counts would treat dependent choices as independent.",
+      "details": "When a partition is defined by assigning indices to S2, every remaining index is forced into S1. Count the valid S2 selections once; independently selecting both sides would allow reused or omitted elements.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/count-partitions-with-given-difference"
+    },
+    {
+      "id": "DP024",
+      "title": "Largest Square Encodes Smaller Squares",
+      "takeaway": "At a fixed corner, a largest all-ones square of side k certifies every size 1 through k; one maximum replaces a whole Boolean size dimension.",
+      "details": "If the largest all-ones square ending at a bottom-right corner has side k, exactly one square of each side from 1 through k ends there. The single maximum therefore contributes k to the total count.",
+      "tags": [
+        "dynamic-programming",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-square-submatrices-with-all-ones/description/"
+    },
+    {
+      "id": "DP025",
+      "title": "Assigning Squares a Unique Corner",
+      "takeaway": "Count squares ending at a corner, not squares containing a cell: each square has one bottom-right owner, so summing contributions cannot duplicate it.",
+      "details": "Count all-ones squares by where they end, not by every cell they contain. Each square has exactly one bottom-right corner, so summing per-corner contributions counts it once.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-square-submatrices-with-all-ones/description/"
+    },
+    {
+      "id": "DP026",
+      "title": "Counting Zeros After Reaching Target",
+      "takeaway": "Reaching the target is not always the end of a counting problem: unprocessed zeros still create distinct take-or-skip choices.",
+      "details": "A remaining zero can be included or skipped without changing the subset sum. Returning one immediately when the remaining target reaches zero can miss distinct index selections, so the counting base case must still account for unprocessed zeros.",
+      "tags": [
+        "dynamic-programming",
+        "counting",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "DP054",
+      "title": "Tracking Optimal Length and Multiplicity",
+      "takeaway": "To count optimal solutions, keep quality and multiplicity: replace the count on improvement, and add counts on ties when the represented choices are disjoint.",
+      "details": "When extending increasing subsequences, a longer candidate replaces both the best length and its count; an equally long candidate adds its count. Addition is valid when the predecessor choices represent disjoint subsequences.",
+      "tags": [
+        "dynamic-programming",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "DP063",
+      "title": "Distinct Zero Choices Share a State",
+      "takeaway": "Taking a zero and skipping it can call the same child state, but they are different choices, so add that child's count twice.",
+      "details": "In the subset-counting formulation of Target Sum, including and excluding a zero reach the same remaining state. They still represent two distinct choices, so both transitions contribute the child's count.",
+      "tags": [
+        "dynamic-programming",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/target-sum/description/"
+    },
+    {
+      "id": "trees_a_058",
+      "title": "Interleaving Independent BST Insertion Orders",
+      "takeaway": "Independent subsequences can be interleaved without changing their internal order: choose positions, then multiply by each side’s valid reorderings.",
+      "details": "Keep the root first, choose the L positions occupied by left-subtree values among the next L+R positions, and multiply by each subtree's valid reorderings. This counts insertion orders, not preorder traversals; internal order within each chosen side-order is preserved.",
+      "tags": [
+        "binary-search-trees",
+        "counting",
+        "math",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-ways-to-reorder-array-to-get-same-bst/"
+    },
+    {
+      "id": "TB25",
+      "title": "Unique Producers Remove Deduplication Needs",
+      "takeaway": "If every result has exactly one producer, a set adds no deduplication value.",
+      "details": "When deleting tree nodes, each surviving child of a deleted parent can be emitted exactly once by that parent. If the wrapper also handles the surviving original root once and output order is unrestricted, a set adds no deduplication benefit.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/delete-nodes-and-return-forest/description/"
+    },
+    {
+      "id": "TB42",
+      "title": "Owning Leaf Pairs at Their LCA",
+      "takeaway": "Count each pair of leaves at its LCA: that is the unique node where they lie in opposite child subtrees.",
+      "details": "Two distinct leaves occur in opposite child subtrees only at their lowest common ancestor. Counting cross-child pairs there gives each pair one owner, avoiding duplicates at higher ancestors.",
+      "tags": [
+        "trees",
+        "counting",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-good-leaf-nodes-pairs/description/"
+    },
+    {
+      "id": "TB43",
+      "title": "Preserving Multiplicity in Distance Summaries",
+      "takeaway": "Compress equal distances into frequencies, not a set; equal distances can still represent different leaves.",
+      "details": "Multiple leaves at the same distance remain distinct pair candidates. Store their frequency rather than deduplicating the distance; qualifying left and right buckets contribute the product of their frequencies.",
+      "tags": [
+        "trees",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-good-leaf-nodes-pairs/description/"
+    },
+    {
+      "id": "TB49",
+      "title": "Querying Prefixes Before Inserting Current",
+      "takeaway": "Query earlier prefixes before inserting the current one, or a zero target can count an empty path.",
+      "details": "For Path Sum III, query earlier ancestor-prefix frequencies before inserting the current prefix. Otherwise a zero target lets the current prefix pair with itself, incorrectly counting an empty path.",
+      "tags": [
+        "trees",
+        "prefix-sums",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/path-sum-iii/description/"
+    },
+    {
+      "id": "X10",
+      "title": "Distinguishing BST Shapes from Insertion Orders",
+      "takeaway": "Count the resulting structures, not the different construction orders that happen to produce the same structure.",
+      "details": "For a fixed set of distinct keys, inorder ordering assigns values uniquely to each BST shape. Different insertion orders can produce that same shape, so they must not be counted separately when the requested objects are distinct BSTs.",
+      "tags": [
+        "binary-search-trees",
+        "counting",
+        "dynamic-programming"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/unique-binary-search-trees/"
+    },
+    {
+      "id": "X11",
+      "title": "One Choice for an Empty Subtree",
+      "takeaway": "An empty subtree is one valid choice, not zero choices; otherwise pairing it with a nonempty subtree produces no combinations.",
+      "details": "When generating BSTs by pairing left and right subtree choices, an empty interval must return one empty-subtree choice. Returning no choices would make every pairing involving that empty side disappear.",
+      "tags": [
+        "binary-search-trees",
+        "counting",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/unique-binary-search-trees-ii/"
+    },
+    {
+      "id": "O19",
+      "title": "Fixed Row Order for N Queens",
+      "takeaway": "Fix one queen per row and a fixed row order: each recursion path represents one board, rather than another ordering of the same board.",
+      "details": "Place one queen per row and process rows in a fixed order while tracking occupied columns and diagonals. Each recursion path then identifies one board instead of another placement ordering of the same board.",
+      "tags": [
+        "backtracking",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/n-queens/description/"
+    },
+    {
+      "id": "O32",
+      "title": "Isolating Exact GCD Pair Counts",
+      "takeaway": "'Both values are divisible by d' counts GCDs that are multiples of d. Subtract the already-known larger multiples to isolate GCD exactly d.",
+      "details": "Choosing pairs among values divisible by d counts every pair whose GCD is a multiple of d. Process d downward and subtract the exact counts already computed for its larger multiples to obtain the count with GCD exactly d.",
+      "tags": [
+        "math",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/sorted-gcd-pair-queries/"
+    },
+    {
+      "id": "TB39",
+      "title": "Separating Complete and Extendable Tree Paths",
+      "takeaway": "Keep “best anywhere” separate from “the value my caller can extend.”",
+      "details": "A ZigZag helper must return a length compatible with the incoming edge direction, while a maximum-path-sum helper may return only one extendable downward arm. Keep the best completed path separate from either caller-facing result; a completed maximum-sum path may use both child arms.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-zigzag-path-in-a-binary-tree/"
+    },
+    {
+      "id": "TB09",
+      "title": "Choosing a Recursive Return Contract",
+      "takeaway": "Return what the caller needs: facts about the subtree, or the subtree that should replace it.",
+      "details": "A tree helper can return facts about its subtree or the root that should replace it. For a modifying helper, the caller must reconnect the returned pointer, which may be the existing node, a descendant, or null.",
+      "tags": [
+        "trees",
+        "recursion",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-pruning/"
+    },
+    {
+      "id": "X03",
+      "title": "Returning Height with Deepest Node Candidates",
+      "takeaway": "Return the candidate answer together with the information its parent needs to choose between candidates; a deepest-node LCA needs the subtree height too.",
+      "details": "Return both the candidate LCA of a subtree's deepest nodes and that subtree's height. Unequal child heights select the taller side's candidate; equal heights select the current node, while the returned height always describes the whole current subtree.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/smallest-subtree-with-all-the-deepest-nodes/description/"
+    },
+    {
+      "id": "X04",
+      "title": "Separating Path State from Shared Totals",
+      "takeaway": "Branch-local path state and shared aggregation have different jobs. Copy or restore the path state; deliberately share the total.",
+      "details": "A root-to-leaf number belongs to one branch and must be passed by value or restored before visiting a sibling. A shared total may intentionally aggregate both branches, provided it is reset for each top-level invocation.",
+      "tags": [
+        "trees",
+        "recursion",
+        "backtracking",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/sum-root-to-leaf-numbers/description/"
+    },
+    {
+      "id": "X14",
+      "title": "Leaving Out of Range Tokens Unread",
+      "takeaway": "A value that does not fit the current subtree can mean 'this subtree is finished,' not 'the whole input is invalid.' Leave it unread for an ancestor's next branch.",
+      "details": "A bounded BST-preorder parser consumes the next value only if it belongs to the current subtree. A non-fitting value may belong to an ancestor's later branch, so leave it unread and reject only if values remain after the complete parse.",
+      "tags": [
+        "binary-search-trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/verify-preorder-sequence-in-binary-search-tree/description/"
+    },
+    {
+      "id": "X17",
+      "title": "Checking Complete Input Consumption",
+      "takeaway": "Successfully parsing one complete structure is not the same as successfully parsing the whole input; check that nothing remains unread.",
+      "details": "A recursive serialization validator can successfully consume one tree while leaving extra tokens. The wrapper must require both successful subtree validation and an index at the end of the input; the helper must also reject missing tokens before reading them.",
+      "tags": [
+        "trees",
+        "recursion",
+        "testing"
+      ],
+      "code": "validateOneSubtree:\n    if index >= token count: return false\n    consume the next token (advance index even for #)\n    if token is #: return true\n    return validateLeftSubtree AND validateRightSubtree\n\nvalidateWholeInput:\n    index = 0\n    valid = validateOneSubtree\n    return valid AND index == token count\n",
+      "language": "text",
+      "sourceUrl": "https://leetcode.com/problems/verify-preorder-serialization-of-a-binary-tree/description/"
+    },
+    {
+      "id": "TB24",
+      "title": "Testing Leaves After Child Pruning",
+      "takeaway": "For repeated deletion of target-valued leaves, judge a node using the children that remain after recursion—not the children it originally had.",
+      "details": "Repeated target-leaf deletion can turn a former parent into a new removable leaf. Reconnect the recursively pruned children before deciding whether the current target-valued node is now a leaf.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/delete-leaves-with-a-given-value/description/"
+    },
+    {
+      "id": "TB36",
+      "title": "Passing Path Sums and Returning Survival",
+      "takeaway": "Send path information down; return whether any qualifying continuation survives up.",
+      "details": "For insufficient-path pruning, pass the accumulated ancestor sum down to evaluate original root-to-leaf paths. Return whether any qualifying continuation survives so the parent can decide which child links to keep.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/insufficient-nodes-in-root-to-leaf-paths/description/"
+    },
+    {
+      "id": "TB37",
+      "title": "Preserving Original Leaf Semantics",
+      "takeaway": "A node becoming a leaf does not make it an original path endpoint.",
+      "details": "When qualification applies to original root-to-leaf paths, a node exposed by pruning does not become a new valid endpoint. Record or test its original leaf status before removing children.",
+      "tags": [
+        "trees",
+        "recursion",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/insufficient-nodes-in-root-to-leaf-paths/description/"
+    },
+    {
+      "id": "TB38",
+      "title": "Evaluating Both Branches Before Combining",
+      "takeaway": "“Either branch succeeds” permits short-circuiting only if skipping the other branch also skips no required work.",
+      "details": "A pruning helper must visit both children even if either surviving branch is enough to keep the parent. Evaluate both recursive calls first, then combine their Boolean results; short-circuit OR can skip required mutations.",
+      "tags": [
+        "trees",
+        "recursion",
+        "cpp",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/insufficient-nodes-in-root-to-leaf-paths/description/"
+    },
+    {
+      "id": "TB44",
+      "title": "Pruning Summaries After Counting Local Answers",
+      "takeaway": "Discard a summary when it cannot help an ancestor—not before counting the answers wholly inside its subtree.",
+      "details": "In bounded-distance leaf-pair counting, a leaf distance may be too large to help form a pair at any ancestor. Discard it from the returned summary only after counting valid pairs already formed inside the current subtree.",
+      "tags": [
+        "trees",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-good-leaf-nodes-pairs/description/"
+    },
+    {
+      "id": "trees_a_011",
+      "title": "Clamping Optional Child Path Gains",
+      "takeaway": "Clamping each optional child gain at zero turns four path-sum cases into one expression.",
+      "details": "In maximum path sum, a negative child branch can be omitted, so clamp each optional gain to zero. The through-node candidate then covers node-only, one-child, and two-child cases, while the caller receives only one extendable downward arm.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-maximum-path-sum/"
+    },
+    {
+      "id": "trees_a_013",
+      "title": "Preserving Information Before Rewiring Links",
+      "takeaway": "Before overwriting a link, ask what information it is preserving; save only what the next step needs.",
+      "details": "Before replacing a tree pointer, determine whether its old target is still needed for the next connection. Save that attachment information separately instead of trying to recover it after the structure changes.",
+      "tags": [
+        "trees",
+        "pointers",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-upside-down/description/"
+    },
+    {
+      "id": "trees_a_014",
+      "title": "Separating New Roots from Attachment Nodes",
+      "takeaway": "The root returned by a transformation is not necessarily the node where the caller must reconnect.",
+      "details": "In upside-down tree transformation, the transformed subtree's new root is different from the old left child used for local reconnection. Preserve both roles separately to avoid repeated right-chain searches that can make the transformation quadratic.",
+      "tags": [
+        "trees",
+        "pointers",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-upside-down/description/"
+    },
+    {
+      "id": "trees_a_016",
+      "title": "Combining Downward Repair with Upward Recalculation",
+      "takeaway": "Fix only the next edge; recursion can propagate the requirement downward and restore exact values on the way back.",
+      "details": "For the increment-only children-sum transformation, repair the immediate deficit before recursing so the same local operation propagates downward. After the children are updated, set the parent to their final sum; these two phases fit in one recursive helper.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://www.youtube.com/watch?v=fnmisPM6cVo"
+    },
+    {
+      "id": "trees_a_043",
+      "title": "Propagating Recursive Search Completion",
+      "takeaway": "Returning from the call that found the answer does not stop callers that were already waiting; guard the points where execution resumes.",
+      "details": "Finding the kth inorder value and returning from that frame does not stop its waiting ancestors. Propagate a success result or check a shared stop condition wherever execution resumes after a recursive call.",
+      "tags": [
+        "binary-search-trees",
+        "recursion",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/kth-smallest-element-in-a-bst/description/"
+    },
+    {
+      "id": "trees_a_062",
+      "title": "Restoring Morris Threads After Failure",
+      "takeaway": "An answer may be known before an operation is safe to stop: temporary structural changes still have to be undone.",
+      "details": "Morris BST validation temporarily rewires predecessor links. After detecting an ordering violation, record failure but continue long enough to remove every temporary thread; returning immediately can leave the input tree corrupted.",
+      "tags": [
+        "binary-search-trees",
+        "pointers",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/validate-binary-search-tree/description/"
+    },
+    {
+      "id": "trees_a_064",
+      "title": "Separating Level Discovery from Contribution Scans",
+      "takeaway": "Stopping a contribution scan must not stop discovery of the next batch.",
+      "details": "For directional-prefix level sums, first gather children from every node in the current level. A later break in the summation loop must not prevent excluded nodes' children from appearing in subsequent levels.",
+      "tags": [
+        "trees",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/zigzag-level-sum-of-binary-tree/"
+    },
+    {
+      "id": "O01",
+      "title": "Finishing Component Traversal After Failure",
+      "takeaway": "Separate detecting a failure from finishing the traversal: if the outer loop relies on visited marks, an early return can split one component into several fake components.",
+      "details": "When an outer loop uses visited or color marks to identify components, detecting a coloring conflict must not leave the component half-visited. Set a failure flag and finish traversal so its unvisited tail is not counted later as a separate component.",
+      "tags": [
+        "graphs",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "O23",
+      "title": "Guaranteeing Progress in Precomputed Jumps",
+      "takeaway": "A jump to a precomputed index still needs a progress argument: if that index can equal the current one, the loop can stall.",
+      "details": "A prefix-maximum index that includes the current position can point back to that same position. In a backward jump scan, continue from strictly before the chosen index so each iteration makes progress and the loop can terminate.",
+      "tags": [
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "TB17",
+      "title": "Checking Bounds of Recursive Subproblems",
+      "takeaway": "Being inside the array is not enough: a recursive read must belong to the current subproblem.",
+      "details": "During traversal-based reconstruction, a potential child index may be inside the full array but outside the current subtree segment. Handle singleton subproblems and validate reads against the active segment, not only the container's bounds.",
+      "tags": [
+        "trees",
+        "recursion",
+        "reconstruction",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-postorder-traversal/description/"
+    },
+    {
+      "id": "TB01",
+      "title": "Avoiding Revisits with Tree Arrival Edges",
+      "takeaway": "In a tree, remembering the node you arrived from is enough to avoid revisits; in a cyclic graph, it is not.",
+      "details": "When traversing a tree through child and parent links, skipping the node just visited prevents retracing the unique arrival edge. This relies on the absence of undirected cycles; general cyclic graphs need additional visited-state tracking.",
+      "tags": [
+        "trees",
+        "graphs"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/all-nodes-distance-k-in-binary-tree/description/"
+    },
+    {
+      "id": "TB07",
+      "title": "Representing an Iterator as Paused Traversal",
+      "takeaway": "An iterator is a traversal paused with just enough state to resume—not necessarily a precomputed list.",
+      "details": "A BST iterator can retain only the traversal state needed to resume inorder at the next request. It need not materialize the complete traversal before returning the first value.",
+      "tags": [
+        "binary-search-trees",
+        "state-design",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-search-tree-iterator/"
+    },
+    {
+      "id": "TB08",
+      "title": "Accumulating Greater Values in Reverse Inorder",
+      "takeaway": "Choose an order that makes the aggregate incremental: reverse inorder turns BST suffix sums into one running sum.",
+      "details": "Reverse inorder visits BST values from greater to smaller. For the greater-sum transformation, a running total then contains the values already visited that contribute to the current node's replacement value.",
+      "tags": [
+        "binary-search-trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-search-tree-to-greater-sum-tree/description/"
+    },
+    {
+      "id": "TB10",
+      "title": "Capturing Right View with Right First DFS",
+      "takeaway": "Change visit order to make the answer the first item seen instead of the last.",
+      "details": "A right-first DFS encounters the right-view node first at each depth, so record only the first value for that depth. This changes which endpoint is easy to capture without changing the traversal's asymptotic complexity.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-right-side-view/"
+    },
+    {
+      "id": "TB11",
+      "title": "Composing Vertical Traversal Ordering Rules",
+      "takeaway": "Let each mechanism supply one ordering: BFS supplies depth, enqueue order breaks ties, and the map orders columns.",
+      "details": "For vertical order with left-to-right ties, BFS provides increasing depth, left-before-right enqueueing provides tie order, and an ordered map provides column order. Those guarantees remove the need for a separate depth sort within each column.",
+      "tags": [
+        "trees"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-vertical-order-traversal/description/"
+    },
+    {
+      "id": "TB12",
+      "title": "Understanding Stable Ordering Guarantees",
+      "takeaway": "Stability preserves an order you already established; it does not know the tie-breaking order you intended.",
+      "details": "A stable ordering operation preserves the existing input order among equivalent keys. It cannot create the intended left-to-right tie order unless the earlier traversal or collection step already established it.",
+      "tags": [
+        "trees",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-vertical-order-traversal/description/"
+    },
+    {
+      "id": "TB48",
+      "title": "Scoping Prefix Frequencies to Ancestors",
+      "takeaway": "A DFS prefix map represents the current ancestor chain—not every prefix ever seen.",
+      "details": "In Path Sum III, the prefix-frequency map must describe only the active root-to-current ancestor chain. Insert before visiting descendants and decrement on return so a completed sibling branch cannot supply a false ancestor prefix.",
+      "tags": [
+        "trees",
+        "prefix-sums",
+        "backtracking"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/path-sum-iii/description/"
+    },
+    {
+      "id": "X05",
+      "title": "Making First Seen Mean Shallowest",
+      "takeaway": "'First seen' means 'shallowest' only when the traversal order guarantees it. BFS supplies that guarantee; DFS needs an explicit depth comparison.",
+      "details": "For a tree's top view, BFS guarantees the first node encountered in each column has minimum depth. DFS can encounter a deeper node first and therefore needs an explicit per-column depth comparison.",
+      "tags": [
+        "trees",
+        "graphs"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/top-view-of-bt"
+    },
+    {
+      "id": "trees_a_012",
+      "title": "Deriving Postorder from Reversed Preorder",
+      "takeaway": "When node-last order feels awkward, reverse the desired order and look for an easy node-first traversal.",
+      "details": "Reverse the desired left-right-root order to obtain root-right-left, which is easy to generate as modified preorder. Reversing the collected result produces postorder; an explicit stack must push left before right to visit right first.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-postorder-traversal/"
+    },
+    {
+      "id": "trees_a_015",
+      "title": "Separating Zigzag Display from BFS Order",
+      "takeaway": "The queue decides visit order; the output decides display order. Zigzagging the answer does not require zigzagging the traversal.",
+      "details": "Keep queue traversal and child scheduling in ordinary left-to-right BFS order. Reverse only the completed level's output when needed, toggling direction once per level.",
+      "tags": [
+        "trees"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-zigzag-level-order-traversal/description/"
+    },
+    {
+      "id": "trees_a_026",
+      "title": "Visiting Faulty Pointer Targets First",
+      "takeaway": "Changing traversal order can make the needed information available without storing it explicitly.",
+      "details": "When the one faulty right pointer targets a distinct node at the same depth strictly to its right, right-first DFS visits that target before the faulty owner. This ordering supplies the needed seen-node evidence without explicitly storing levels.",
+      "tags": [
+        "trees",
+        "recursion",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/correct-a-binary-tree/"
+    },
+    {
+      "id": "trees_a_038",
+      "title": "Distinguishing Tree Edges from Added Links",
+      "takeaway": "A visited set prevents repeated traversal; it does not tell you which links belong to the structure you meant to measure.",
+      "details": "In a tree augmented with links between leaves, a visited set prevents repeated expansion but does not identify original child edges. Following added links can make graph distance differ from tree depth, so identify the intended structural edges before measuring height.",
+      "tags": [
+        "trees",
+        "graphs",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/2773"
+    },
+    {
+      "id": "trees_a_041",
+      "title": "Tracking Active Ancestors in Preorder",
+      "takeaway": "A preorder traversal cannot return to a subtree after finishing it.",
+      "details": "For preorder entries with required parents, pop finished subtrees until the stack top is the next entry's parent. If that parent is no longer active, the order is invalid: preorder cannot return to a completed subtree.",
+      "tags": [
+        "trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/is-array-a-preorder-of-some-binary-tree/"
+    },
+    {
+      "id": "trees_a_045",
+      "title": "Separating Match Starts from Consecutive Matching",
+      "takeaway": "Finding a start may search past nodes; matching from that start may not skip them.",
+      "details": "Finding where a linked-list pattern begins may search every tree node, but matching from a chosen start must follow consecutive downward nodes. Keep those jobs distinct so a failed match does not hide an overlapping valid start below it.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/linked-list-in-binary-tree/description/"
+    },
+    {
+      "id": "trees_a_060",
+      "title": "Modeling DFS Entry Middle and Exit",
+      "takeaway": "Preorder, inorder, and postorder observe the same DFS lifecycle at entry, middle, and exit.",
+      "details": "Preorder records a node at entry, inorder after its left subtree, and postorder after both subtrees. An explicit node-and-state stack models the same recursive frame by remembering which checkpoint must resume next.",
+      "tags": [
+        "trees",
+        "recursion",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/prep-hub/strivers-a2z-dsa-sheet"
+    },
+    {
+      "id": "trees_a_021",
+      "title": "Binary Searching a Preorder Partition",
+      "takeaway": "Binary search needs a monotone predicate, not sorted values.",
+      "details": "Within a valid distinct-key BST subtree's preorder segment, values greater than the root form a contiguous right-subtree suffix. That false-then-true predicate permits boundary search even though the segment is not sorted; arbitrary unsorted input does not provide this guarantee.",
+      "tags": [
+        "binary-search-trees",
+        "binary-search",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_022",
+      "title": "Preserving First True Boundary Candidates",
+      "takeaway": "possible answer → keep mid; impossible answer → skip mid.",
+      "details": "In the first-true search variant that retains its answer inside the search bounds, a true midpoint remains a candidate, so set right to mid. A false midpoint and all earlier positions are impossible, so set left to mid+1.",
+      "tags": [
+        "binary-search"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_023",
+      "title": "Using an Unreadable Boundary Sentinel",
+      "takeaway": "One-past-end can be a possible answer without being a readable element.",
+      "details": "A first-true boundary search may return one past the segment to mean no true position exists. With left less than right and a floor midpoint, reads remain inside the real segment; the final sentinel is an answer position, not an element to dereference.",
+      "tags": [
+        "binary-search",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-search-tree-from-preorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_035",
+      "title": "Separating Search Position from Best Candidate",
+      "takeaway": "The pointer exploring the search space and the best answer found so far are two different jobs.",
+      "details": "A floor or ceil search may need to traverse through a node that is not itself a valid answer. Keep the traversal pointer separate from the best valid candidate so exploring a promising subtree does not lose the saved answer or stall the search.",
+      "tags": [
+        "binary-search-trees",
+        "pointers",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/floor-and-ceil-in-a-bst"
+    },
+    {
+      "id": "trees_a_036",
+      "title": "Retaining an Extra Rank for Exclusion",
+      "takeaway": "To recompute the top k after excluding one contribution, retain the top k+1.",
+      "details": "To recover the top k contributions after excluding one child, retain the top k+1 beforehand. Preserve identity or multiplicity so exactly that child's contribution is removed, and use the problem's default when too few contributions exist.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/F"
+    },
+    {
+      "id": "trees_a_042",
+      "title": "Ranking Perfect Subtrees by Height",
+      "takeaway": "If a quantity is a strictly increasing function of a cheaper representation, rank the representation and convert only the final answer.",
+      "details": "A perfect subtree with height h has size 2^h−1, so height and size induce the same ranking. Preserve duplicate heights when finding the kth subtree, then convert only the selected height if sizes are not already available.",
+      "tags": [
+        "trees",
+        "math",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/k-th-largest-perfect-subtree-size-in-binary-tree/description/"
+    },
+    {
+      "id": "TB15",
+      "title": "Evicting the Sorted Window Endpoint",
+      "takeaway": "The oldest value need not be the farthest; in a sorted closest-k window, it is still the only one an incoming larger value can evict.",
+      "details": "During increasing-order traversal for the closest k values, the queue front is the smallest retained value, not necessarily the farthest. An incoming larger value is compared against that left endpoint to decide whether the retained sorted window should advance.",
+      "tags": [
+        "binary-search-trees",
+        "sliding-window"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/272"
+    },
+    {
+      "id": "TB20",
+      "title": "Binary Searching Complete Tree Occupancy",
+      "takeaway": "Completeness turns last-level occupancy into true…true, false…false; counting nodes becomes finding a boundary.",
+      "details": "A complete binary tree fills its last level from left to right without gaps. Existence by last-level position is therefore true followed by false, allowing a boundary search to determine how many positions are occupied.",
+      "tags": [
+        "trees",
+        "binary-search"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-complete-tree-nodes/"
+    },
+    {
+      "id": "TB27",
+      "title": "Relating Adjacent BST Keys by Ancestry",
+      "takeaway": "Adjacent BST keys must be ancestor-related: separate branches would force a key between them at their LCA.",
+      "details": "For distinct keys, immediate predecessor and successor among already-inserted values cannot lie in separate branches. Their lowest common ancestor would otherwise have a key strictly between them, contradicting their adjacency.",
+      "tags": [
+        "binary-search-trees",
+        "trees"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/1902"
+    },
+    {
+      "id": "X07",
+      "title": "Eliminating Impossible Two Sum Candidates",
+      "takeaway": "In a sorted two-sum scan, if the smallest candidate plus the largest remaining partner is still too small, no remaining partner can rescue that candidate.",
+      "details": "Compare the smallest remaining value from one BST with the largest remaining value from the other. If their sum is too small, discard the smaller candidate; if too large, discard the larger one, because no remaining partner can fix that candidate's sum.",
+      "tags": [
+        "binary-search-trees",
+        "two-pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/two-sum-bsts/"
+    },
+    {
+      "id": "O06",
+      "title": "Checking Neighboring Occurrences on a Circle",
+      "takeaway": "For the nearest equal value on a circle, only the previous and next occurrences in circular index order can win.",
+      "details": "Store sorted occurrence indices for each value and locate the queried index in its list. Only its previous and next occurrences in circular order can be closest; apply wraparound distance, and return no match when the queried occurrence is the only one.",
+      "tags": [
+        "binary-search"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/closest-equal-element-queries/"
+    },
+    {
+      "id": "O27",
+      "title": "Search The Sales Threshold",
+      "takeaway": "Binary-search a monotonic threshold, not necessarily the returned answer. Here, the number of balls above a height is monotonic even though profit is what we return.",
+      "details": "For diminishing inventory values, the number of balls strictly above a height decreases as that height rises. Search this boundary, then use arithmetic-series sums and a partial final level to compute profit without simulating every sale.",
+      "tags": [
+        "binary-search",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/sell-diminishing-valued-colored-balls/description/"
+    },
+    {
+      "id": "O29",
+      "title": "Reject Impossible Digit Factors",
+      "takeaway": "Before searching for a zero-free digit product divisible by t, factor t: digits 1 through 9 cannot supply any prime outside 2, 3, 5 and 7.",
+      "details": "A product of nonzero decimal digits contains only the prime factors 2, 3, 5, and 7. Divide these factors out of the required divisor before searching; any remaining prime makes divisibility impossible.",
+      "tags": [
+        "math",
+        "strings"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/smallest-divisible-digit-product-ii/description/"
+    },
+    {
+      "id": "O04",
+      "title": "Positive Sums Support Sliding Windows",
+      "takeaway": "With positive values, a window can shrink from the left until its sum is valid; neither pointer ever needs to move backward.",
+      "details": "For the longest contiguous segment of positive values with sum at most a budget, extending right can only increase the sum and removing left can only decrease it. Each pointer moves forward at most once per element, giving linear total work.",
+      "tags": [
+        "sliding-window",
+        "two-pointers",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "DP033",
+      "title": "Check Validity After Shrinking",
+      "takeaway": "Shrinking a valid segment is not automatically safe: removing its left edge may reset the process and change every later decision.",
+      "details": "In Good Schedule, removing the first position restarts the process with need equal to 1. That reset can change later decisions and create a violation, so a valid segment does not imply its left-trimmed suffix is valid.",
+      "tags": [
+        "sliding-window",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/D"
+    },
+    {
+      "id": "DP039",
+      "title": "Summarize Reachability By Its Boundary",
+      "takeaway": "When every shorter forward jump is allowed, indices reachable from the start form a prefix; its farthest boundary summarizes the entire reachable set.",
+      "details": "In Jump Game, an allowed forward jump also permits every shorter jump. Reachable intervals therefore overlap into a prefix, allowing one farthest-reachable index to summarize the set instead of storing every reachable position.",
+      "tags": [
+        "greedy",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/jump-game/description/"
+    },
+    {
+      "id": "trees_a_030",
+      "title": "Exclude The Uncuttable Root",
+      "takeaway": "Exclude the root because there is no edge above it—not because zero totals need a special case.",
+      "details": "An equal partition requires cutting an existing parent edge, so the whole tree is never a candidate detachable subtree. Search only non-root nodes, including when the total is zero, and reject null children before testing their sums.",
+      "tags": [
+        "trees",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/equal-tree-partition/"
+    },
+    {
+      "id": "DP036",
+      "title": "Cover Circular Endpoint Exclusions",
+      "takeaway": "If two endpoints cannot both be chosen, solve the two cases excluding one endpoint; neither case has to force the other endpoint in.",
+      "details": "A valid circular-house selection skips the first house, the last house, or both. Taking the better linear solution after excluding each endpoint covers all valid selections without requiring the opposite endpoint to be selected.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/house-robber-ii/"
+    },
+    {
+      "id": "DP040",
+      "title": "Extend Transitive Divisibility Chains",
+      "takeaway": "When compatibility is transitive, checking a chain's last element can certify compatibility with the whole chain.",
+      "details": "In a valid divisibility chain, every earlier selected value divides the final value. If that final value divides a new candidate, transitivity certifies compatibility with the whole chain using one divisibility check.",
+      "tags": [
+        "dynamic-programming",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/largest-divisible-subset/description/"
+    },
+    {
+      "id": "DP010",
+      "title": "Justify Discarding DP Alternatives",
+      "takeaway": "DP preserves relevant alternatives; greedy needs a reason those alternatives can be discarded without losing an optimum.",
+      "details": "A DP state retains alternatives that can affect future profit, such as holding or being constrained by a cooldown. Replacing these alternatives with a greedy choice requires a reason that the discarded histories cannot lead to a better result.",
+      "tags": [
+        "dynamic-programming",
+        "greedy",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-cooldown/"
+    },
+    {
+      "id": "DP011",
+      "title": "Interpret Adjusted Purchase Thresholds",
+      "takeaway": "A greedy variable can be an adjusted break-even threshold, not a literal purchase price: provisional profit can still be extended into a later sale.",
+      "details": "In the stock-with-fee greedy method, buyCost can become an adjusted break-even threshold after recording provisional profit. It need not identify an actual purchase, and recording today's gain does not prevent extending the same opportunity to a later sale.",
+      "tags": [
+        "greedy",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/description/"
+    },
+    {
+      "id": "DP012",
+      "title": "Compare Drops Against Extra Fees",
+      "takeaway": "With unlimited trades, a transaction fee, and no cooldown, splitting a trade beats holding only when the peak-to-valley drop exceeds the extra fee.",
+      "details": "With unlimited trades and no cooldown, selling at a peak and rebuying at a later valley changes profit relative to holding by peak minus valley minus one extra fee. A larger drop favors splitting, equality ties, and the drop may span multiple days.",
+      "tags": [
+        "greedy",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/description/"
+    },
+    {
+      "id": "DP041",
+      "title": "Divisibility Lacks Minimum Tail Dominance",
+      "takeaway": "The LIS recurrence transfers to divisibility chains; minimum-tail compression does not, because a smaller number is not always easier to extend by divisibility.",
+      "details": "The quadratic LIS-style recurrence applies to sorted divisibility chains, but keeping only the smallest tail for each length loses necessary alternatives. For example, 9 extends a chain ending at 3 but not one ending at the smaller value 2.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/largest-divisible-subset/description/"
+    },
+    {
+      "id": "DP043",
+      "title": "Join Subsequences At One Peak",
+      "takeaway": "Combine two optimal halves at the same boundary; independent global maxima may not belong to a compatible whole.",
+      "details": "For a bitonic subsequence, combine the increasing subsequence ending at an index with the decreasing subsequence starting at that same index, subtracting the shared peak once. Independent global maxima can occur at incompatible positions and cannot safely be added.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://takeuforward.org/practice/dsa/longest-bitonic-subsequence"
+    },
+    {
+      "id": "DP067",
+      "title": "Commit Earlier Wildcard Block Matches",
+      "takeaway": "In wildcard matching, an earlier feasible intermediate block leaves at least as much suffix; the next star can absorb the gap, so choices before it need not be revisited.",
+      "details": "For an intermediate fixed block followed by another star, an earlier feasible match leaves at least as much source text for the remainder. The following star can absorb the extra gap, so moving that block later cannot unlock a suffix that the earlier placement excludes.",
+      "tags": [
+        "strings",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/wildcard-matching/description/"
+    },
+    {
+      "id": "O05",
+      "title": "Merge Candy Bounds By Maximum",
+      "takeaway": "When left and right neighbors impose separate lower bounds, take their maximum to satisfy both—not their sum.",
+      "details": "The two directional passes impose lower bounds from the original left and right neighbors. Retain the maximum of those bounds to satisfy both with the fewest candies; summing overpays, while sorting would destroy the adjacency constraints.",
+      "tags": [
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/candy/"
+    },
+    {
+      "id": "O17",
+      "title": "Bound A Restricted Minimum Globally",
+      "takeaway": "A global surrogate minimum can cover a restricted region when true cost never exceeds the surrogate and equals it inside that region. Evaluate the candidate's true cost.",
+      "details": "In Minimum Influence, true cost never exceeds p+c and equals p+c within the center region. The globally smallest p+c item, evaluated using its true cost, is therefore no worse than any center-region candidate even if the selected item lies outside that region.",
+      "tags": [
+        "greedy",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/contest/2230/problem/E"
+    },
+    {
+      "id": "O21",
+      "title": "Compare Equivalent Reading Bundles",
+      "takeaway": "Compare options that satisfy the same requirement: one book liked by both versus one Alice-only book plus one Bob-only book.",
+      "details": "One both-liked book and a pair containing one Alice-only plus one Bob-only book each satisfy one additional requirement for both readers. Sort the three categories and compare these equivalent bundles, checking that each candidate bundle is available before choosing.",
+      "tags": [
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/problemset/problem/1374/E1"
+    },
+    {
+      "id": "O25",
+      "title": "Prioritize The Dominant Row Bit",
+      "takeaway": "Making the highest bit 1 is safe when that bit is worth more than every possible loss in all lower bits combined.",
+      "details": "In a binary row, the highest bit is worth one more than every lower bit combined, so making it 1 outweighs any lower-bit loss caused by that row flip. Once all first bits are 1, choose each remaining column's orientation independently to maximize its number of 1s.",
+      "tags": [
+        "greedy",
+        "bit-manipulation",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/score-after-flipping-matrix/description/"
+    },
+    {
+      "id": "O30",
+      "title": "Exchange For Earliest Legal Placement",
+      "takeaway": "To prove the earliest legal placement is safe, exchange it with a later optimal placement: left-side legality remains, and the space available to the right only increases.",
+      "details": "In Social Distance, place a new 1 only when it is far enough from the latest left 1 and the nearest original right 1. Replacing a later optimal placement with this earlier legal position preserves left-side legality and only enlarges the gaps to placements on the right.",
+      "tags": [
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/problemset/problem/1367/C"
+    },
+    {
+      "id": "O38",
+      "title": "Close Valid Teams Immediately",
+      "takeaway": "After sorting team-size requirements, close a team as soon as it is valid; giving it extra people cannot increase the number of teams.",
+      "details": "After sorting requirements, the current largest requirement determines when the growing team is valid. Closing it immediately preserves unused people for later teams; adding extra members to an already valid team cannot increase the team count.",
+      "tags": [
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/problemset/problem/1355/B"
+    },
+    {
+      "id": "trees_a_005",
+      "title": "Claim A Component At Its Entrance",
+      "takeaway": "To maximize a region you can secure, start at its entrance: any deeper choice gets at most the same component.",
+      "details": "Removing the first player's node conceptually leaves its left, right, and parent-side components. Starting at a component's adjacent entrance secures the entire component, while a deeper start cannot secure more; a winning response exists exactly when one component contains a majority of nodes.",
+      "tags": [
+        "trees",
+        "greedy",
+        "game-theory"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-coloring-game/description/"
+    },
+    {
+      "id": "trees_a_025",
+      "title": "Stop After One Compatible Subtree",
+      "takeaway": "Once a split fixes independent left and right subproblems, one successful left answer is enough; enumerating its alternatives cannot repair the right side.",
+      "details": "With repeated traversal labels, each candidate root occurrence fixes both subtree sizes and traversal ranges. For that fixed split, any successful left reconstruction suffices when seeking one tree: a different left shape cannot change whether the independently fixed right range is reconstructible.",
+      "tags": [
+        "trees",
+        "backtracking",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_047",
+      "title": "Raise The Smaller Branch Root",
+      "takeaway": "Increasing a shared parent cannot close a difference between its branches; increase the smaller branch’s root to lift every path in it together.",
+      "details": "After balancing each child subtree internally, increasing their shared parent changes both path totals equally and cannot close the gap. Increasing the smaller child's root by that gap raises every path on that side together, achieving the required adjustment without separate payments at each leaf.",
+      "tags": [
+        "trees",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/make-costs-of-paths-equal-in-a-binary-tree/description/"
+    },
+    {
+      "id": "TB31",
+      "title": "Prove Coin Moves Per Edge",
+      "takeaway": "One exit edge forces a subtree’s net transfer: summing unavoidable crossings gives the optimum when those flows are achievable.",
+      "details": "A subtree has only one edge connecting it to the outside, so its coin surplus or deficit forces that many net crossings of the parent edge. Summing these edge-wise lower bounds proves optimality when the distribution process realizes all of them.",
+      "tags": [
+        "trees",
+        "greedy",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/distribute-coins-in-binary-tree/description/"
+    },
+    {
+      "id": "TB35",
+      "title": "Preorder Values Force Child Order",
+      "takeaway": "If no later decision can change the next required item, the current choice is forced—not a branch to optimize.",
+      "details": "When two child roots have distinct values, the next required preorder value determines which child must be visited first. If it names the right child, flipping the current node is unavoidable; later choices cannot alter that next visit.",
+      "tags": [
+        "trees",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/flip-binary-tree-to-match-preorder-traversal/description/"
+    },
+    {
+      "id": "TB41",
+      "title": "Separate Termination From Minimum Swaps",
+      "takeaway": "Permanent progress proves termination; a matching lower bound proves minimality.",
+      "details": "A level-sorting swap procedure can make permanent progress and still need a separate argument that its swap count is minimal. The permutation's cycle-count lower bound supplies that optimality argument, rather than progress alone.",
+      "tags": [
+        "trees",
+        "greedy",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-number-of-operations-to-sort-a-binary-tree-by-level/description/"
+    },
+    {
+      "id": "trees_a_001",
+      "title": "Consume BST Values As Streams",
+      "takeaway": "Sorted-order algorithms can operate on streams: BST iterators let you merge or scan opposite ends without materializing both traversals.",
+      "details": "Inorder iterators expose BST values in sorted order without storing complete traversals. Two iterators can feed a sorted merge lazily; account separately for their temporary traversal state and the space required by the returned answer.",
+      "tags": [
+        "binary-search-trees",
+        "two-pointers",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/all-elements-in-two-binary-search-trees/description/"
+    },
+    {
+      "id": "trees_a_024",
+      "title": "Distinguish Construction From Unique Recovery",
+      "takeaway": "Constructing one compatible answer and recovering the unique original answer are different requirements.",
+      "details": "Repeated labels in preorder and inorder can permit zero, one, or several compatible trees. Returning the first successful reconstruction proves existence only; it neither recovers a uniquely determined original nor enumerates every valid tree.",
+      "tags": [
+        "trees",
+        "backtracking",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-tree-from-preorder-and-inorder-traversal/description/"
+    },
+    {
+      "id": "trees_a_033",
+      "title": "Decode Paths From Shifted Labels",
+      "takeaway": "Adding one to a zero-based binary-tree label exposes its path: skip the leading one, then zero means left and one means right.",
+      "details": "For labels with children 2x+1 and 2x+2, shifting to x+1 makes left and right children append binary 0 and 1. Skip the leading root bit of target+1 and follow the remaining bits, rejecting the target if any required child is missing.",
+      "tags": [
+        "trees",
+        "bit-manipulation"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/find-elements-in-a-contaminated-binary-tree/description/"
+    },
+    {
+      "id": "trees_a_053",
+      "title": "Normalize Width Indices Without Compression",
+      "takeaway": "Preserve distances and shift the origin; normalization removes irrelevant offsets, not meaningful gaps.",
+      "details": "Subtracting the same first index from every position on a level preserves all differences and therefore the width. Renumbering only the present nodes consecutively would erase meaningful gaps; normalization shifts the origin but does not compress the level.",
+      "tags": [
+        "trees",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-width-of-binary-tree/description/"
+    },
+    {
+      "id": "TB05",
+      "title": "Rebuild For Balance Not Original Shape",
+      "takeaway": "“Balance this BST” does not mean preserve its shape: if only values and balance matter, rebuilding is allowed.",
+      "details": "Balancing a BST requires preserving its values and search ordering, not its old shape. An inorder sequence can therefore be rebuilt around middle elements even though that sequence does not uniquely identify the original tree.",
+      "tags": [
+        "binary-search-trees",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/balance-a-binary-search-tree/description/"
+    },
+    {
+      "id": "TB13",
+      "title": "Compare Addition Trees By Multiplicity",
+      "takeaway": "For addition-only expressions, equivalence is equal variable multiplicities—not equal tree shapes.",
+      "details": "When addition is the only operator, rearranging leaves or parentheses does not change the expression. Compare the number of occurrences of each variable, including repetitions, rather than requiring equal tree shapes or traversal order.",
+      "tags": [
+        "trees",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/check-if-two-expression-trees-are-equivalent/description/"
+    },
+    {
+      "id": "TB26",
+      "title": "Distinguish Insertion Order From Preorder",
+      "takeaway": "Insertion order is not preorder: left- and right-subtree insertions can interleave, so a contiguous split may not exist.",
+      "details": "A BST insertion sequence identifies the root with its first value, but subsequent left- and right-subtree insertions can interleave. Do not assume that all left-subtree values form a contiguous block as they would in a preorder traversal.",
+      "tags": [
+        "binary-search-trees",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/1902"
+    },
+    {
+      "id": "TB34",
+      "title": "Store A Continuation Before Flattening",
+      "takeaway": "A splice point need not be the final tail; it can hold a continuation that later rewrites move behind unfinished work.",
+      "details": "While flattening a binary tree, a splice endpoint can temporarily hold the original right-side continuation before the left subtree is fully flattened. Later pointer rewrites move that continuation behind the remaining work, so the endpoint need not already be the final tail.",
+      "tags": [
+        "trees",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/flatten-binary-tree-to-linked-list/"
+    },
+    {
+      "id": "TB40",
+      "title": "Allow Prefix Trees To Be Reparented",
+      "takeaway": "Build a correct structure for the prefix you have; a parent link need not be permanent to be useful now.",
+      "details": "During maximum-binary-tree construction, maintain a valid tree for the prefix processed so far. A later value may change an earlier parent link; requiring every initial link to be permanent prevents useful incremental construction.",
+      "tags": [
+        "trees",
+        "monotonic-stack"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-binary-tree/description/"
+    },
+    {
+      "id": "TB46",
+      "title": "Translate Zigzag Labels Before Navigation",
+      "takeaway": "Convert to ordinary coordinates, do the easy operation there, then convert back.",
+      "details": "Zigzag numbering obscures the ordinary parent relationship. Translate a label into the corresponding ordinary tree coordinate, perform the parent operation there, and translate back into the required zigzag numbering.",
+      "tags": [
+        "trees",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/path-in-zigzag-labelled-binary-tree/description/"
+    },
+    {
+      "id": "TB52",
+      "title": "Separate List Head From Append Tail",
+      "takeaway": "Dummy remembers the beginning; tail keeps appending.",
+      "details": "When linking the next tree level, a dummy node preserves its beginning while a tail pointer advances as children are appended. These roles must remain separate so moving the append position does not lose the level's start.",
+      "tags": [
+        "trees",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/populating-next-right-pointers-in-each-node-ii/description/"
+    },
+    {
+      "id": "X01",
+      "title": "Serialize Missing Child Positions Too",
+      "takeaway": "To serialize a general binary tree, preserve the missing positions as well as the values. One traversal with null markers can encode what a values-only traversal loses.",
+      "details": "A values-only traversal can confuse a left-only child with a right-only child. A defined traversal format with explicit null markers preserves those missing positions and supports reconstruction even when node values repeat.",
+      "tags": [
+        "trees",
+        "strings",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://www.youtube.com/watch?v=-YbXySKJsX8"
+    },
+    {
+      "id": "X12",
+      "title": "Separate DSU Links From Tree Parents",
+      "takeaway": "A DSU parent links a node toward a component representative; it is not the node's parent in the input tree.",
+      "details": "DSU links lead to component representatives and may change during path compression or union; they do not encode the proposed tree's actual edges. Track incoming tree edges separately, and compare find results rather than raw DSU parent entries when checking component membership.",
+      "tags": [
+        "trees",
+        "disjoint-set-union",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/validate-binary-tree-nodes/description/"
+    },
+    {
+      "id": "O07",
+      "title": "Keep Filtered Digit Indices Separate",
+      "takeaway": "A filtered array creates a second index space. A position in the original string is not a position among its nonzero digits.",
+      "details": "The concatenation prefix structure is indexed among nonzero digits, while the digit-sum prefix structure uses original string positions. Convert a query's endpoints into the filtered index space before extracting the concatenation, and return zero when that filtered range is empty.",
+      "tags": [
+        "strings",
+        "prefix-sums",
+        "binary-search",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/concatenate-non-zero-digits-and-multiply-by-sum-ii/description/"
+    },
+    {
+      "id": "O13",
+      "title": "Read Comparators As Ordering Questions",
+      "takeaway": "comp(a, b) answers one question: 'Should a come before b?'",
+      "details": "Read comp(a,b) as whether a should precede b. Ascending numeric order uses a<b and descending order uses a>b; a false result alone does not distinguish equivalence from b preceding a.",
+      "tags": [
+        "cpp"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/minimum-initial-energy-to-finish-tasks/"
+    },
+    {
+      "id": "O26",
+      "title": "Query Virtual Row Flips",
+      "takeaway": "You do not have to perform a transformation to query its result: after normalizing each row's first bit to 1, a cell is 1 exactly when its original bit equals that row's first bit.",
+      "details": "To normalize a row's first bit to 1, flip the row only if that original bit is 0. After this virtual operation, a cell is 1 exactly when its original value matches the row's original first bit, so column counts need not mutate the matrix.",
+      "tags": [
+        "bit-manipulation",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/score-after-flipping-matrix/description/"
+    },
+    {
+      "id": "O36",
+      "title": "Model Scrambled Digits As Counts",
+      "takeaway": "Scrambling destroys order; only the digit counts survive. Work with the multiset, not the original positions.",
+      "details": "Once the digits have been scrambled, their original positions carry no information about the intended chain. Model the available digit multiset, then seek blocks whose values satisfy the successive digit-sum relationships.",
+      "tags": [
+        "strings",
+        "counting",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "O37",
+      "title": "Validate Tokens Before Numeric Conversion",
+      "takeaway": "Validate the characters before converting the token to a number; successful numeric conversion is not proof that the entire token was valid.",
+      "details": "For an IP component, first enforce the allowed characters, length, and applicable leading-zero rules before converting its value. Numeric conversion can accept a valid prefix of a malformed token, so successful conversion does not establish full-token validity.",
+      "tags": [
+        "strings",
+        "cpp",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/validate-ip-address/"
+    },
+    {
+      "id": "DP044",
+      "title": "Attach Predecessors To DP States",
+      "takeaway": "A predecessor belongs to a DP state, not to the traversal globally; one 'last chosen' variable cannot represent many alternative optimal histories.",
+      "details": "Each LCS table cell represents its own optimal subproblem and needs its own chosen predecessor state for reconstruction. A single global last-match variable mixes alternative histories and cannot represent all paths through the table.",
+      "tags": [
+        "dynamic-programming",
+        "reconstruction",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-common-subsequence/description/"
+    },
+    {
+      "id": "DP048",
+      "title": "LIS Tails Are Not A Witness",
+      "takeaway": "A table of best representatives need not describe one realizable solution: each LIS tails slot may summarize a different underlying subsequence.",
+      "details": "Each LIS tails slot represents the best ending value for one subsequence length, potentially from a different subsequence. For input [2,3,4,1], the final tails [1,3,4] is not a subsequence of the input, so the table alone cannot be returned as the reconstructed LIS.",
+      "tags": [
+        "dynamic-programming",
+        "binary-search",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "DP050",
+      "title": "Length Equality Does Not Transfer Witnesses",
+      "takeaway": "Equal optimal lengths do not make reconstructed witnesses interchangeable: LCS(s, reverse(s)) gives the LPS length, but an arbitrary reconstructed LCS need not be palindromic.",
+      "details": "The LCS length of a string and its reverse equals the longest-palindromic-subsequence length. This equality does not make every reconstructed LCS palindromic, so producing a palindrome requires reconstruction logic that preserves the needed structure.",
+      "tags": [
+        "dynamic-programming",
+        "strings",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-palindromic-subsequence/description/"
+    },
+    {
+      "id": "DP057",
+      "title": "Freeze Concrete LIS Predecessor Indices",
+      "takeaway": "Store a predecessor's concrete original index, not a live reference to a mutable best-representative slot; later improvements then cannot rewrite an earlier solution path.",
+      "details": "An LIS predecessor link should store the selected element's original index at the time the link is created. Later replacing a best-tail slot then improves future choices without changing the already recorded chain of earlier elements.",
+      "tags": [
+        "dynamic-programming",
+        "binary-search",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-increasing-subsequence/description/"
+    },
+    {
+      "id": "TB03",
+      "title": "Clone Shared Templates At Return",
+      "takeaway": "Build shared templates once; pay for independent copies only at the return boundary.",
+      "details": "Memoized full-binary-tree construction can reuse subtree templates while assembling candidates. If returned trees must be independent, clone each final answer at the boundary instead of repeatedly cloning intermediate templates during construction.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "pointers"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/all-possible-full-binary-trees/description/"
+    },
+    {
+      "id": "TB04",
+      "title": "Choose Whether Cloning Preserves Sharing",
+      "takeaway": "Memoizing a clone by source address preserves sharing; copying each occurrence independently removes it.",
+      "details": "Caching clones by source address creates one copy per original node and therefore preserves aliasing. To turn shared full-binary-tree templates into independent trees, allocate a fresh node for every occurrence, including repeated occurrences within a single result.",
+      "tags": [
+        "trees",
+        "pointers",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/all-possible-full-binary-trees/description/"
+    },
+    {
+      "id": "TB14",
+      "title": "Register Clones Before Following Cycles",
+      "takeaway": "When cloning cyclic references, publish the copy before following its links; a cycle must find an existing identity.",
+      "details": "When random pointers can form cycles, create and cache a node's clone before recursively cloning its outgoing references. A self-reference or cycle then finds the existing copy; delaying registration until recursion returns can recurse indefinitely.",
+      "tags": [
+        "graphs",
+        "pointers",
+        "recursion"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/clone-binary-tree-with-random-pointer/description/"
+    },
+    {
+      "id": "trees_a_061",
+      "title": "Distinguish Persistence From Independent Copies",
+      "takeaway": "Leaving the original unchanged is not the same as producing an independent copy.",
+      "details": "Path copying can leave the original BST unchanged while the split outputs still share untouched subtrees with it. If outputs must be fully independent of the original, deep-copy the whole input before splitting, paying linear time and new-node storage.",
+      "tags": [
+        "binary-search-trees",
+        "pointers",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/split-bst/description/"
+    },
+    {
+      "id": "TB02",
+      "title": "Memoization Cannot Shrink Required Output",
+      "takeaway": "Memoization removes repeated construction, not the cost of an exponentially large answer.",
+      "details": "Caching the list of full binary trees for each subtree size avoids rebuilding that list in repeated calls. It does not remove the need to produce the full set of requested results, whose size remains exponential.",
+      "tags": [
+        "trees",
+        "dynamic-programming",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/all-possible-full-binary-trees/description/"
+    },
+    {
+      "id": "TB18",
+      "title": "Index Ranges Still Permit Repeated Scans",
+      "takeaway": "Passing indices removes copying, not rescanning; a smaller representation does not automatically make the algorithm linear.",
+      "details": "Passing substring boundaries avoids allocating child-string copies during tree parsing. If each recursive call still scans its range to find matching brackets, repeated scanning remains and the representation change alone does not establish linear time.",
+      "tags": [
+        "trees",
+        "strings",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-binary-tree-from-string/"
+    },
+    {
+      "id": "TB19",
+      "title": "Append Into One Output Buffer",
+      "takeaway": "Build the final output once instead of rebuilding every descendant’s output at each ancestor.",
+      "details": "Returning a completed child string and embedding it into each ancestor's string repeatedly copies descendant output. A traversal that appends node tokens and parentheses directly into one shared answer avoids rebuilding those already written portions.",
+      "tags": [
+        "trees",
+        "strings",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/construct-string-from-binary-tree/description/"
+    },
+    {
+      "id": "TB28",
+      "title": "Count Iterator Movement As Work",
+      "takeaway": "Logarithmic comparisons do not imply logarithmic work if reaching the midpoint takes linear iterator steps.",
+      "details": "Generic std::lower_bound performs logarithmically many comparisons, but map iterators cannot jump directly to a midpoint. Linear iterator movement can dominate the operation, so comparison count alone does not establish logarithmic running time.",
+      "tags": [
+        "binary-search",
+        "cpp",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/1902"
+    },
+    {
+      "id": "TB32",
+      "title": "Charge Moves To Size Doublings",
+      "takeaway": "If every expensive move at least doubles the containing size, an element can make only logarithmically many moves.",
+      "details": "In the light-edge analysis of DSU on tree, moving upward across a light edge at least doubles the containing subtree size. Since that size starts at least at 1 and cannot exceed n, any fixed element can incur only logarithmically many such expensive crossings.",
+      "tags": [
+        "trees",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/44351"
+    },
+    {
+      "id": "TB53",
+      "title": "Include Empty Output Cells In Complexity",
+      "takeaway": "A sparse input can require a dense output; empty cells still impose real time and space costs.",
+      "details": "Printing a binary tree as a dense grid requires materializing its empty cells as well as its node labels. If the required grid has C cells, both time and output storage have an unavoidable lower bound of Ω(C), even for a sparse input tree.",
+      "tags": [
+        "trees",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/print-binary-tree/"
+    },
+    {
+      "id": "trees_a_032",
+      "title": "Cheap Ranges Still Need Equality Work",
+      "takeaway": "Indices make ranges cheap to store, not automatically cheap to compare.",
+      "details": "A preorder serialization with null markers lets each subtree be stored as a range into one shared sequence. This saves copied storage, but directly comparing two ranges of length m still costs O(m); indices alone do not create constant-time equality checks.",
+      "tags": [
+        "trees",
+        "strings",
+        "complexity",
+        "space-optimization"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/find-duplicate-subtrees/description/"
+    },
+    {
+      "id": "trees_a_057",
+      "title": "Count Subtree Visits Per Node",
+      "takeaway": "For repeated subtree traversals, count how often each node can be visited instead of multiplying two loose worst cases.",
+      "details": "After reducing repeated flip queries by parity, each complete-tree label starts at most one traversal. A node is visited only by traversals rooted at itself or its ancestors, so its O(log(n+1)) ancestor count gives a sharper total bound than multiplying two independent worst cases; this argument would not give the same bound for a chain.",
+      "tags": [
+        "trees",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/number-of-nodes-with-value-one/description/"
+    },
+    {
+      "id": "X13",
+      "title": "Amortize Across A Guaranteed Sequence",
+      "takeaway": "Amortized cost bounds the total over a sequence. It does not promise that each operation is cheap, and it is not an average over random inputs.",
+      "details": "Amortized analysis bounds total work across a sequence and divides that bound among the operations. Individual operations may still be expensive, but they must be infrequent enough to keep the sequence bound; this is not an expectation over random inputs.",
+      "tags": [
+        "complexity"
+      ],
+      "code": "Total cost = O(n) + (n - 1) × O(1) = O(n)\nAmortized cost = total / n = O(1)\n",
+      "language": "text",
+      "sourceUrl": "https://leetcode.com/problems/validate-binary-tree-nodes/description/"
+    },
+    {
+      "id": "O08",
+      "title": "Consume One Exponent Bit Per Step",
+      "takeaway": "Binary exponentiation is logarithmic because every iteration consumes one bit of the exponent—not merely because some iterations double a value.",
+      "details": "Binary exponentiation halves the remaining exponent each iteration, using its low bit to decide whether to multiply the result. Doubling a progress counter and then finishing with single increments does not provide this guarantee and can leave a linear remainder phase.",
+      "tags": [
+        "math",
+        "bit-manipulation",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "O02",
+      "title": "Test Small Cases Before Guessing Formulas",
+      "takeaway": "When the formula is unclear, brute-force small cases to get ground truth before guessing the formula.",
+      "details": "When a contribution formula is unclear, enumerate small valid configurations and compare their exact results with candidate formulas. These cases expose incorrect guesses and suggest patterns, but a pattern observed in small cases still needs justification before generalizing.",
+      "tags": [
+        "testing",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://codeforces.com/blog/entry/152085"
+    },
+    {
+      "id": "DP060",
+      "title": "Constant Answers Can Hide Broken States",
+      "takeaway": "If every valid input has the same yes/no answer, passing tests can hide a completely broken recurrence.",
+      "details": "Under Stone Game's guarantees, every valid input has the same true result. Passing the final yes/no tests therefore cannot establish that a DP implementation computed its internal score-difference states correctly.",
+      "tags": [
+        "dynamic-programming",
+        "game-theory",
+        "testing"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/stone-game/description/"
+    },
+    {
+      "id": "O15",
+      "title": "Compare Exact Values Before Reducing",
+      "takeaway": "Modulo preserves congruence, not ordering. Compare exact values; apply modulo only after the decision.",
+      "details": "Modulo reduction preserves congruence but can reverse the relative order of two values. In Maximum XOR Product, construct and compare the exact factors within their supported numeric range, then reduce them for the final modular multiplication.",
+      "tags": [
+        "math",
+        "bit-manipulation",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "trees_a_054",
+      "title": "Bound Intermediate Width Arithmetic Separately",
+      "takeaway": "A bounded final answer does not imply bounded intermediate arithmetic.",
+      "details": "A narrow deep tree can have enormous absolute complete-tree indices even when its reported width is small. Normalize indices and check the arithmetic used to derive children; a bounded final result does not make every algebraically equivalent machine expression safe.",
+      "tags": [
+        "trees",
+        "cpp",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-width-of-binary-tree/description/"
+    },
+    {
+      "id": "TB29",
+      "title": "Separate Coin Direction From Move Count",
+      "takeaway": "For a subtree connected to the rest of a tree by one edge, its signed coin balance says what must cross that edge; the magnitude says how many moves it costs.",
+      "details": "For a subtree, coins minus nodes is its signed balance. A positive balance must leave through its parent edge and a negative balance must enter; the absolute value is the number of one-edge transfers contributed by that connection.",
+      "tags": [
+        "trees",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/distribute-coins-in-binary-tree/description/"
+    },
+    {
+      "id": "TB30",
+      "title": "Count Coin Journeys Edge By Edge",
+      "takeaway": "Count a journey one edge at a time; you may not need to identify its start and destination.",
+      "details": "A coin moving across three tree edges contributes three moves, one on each edge. Summing the required transfers across edges accounts for complete journeys without assigning individual coins to destinations or returning explicit travel distances.",
+      "tags": [
+        "trees",
+        "counting"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/distribute-coins-in-binary-tree/description/"
+    },
+    {
+      "id": "DP013",
+      "title": "Propagate Forced Game Outcomes Backward",
+      "takeaway": "A game state is winning if one move wins, but losing only when every legal move loses; propagate those proofs backward from terminal states.",
+      "details": "In Cat and Mouse, one child outcome that wins for the current mover proves a parent win. A parent loss requires proving every legal move wins for the opponent, tracked by exhausting its remaining degree; states left unresolved after this backward propagation are draws.",
+      "tags": [
+        "graphs",
+        "game-theory",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/cat-and-mouse/description/"
+    },
+    {
+      "id": "DP059",
+      "title": "Use The Current Player's Score Advantage",
+      "takeaway": "Measure a game's score advantage for the player to move; subtracting the child's advantage handles both the turn switch and optimal opposition without a player flag.",
+      "details": "Define a Stone Game subproblem as the best score advantage available to the player whose turn it is. After taking a pile, subtract the child's advantage because the child describes the opponent's best response, making a separate player identity flag unnecessary.",
+      "tags": [
+        "dynamic-programming",
+        "game-theory",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/stone-game/description/"
+    },
+    {
+      "id": "trees_a_004",
+      "title": "Tree Moves Can Block Whole Regions",
+      "takeaway": "A move can claim one node and cut off many more; alternating turns do not imply alternating shares of the remaining territory.",
+      "details": "In the binary-tree coloring game, claiming a junction can cut the opponent off from many still-uncolored nodes. Because a blocked player must pass, alternating turns do not imply that the initially shared territory will be divided into alternating or nearly equal shares.",
+      "tags": [
+        "trees",
+        "game-theory"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/binary-tree-coloring-game/description/"
+    },
+    {
+      "id": "subarray-start-or-extend",
+      "title": "Start or Extend a Contiguous Subarray",
+      "takeaway": "For a contiguous subarray, choose whether to start here or extend the current segment—not skip an interior element.",
+      "details": "For a maximum-sum non-empty subarray ending at i, bestEnd[i] = max(a[i], bestEnd[i-1] + a[i]). A restart discards the entire previous segment; it does not keep an earlier piece while skipping an interior element. In the fixed-k signed-array discussion, apply this after assigning each value its positive or negative contribution. This does not by itself solve how to choose k.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/divisible-game/"
+    },
+    {
+      "id": "subarray-endpoints",
+      "title": "Remember Subarray Boundaries Without Parents",
+      "takeaway": "A subarray is identified by its start and end; reconstructing a subsequence may require remembering which indices were chosen.",
+      "details": "For start-or-extend DP, keep currentStart. When restarting at index i, set currentStart = i. Whenever the global best improves, save currentStart and i as the answer boundaries. No parent array is needed because all indices between the two boundaries belong to the segment. For non-empty subarrays, initialize from a real element so an all-negative input is handled correctly. Choose a consistent tie policy if several segments are optimal.",
+      "tags": [
+        "dynamic-programming",
+        "reconstruction"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/divisible-game/"
+    }
+  ]
+}

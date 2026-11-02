@@ -475,6 +475,12 @@ app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'winter-arc-logic.js')));
 app.get('/goal-calendar-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'goal-calendar-logic.js')));
 app.get('/notes-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'notes-logic.js')));
+app.get('/cp-notebook.js', (req, res) => res.sendFile(path.join(__dirname, 'cp-notebook.js')));
+// Only the validated, privacy-filtered export is served. Never expose the master file.
+app.get('/cp-notes.json', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(__dirname, 'data', 'cp-notes.public.json'));
+});
 app.get('/manifest.webmanifest', (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'manifest.webmanifest'));

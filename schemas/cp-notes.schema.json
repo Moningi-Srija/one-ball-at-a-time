@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CP Notebook Notes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "notes"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "notes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/note"}
+    }
+  },
+  "$defs": {
+    "note": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "original", "takeaway", "details", "tags", "code", "language", "sourceUrl", "archived"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1, "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
+        "title": {"type": "string", "minLength": 1},
+        "original": {"type": "string"},
+        "takeaway": {"type": "string", "minLength": 1},
+        "details": {"type": "string"},
+        "tags": {
+          "type": "array", "uniqueItems": true,
+          "items": {
+            "enum": ["dynamic-programming", "trees", "binary-search-trees", "graphs", "binary-search", "greedy", "recursion", "backtracking", "prefix-sums", "sliding-window", "two-pointers", "monotonic-stack", "segment-tree", "disjoint-set-union", "strings", "bit-manipulation", "math", "counting", "game-theory", "state-design", "space-optimization", "complexity", "reconstruction", "pointers", "cpp", "debugging", "testing", "needs-review"]
+          }
+        },
+        "code": {"type": ["string", "null"]},
+        "language": {"type": ["string", "null"]},
+        "sourceUrl": {"type": ["string", "null"], "pattern": "^https?://"},
+        "archived": {"type": "boolean"}
+      },
+      "allOf": [
+        {"if": {"properties": {"code": {"type": "null"}}}, "then": {"properties": {"language": {"type": "null"}}}},
+        {"if": {"properties": {"code": {"type": "string"}}}, "then": {"properties": {"language": {"type": "string", "minLength": 1}}}}
+      ]
+    }
+  }
+}

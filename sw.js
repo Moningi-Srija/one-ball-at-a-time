@@ -1,10 +1,11 @@
-const CACHE_NAME = 'one-ball-shell-v16';
+const CACHE_NAME = 'one-ball-shell-v17';
 const SHELL_FILES = [
   '/offline.html',
   '/style.css',
   '/winter-arc-logic.js',
   '/goal-calendar-logic.js',
   '/notes-logic.js',
+  '/cp-notebook.js',
   '/app.js',
   '/assets/app-icon-192.png',
   '/assets/app-icon-512.png'
@@ -29,7 +30,7 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
-  if (url.pathname === '/sw.js' || url.pathname.endsWith('.webmanifest')) return;
+  if (url.pathname === '/sw.js' || url.pathname === '/cp-notes.json' || url.pathname.endsWith('.webmanifest')) return;
 
   if (request.mode === 'navigate') {
     event.respondWith(

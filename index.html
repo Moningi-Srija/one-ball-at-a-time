@@ -68,6 +68,7 @@
         <button class="tab-btn" data-tab="goal-calendar">Goal Calendar</button>
         <button class="tab-btn" data-tab="countdowns">Countdowns</button>
         <button class="tab-btn" data-tab="notes">Notes to self</button>
+        <button class="tab-btn" data-tab="cp-notebook">CP Notebook</button>
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
         <button class="tab-btn" data-tab="focus">Focus</button>
@@ -160,6 +161,59 @@
       </details>
       <p class="journal-colophon">Still figuring it out. Taking notes anyway.</p>
     </section>
+  </section>
+
+  <!-- CP NOTEBOOK: a read-only, filtered import; personal reminders stay separate. -->
+  <section id="tab-cp-notebook" class="tab-panel cp-panel" aria-labelledby="cpNotebookTitle">
+    <div class="section-head journal-cover cp-cover">
+      <div>
+        <p class="journal-cover-kicker">The study collection · One idea at a time</p>
+        <h2 id="cpNotebookTitle">CP Notebook</h2>
+        <p class="hint">For the little clicks that change how you solve.</p>
+      </div>
+      <div class="cp-cover-stamp" aria-label="Collection size">
+        <strong id="cpTotal">—</strong><span>ideas to keep</span>
+      </div>
+    </div>
+
+    <section class="reminder-featured cp-featured" id="cpFeatured" data-color="lilac" aria-labelledby="cpFeaturedTitle" hidden>
+      <div aria-live="polite" aria-atomic="true">
+        <p class="reminder-kicker">A little insight for your next problem</p>
+        <h3 id="cpFeaturedTitle"></h3>
+        <p class="reminder-featured-text" id="cpFeaturedText"></p>
+        <p class="journal-entry-number" id="cpFeaturedMeta"></p>
+      </div>
+      <div class="cp-featured-actions">
+        <button class="btn ghost small reminder-shuffle" id="cpTurnPage" type="button">Turn the page ↻</button>
+        <button class="link-btn" id="cpReadFeatured" type="button">Read this idea ↓</button>
+      </div>
+    </section>
+
+    <div class="cp-toolbar">
+      <label for="cpSearch">Find a thought
+        <input id="cpSearch" type="search" placeholder="Search ideas, patterns, code…" autocomplete="off" maxlength="300">
+      </label>
+      <label for="cpTopic">Topic
+        <select id="cpTopic"><option value="all">All topics</option></select>
+      </label>
+      <button class="btn ghost small" id="cpClear" type="button">Clear filters</button>
+    </div>
+    <div class="cp-collection-heading">
+      <h3>The collected insights</h3>
+      <p id="cpResults" role="status" aria-live="polite">Open the notebook to load your ideas.</p>
+    </div>
+    <div class="cp-status-row">
+      <p id="cpImportStatus">Read-only pages from your master notebook.</p>
+      <button class="link-btn" id="cpRefresh" type="button">Refresh collection ↻</button>
+    </div>
+    <p class="cp-error" id="cpError" role="alert" hidden></p>
+    <div class="cp-grid" id="cpGrid" aria-label="Coding ideas"></div>
+    <div class="cp-empty" id="cpEmpty" hidden>
+      <h3>No ideas on this page yet.</h3>
+      <p id="cpEmptyText"></p>
+    </div>
+    <div class="cp-more"><button class="btn ghost" id="cpLoadMore" type="button" hidden>More ideas ↓</button></div>
+    <p class="journal-colophon">A pattern remembered. A problem seen differently.</p>
   </section>
 
   <!-- GOAL CALENDAR -->
@@ -921,6 +975,7 @@
 <script src="/winter-arc-logic.js"></script>
 <script src="/goal-calendar-logic.js"></script>
 <script src="/notes-logic.js"></script>
+<script src="/cp-notebook.js"></script>
 <script src="/app.js"></script>
 </body>
 </html>

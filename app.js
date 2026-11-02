@@ -910,6 +910,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       renderReminders();
       document.getElementById('remindersWall').open = true;
     }
+    if (btn.dataset.tab === 'cp-notebook') window.CPNotebook?.open();
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'focus') renderFocus();
@@ -925,7 +926,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (!['board', 'goal-calendar', 'countdowns', 'notes', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
+  if (!['board', 'goal-calendar', 'countdowns', 'notes', 'cp-notebook', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
