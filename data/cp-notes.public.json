@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-03T08:46:49.376Z",
+  "generatedAt": "2026-11-03T10:29:20.115Z",
   "notes": [
     {
       "id": "DP037",
@@ -3068,6 +3068,20 @@
       "code": null,
       "language": null,
       "sourceUrl": null
+    },
+    {
+      "id": "stars-and-bars-count-distributions",
+      "title": "Stars and Bars — Count Distributions",
+      "takeaway": "• Distribute n identical items among k distinct groups; empty groups allowed.\n• Use n stars and k−1 bars → n+k−1 positions.\n• Choose bar positions: C(n+k−1, k−1).\n• Sorted vowel strings: five vowel counts → C(n+4, 4).",
+      "details": "WHEN IT APPLIES\nFor integers n ≥ 0 and k ≥ 1, count distributions of n identical items among k distinguishable groups, with zero allowed in any group and no extra upper limits. Equivalently, count nonnegative integer solutions of x₁ + x₂ + … + xₖ = n.\n\nWHY THE FORMULA WORKS\nRepresent the n items by identical stars. Use k−1 bars to separate them into k groups in a fixed order. There are n+k−1 positions altogether. Choose which k−1 positions contain bars; all remaining positions contain stars. Each bar arrangement gives exactly one count distribution, and each count distribution gives exactly one bar arrangement. Therefore the count is C(n+k−1, k−1) = C(n+k−1, n). Adjacent bars, or a bar at either end, represent empty groups.\n\nEXAMPLE: SORTED VOWEL STRINGS\nA nondecreasing string using a, e, i, o, u is uniquely determined by its five vowel counts; repetition is allowed. For length n, the counts satisfy a+e+i+o+u=n. Four bars divide n stars into five vowel groups.\n\n** | | | | *\nCounts: (2, 0, 0, 0, 1)\nString: aau\n\nThus the count is C(n+4, 4) = (n+1)(n+2)(n+3)(n+4)/24. For n=3, C(7,4)=35.\n\nTHE VOWELS ARE NOT IDENTICAL\na, e, i, o, u are five distinct group labels. The stars represent identical, not-yet-labeled units of length to assign among those groups, not five identical vowel types or already-chosen letters. A unit assigned to the a group contributes one a; a unit assigned to the e group contributes one e. We count how many of each vowel to use. Sorted order then gives exactly one string per count vector.\n\nWATCH OUT\n• The items are identical; the groups are distinguishable.\n• Counts total exactly n.\n• The formula above allows zero and assumes no extra upper limits. Requiring every group to be nonempty, imposing upper limits, or changing whether items/groups are distinguishable changes the counting problem; do not reuse the formula unchanged.\n• Counts uniquely determine a sorted string, not every unsorted arrangement of its letters.",
+      "tags": [
+        "math",
+        "counting",
+        "strings"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/count-sorted-vowel-strings/description/"
     }
   ]
 }
