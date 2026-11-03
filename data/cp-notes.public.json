@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-02T20:29:58.866Z",
+  "generatedAt": "2026-11-03T08:46:49.376Z",
   "notes": [
     {
       "id": "DP037",
@@ -3025,12 +3025,13 @@
     },
     {
       "id": "parentheses-inside-outside-unique",
-      "title": "Generate Parentheses Without Duplicates",
-      "takeaway": "Building answers as (inside)outside avoids duplicates: the closing bracket matching the first opening bracket fixes exactly where the inside ends and the outside begins.",
-      "details": "For Generate Parentheses, inside and outside must each be valid parentheses strings. With n pairs, choose x pairs inside and n - x - 1 pairs outside, for every x from 0 to n - 1. Combine them as \"(\" + inside + \")\" + outside. The base list f(0) contains one empty string.\n\nWhy no duplicates: scan a finished string from its first opening bracket. The first point where opening and closing counts balance identifies that opening bracket's matching close, not necessarily the first closing bracket in the string. That position uniquely fixes inside, outside, and x. Different splits therefore cannot produce the same finished string. This relies on the smaller lists containing no duplicates and each inside/outside combination being generated once. A deduplication set is not needed for this construction.",
+      "title": "Avoid Duplicates: Vowel Strings and Parentheses",
+      "takeaway": "• Sorted vowel strings: Choose first vowel v; remaining characters can use only v or later vowels. Each string has one first-character branch.\n• Parentheses: Build (inside)outside. First opening bracket’s matching close uniquely fixes the split.\n• No duplicates: Smaller results must be unique; generate each combination once.",
+      "details": "The common idea: choose a decomposition that each finished answer determines uniquely. This lets us generate answers without a deduplication set, provided recursive results are unique and every combination is generated once.\n\nSORTED VOWEL STRINGS\nNumber a, e, i, o, u as 0, 1, 2, 3, 4. At f(remaining, minVowel), choose the first vowel c from minVowel through 4, then build the rest with f(remaining - 1, c). Keeping c allowed permits repeated vowels; requiring c+1 would incorrectly forbid repeats. Start with f(n, 0). Each finished string has exactly one first character, and its remaining suffix belongs to exactly one recursive result. Different first-character branches cannot produce the same string. This is a choice made at every recursive step, not a requirement that all strings start with the same vowel.\n\nIf generating strings, the zero-length result is one empty string, f(0, minVowel) = [\"\"], not an empty list. If only counting, remaining == 0 returns 1 and the state returns the sum of its branches; no current string or vector of answers is needed. Count Sorted Vowel Strings asks for the count, while Generate Parentheses asks for the actual strings.\n\nPARENTHESES\nHere n counts pairs. Inside and outside must each be valid parentheses strings. For every x from 0 to n - 1, choose x pairs inside and n - x - 1 pairs outside. Combine every inside/outside pair as \"(\" + inside + \")\" + outside. The base list is f(0) = [\"\"].\n\nScan a finished parentheses string from its first opening bracket. The first point where opening and closing counts balance identifies that opening bracket's matching close, not necessarily the first closing bracket in the string. That position uniquely fixes inside, outside, and x. Different splits therefore cannot produce the same finished string.\n\nWATCH OUT\nVectors do not cause duplicates; ambiguous construction paths do. Allowing every arbitrary split can produce \"aaa\" both as \"a\" + \"aa\" and as \"aa\" + \"a\". A unique outer decomposition is not enough if smaller result lists already contain duplicates or the same combination is generated repeatedly.\n\nAdditional public problem source: https://leetcode.com/problems/count-sorted-vowel-strings/description/",
       "tags": [
         "dynamic-programming",
         "recursion",
+        "backtracking",
         "strings"
       ],
       "code": null,
