@@ -2715,6 +2715,10 @@ body.chart-expanded-open { overflow: hidden; }
 .focus-history-head .hint,
 .focus-log-head .hint { display: block; margin-top: 4px; }
 .focus-period { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.focus-analysis-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; margin-bottom: 18px; padding: 14px 18px; border: 1.5px dashed var(--border); background: rgba(255, 253, 253, .85); }
+.focus-analysis-filter .focus-filter-label { flex: 0 1 300px; min-width: 0; }
+.focus-analysis-filter select { width: 100%; max-width: 100%; }
+.focus-analysis-filter .hint { flex: 1 1 220px; margin: 0; }
 .focus-date-nav { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 15px 18px; border: 1.5px solid var(--border); background: rgba(255, 253, 253, .94); box-shadow: 4px 5px 0 rgba(184, 77, 118, .12); }
 .focus-date-nav .date-nav-center { min-width: min(440px, 60vw); text-align: center; }
 .focus-date-nav.is-all-time .nav-arrow { visibility: hidden; }

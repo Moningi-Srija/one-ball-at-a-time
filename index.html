@@ -67,13 +67,13 @@
         <button class="tab-btn active" data-tab="board">Board</button>
         <button class="tab-btn" data-tab="focus">Focus</button>
         <button class="tab-btn" data-tab="expenses">Expenses</button>
-        <button class="tab-btn" data-tab="countdowns">Countdowns</button>
-        <button class="tab-btn" data-tab="goal-calendar">Goal Calendar</button>
         <button class="tab-btn" data-tab="notes">Notes to self</button>
         <button class="tab-btn" data-tab="cp-notebook">CP Notebook</button>
+        <button class="tab-btn" data-tab="countdowns">Countdowns</button>
+        <button class="tab-btn" data-tab="analytics">Analytics</button>
+        <button class="tab-btn" data-tab="goal-calendar">Goal Calendar</button>
         <button class="tab-btn" data-tab="matrix">Matrix</button>
         <button class="tab-btn" data-tab="dashboard">Dashboard</button>
-        <button class="tab-btn" data-tab="analytics">Analytics</button>
         <button class="tab-btn" data-tab="log">Log</button>
         <button class="tab-btn" data-tab="guide">Points Guide</button>
         <button class="tab-btn" data-tab="targets">Targets</button>
@@ -398,6 +398,17 @@
         </div>
       </div>
 
+      <div class="focus-analysis-filter">
+        <label class="focus-filter-label" for="focusCategoryFilter">
+          <span>Analyze by tag</span>
+          <select id="focusCategoryFilter" class="log-filter" aria-label="Filter focus sessions by tag" aria-describedby="focusFilterHint">
+            <option value="all">All tags</option>
+            <option value="none">No tag</option>
+          </select>
+        </label>
+        <p class="hint" id="focusFilterHint" role="status">Filters the totals, charts, and session log.</p>
+      </div>
+
       <div class="focus-date-nav" id="focusDateNav">
         <button class="nav-arrow" id="focusPrev" type="button" aria-label="Previous focus period">&#8249;</button>
         <div class="date-nav-center">
@@ -450,13 +461,6 @@
             <p class="hint" id="focusLogCount"></p>
             <p class="log-delete-hint">Every saved session can be edited or deleted here.</p>
           </div>
-          <label class="focus-filter-label" for="focusCategoryFilter">
-            <span>Tag</span>
-            <select id="focusCategoryFilter" class="log-filter" aria-label="Filter focus sessions by tag">
-              <option value="all">All tags</option>
-              <option value="none">No tag</option>
-            </select>
-          </label>
         </div>
         <div id="focusLog" class="focus-log"></div>
       </section>

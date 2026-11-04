@@ -3702,7 +3702,7 @@ function populateFocusCategorySelect(select, { includeAll = false, includeNone =
   if (includeNone) {
     const noneOption = document.createElement('option');
     noneOption.value = includeAll ? 'none' : '';
-    noneOption.textContent = '○ No tag — just start';
+    noneOption.textContent = includeAll ? '○ No tag' : '○ No tag — just start';
     select.appendChild(noneOption);
   }
   CATEGORIES.forEach(category => {
@@ -4292,13 +4292,13 @@ function finishedFocusSessions() {
   return focusSessions.filter(session => session.status === 'finished');
 }
 
-function focusSessionsInPeriod({ includeCategoryFilter = false } = {}) {
+function focusSessionsInPeriod() {
   const [start, end] = focusPeriodRange();
   return finishedFocusSessions().filter(session => {
     const date = dateKeyToLocalDate(focusSessionDateKey(session));
     const timestamp = date?.getTime();
     if (!Number.isFinite(timestamp) || timestamp < start || timestamp >= end) return false;
-    if (!includeCategoryFilter || focusView.category === 'all') return true;
+    if (focusView.category === 'all') return true;
     if (focusView.category === 'none') return !session.category;
     return session.category === focusView.category;
   });
@@ -4407,7 +4407,9 @@ function renderFocusCharts(entries) {
   if (!categoryEntries.length) {
     const empty = document.createElement('div');
     empty.className = 'category-insight-empty';
-    empty.textContent = 'Your first session will start this picture.';
+    empty.textContent = focusView.category === 'all'
+      ? 'Your first session will start this picture.'
+      : 'No sessions match this tag in the selected period.';
     breakdown.appendChild(empty);
   } else {
     categoryEntries.forEach(entry => {
@@ -4483,7 +4485,7 @@ function renderFocusCharts(entries) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '65%',
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => `${item.label}: ${item.raw}m` } } },
+      plugins: { legend: { display: false }, tooltip: { enabled: categoryEntries.length > 0, callbacks: { label: item => `${item.label}: ${item.raw}m` } } },
     },
   });
 }
@@ -4495,11 +4497,8 @@ function focusClockTime(iso) {
     : '—';
 }
 
-function renderFocusLog() {
-  const filter = document.getElementById('focusCategoryFilter');
-  if (filter.options.length <= 2) populateFocusCategorySelect(filter, { includeAll: true });
-  filter.value = focusView.category;
-  const entries = [...focusSessionsInPeriod({ includeCategoryFilter: true })]
+function renderFocusLog(sessions) {
+  const entries = [...sessions]
     .sort((a, b) => Date.parse(b.endedAt || b.startedAt) - Date.parse(a.endedAt || a.startedAt));
   document.getElementById('focusLogCount').textContent = `${entries.length} saved session${entries.length === 1 ? '' : 's'}`;
   const logElement = document.getElementById('focusLog');
@@ -4591,6 +4590,13 @@ function renderFocusLog() {
 }
 
 function renderFocusHistory() {
+  const filter = document.getElementById('focusCategoryFilter');
+  if (filter.options.length <= 2) populateFocusCategorySelect(filter, { includeAll: true });
+  filter.value = focusView.category;
+  const tagLabel = focusView.category === 'all'
+    ? 'All tags'
+    : focusCategoryMeta(focusView.category === 'none' ? '' : focusView.category).label;
+  document.getElementById('focusFilterHint').textContent = `${tagLabel} · Filters the totals, charts, and session log. Zero-focus days stay visible.`;
   const allTime = focusView.period === 'all';
   document.querySelectorAll('#focusPeriod .seg-btn').forEach(button => {
     const selected = button.dataset.focusPeriod === focusView.period;
@@ -4611,7 +4617,7 @@ function renderFocusHistory() {
   const entries = focusSessionsInPeriod();
   renderFocusSummary(entries);
   renderFocusCharts(entries);
-  renderFocusLog();
+  renderFocusLog(entries);
 }
 
 function renderFocus() {
@@ -4865,7 +4871,7 @@ document.getElementById('focusJumpDate').addEventListener('change', event => {
 });
 document.getElementById('focusCategoryFilter').addEventListener('change', event => {
   focusView.category = event.target.value;
-  renderFocusLog();
+  renderFocusHistory();
 });
 document.getElementById('openFocusFromAnalytics').addEventListener('click', () => document.querySelector('[data-tab="focus"]')?.click());
 document.addEventListener('visibilitychange', () => {
