@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-04T18:00:49.196Z",
+  "generatedAt": "2026-11-04T18:28:00.422Z",
   "notes": [
     {
       "id": "DP037",
@@ -3097,6 +3097,19 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/count-submatrices-with-all-ones/description/"
+    },
+    {
+      "id": "named-constants-replace-numeric-codes",
+      "title": "Name Numeric States",
+      "takeaway": "Use named constants like `RIGHT = 0` and `DOWN = 1`, then write `dir == RIGHT` instead of remembering what `0` and `1` mean.",
+      "details": "",
+      "tags": [
+        "cpp",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/twisted-mirror-path-count/description/"
     }
   ]
 }
