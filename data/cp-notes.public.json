@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-05T10:05:27.443Z",
+  "generatedAt": "2026-11-05T12:19:38.519Z",
   "notes": [
     {
       "id": "DP037",
@@ -2149,9 +2149,9 @@
     },
     {
       "id": "DP041",
-      "title": "Divisibility Lacks Minimum Tail Dominance",
-      "takeaway": "The LIS recurrence transfers to divisibility chains; minimum-tail compression does not, because a smaller number is not always easier to extend by divisibility.",
-      "details": "The quadratic LIS-style recurrence applies to sorted divisibility chains, but keeping only the smallest tail for each length loses necessary alternatives. For example, 9 extends a chain ending at 3 but not one ending at the smaller value 2.",
+      "title": "Largest Divisible Subset: LIS-style DP works, tails doesn’t",
+      "takeaway": "- Sort first. Extend an earlier chain when nums[i] % nums[j] == 0.\n- Don’t keep only the smallest ending value for each length: 9 can follow 3, but cannot follow 2.",
+      "details": "dp[i] = longest divisible chain ending at nums[i].\n\nChecking the last element is enough: if 2 divides 4, and 4 divides 8, then 2 also divides 8.\n\nBut LIS’s tails shortcut loses useful options here. For [2,3,9], keeping only [2] as the length-one chain discards [3]—so we miss [3,9].\n\nIn LIS, a smaller endpoint is at least as easy to extend. In divisibility, it isn’t.",
       "tags": [
         "dynamic-programming",
         "state-design",
