@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-04T18:28:00.422Z",
+  "generatedAt": "2026-11-05T10:05:27.443Z",
   "notes": [
     {
       "id": "DP037",
@@ -3110,6 +3110,19 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/twisted-mirror-path-count/description/"
+    },
+    {
+      "id": "cpp-bitmask-quick-reference",
+      "title": "C++ Bitmask Quick Reference",
+      "takeaway": "• Count 1s: __builtin_popcount(mask); use __builtin_popcountll for unsigned long long.\n• Bit b: test &, set |, clear & ~, toggle ^ with 1ULL << b.\n• Unsigned shifts: << k multiplies by 2^k if it fits; >> k divides, rounding down.\n• Masks act as sets; bit positions start at 0 from the right.",
+      "details": "CONVENTION\nBit positions start at 0 from the right. Unless a different type is stated, assume mask, x, a, and b are 64-bit unsigned long long values. In formulas using a bit position, call it pos. Shift amounts must be integers from 0 through 63. These width-specific rules assume a 64-bit unsigned long long.\n\nCOUNTING BITS\n• Count 1s in unsigned int → __builtin_popcount(mask)\n• Count 1s in unsigned long long → __builtin_popcountll(mask)\n• For bitset<N> bits → bits.count()\n• Count 0s among the lowest n bits → n − __builtin_popcountll(mask), provided no higher bits are set.\n• Use the builtin matching the operand type; plain popcount can lose the high bits of a 64-bit value.\n\nWORKING WITH ONE BIT\n• Make only bit pos equal to 1 → 1ULL << pos\n• Check bit pos → (mask & (1ULL << pos)) != 0\n• Set bit pos to 1 → mask |= (1ULL << pos)\n• Clear bit pos to 0 → mask &= ~(1ULL << pos)\n• Toggle bit pos → mask ^= (1ULL << pos)\n• Include a bit without changing the old mask → newMask = mask | (1ULL << pos)\n\nPOWERS OF TWO AND ARITHMETIC\n• Calculate 2^k → 1ULL << k\n• Multiply unsigned x by 2^k → x << k, if the result fits.\n• Divide unsigned x by 2^k, rounding down → x >> k\n• Unsigned x % 2^k → x & ((1ULL << k) - 1)\n• Check odd → (x & 1ULL) != 0\n• ^ means XOR, not exponentiation.\n• Unsigned left shifts discard overflowing high bits; they are not exact multiplication once the mathematical result exceeds the type's range.\n\nMASKS AS SETS\n• Union → a | b\n• Intersection → a & b\n• Elements in a, but not b → a & ~b\n• Is a a subset of b? → (a & b) == a\n• Are they disjoint? → (a & b) == 0\n• Lowest n bits all set → full = (1ULL << n) - 1, for 0 ≤ n < 64\n• For all 64 bits set, use ~0ULL instead; never shift by 64.\n• Flip only those n bits → (~mask) & full\n• n items have 2^n possible subset masks, including the empty mask 0. This is a mathematical count; 2^64 itself cannot fit in a 64-bit unsigned integer.\n\nUSEFUL EXTRA TRICKS\n• Remove the lowest set bit → mask &= (mask - 1)\n• Isolate the lowest set bit → mask & -mask, with an unsigned mask.\n• Index of the lowest set bit → __builtin_ctzll(mask); mask must be nonzero.\n• Exactly one bit set / power of two → mask != 0 && (mask & (mask - 1)) == 0\n• The lowest-bit removal/isolation formulas return 0 for an unsigned zero mask. Do not confuse that with ctz: __builtin_ctzll(0) is undefined.\n\nWATCH OUT\n• Keep parentheses around bit tests before comparing them, for example (mask & bit) != 0.\n• 1ULL gives the shift a wide unsigned left operand; assigning 1 << pos to a wider variable afterward does not widen the original operation.\n• Do not transfer these unsigned arithmetic rules blindly to negative signed values.\n• The __builtin_* functions are compiler extensions, not portable standard-library function names.",
+      "tags": [
+        "bit-manipulation",
+        "cpp"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
     }
   ]
 }
