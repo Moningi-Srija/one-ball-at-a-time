@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-05T12:19:38.519Z",
+  "generatedAt": "2026-11-05T18:17:34.659Z",
   "notes": [
     {
       "id": "DP037",
@@ -3123,6 +3123,19 @@
       "code": null,
       "language": null,
       "sourceUrl": null
+    },
+    {
+      "id": "dp-state-simplifies-bookkeeping",
+      "title": "Choose the DP State With Simpler Bookkeeping",
+      "takeaway": "Same time complexity, different bookkeeping. Choose the DP state that makes transitions, base cases, and the final answer easier to express.",
+      "details": "State design changes what each stored answer means, not just which direction the loops run. Two correct states can have the same asymptotic time complexity while needing different boundary checks and answer accumulation.\n\nEXAMPLE — OUT OF BOUNDARY PATHS (LC576)\n• Remaining-moves state: f(r,c,left) counts ways to exit from this cell within left moves. Outside returns 1; inside with zero moves returns 0. Sum the four neighbors with left−1. The final answer is f(startRow,startColumn,maxMove). Check outside before zero moves so an exit on the final allowed move counts.\n• Arrival state: g(steps,r,c) counts ways to reach this inside cell after exactly steps moves, without having exited earlier. Accumulate transitions that leave the grid over moves 1 through maxMove; the last inside layer alone is not the answer. Never continue a path after it exits.\n\nFor a positive move budget T, both standard DPs take O(Tmn) time on an m×n grid and can use O(mn) space with rolling bottom-up layers. Their bookkeeping differs even though these bounds match.\n\nWATCH OUT\nChoose among correct states that retain enough information and meet the time/space limits. A suffix or remaining-moves state is not universally better; forward tabulation can be simple too. Here the remaining-moves formulation makes the requested exit count direct.",
+      "tags": [
+        "dynamic-programming",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/out-of-boundary-paths/description/"
     }
   ]
 }
