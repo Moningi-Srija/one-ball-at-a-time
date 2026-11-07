@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T09:46:33.497Z",
+  "generatedAt": "2026-11-07T10:10:38.368Z",
   "notes": [
     {
       "id": "DP037",
@@ -3162,6 +3162,20 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/maximum-absolute-sum-of-any-subarray/description/"
+    },
+    {
+      "id": "kadane-start-fresh-or-extend",
+      "title": "Maximum Subarray — Start Fresh or Extend",
+      "takeaway": "• Ending here: max(current number, previous ending sum + current number).\n• Previous sum is negative? Leave it and start here.\n• Answer = largest ending sum seen anywhere.\n• Non-empty subarray: initialize with nums[0], not zero.",
+      "details": "Kadane keeps the best sum of a non-empty subarray ending exactly at the current index.\n\nending = max(nums[i], previousEnding + nums[i])\nanswer = max(answer, ending)\n\nWhy drop a negative previous sum? Adding it only makes the new sum smaller. Starting with nums[i] is better. If the previous sum is zero, starting fresh and extending tie.\n\nStart ending and answer at nums[0]. For [-5, -2], the answer is -2, not 0. In the reset-to-zero version, update the answer before resetting a negative running sum; that zero means carry nothing into the next iteration, not select an empty answer.\n\nOnly the previous ending sum is needed: O(n) time and O(1) extra space. This is start-or-extend for a contiguous subarray, not permission to skip an interior element.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "greedy"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-subarray/description/"
     }
   ]
 }
