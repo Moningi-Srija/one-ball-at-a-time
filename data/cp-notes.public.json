@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-05T18:17:34.659Z",
+  "generatedAt": "2026-11-07T08:54:51.892Z",
   "notes": [
     {
       "id": "DP037",
@@ -3136,6 +3136,18 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/out-of-boundary-paths/description/"
+    },
+    {
+      "id": "jensen-weighted-average-inequality",
+      "title": "Jensen's Inequality — Function of an Average",
+      "takeaway": "• Convex f: f(Σ wᵢxᵢ) ≤ Σ wᵢf(xᵢ).\n• Weights: wᵢ ≥ 0 and Σ wᵢ = 1.\n• Function of weighted average ≤ weighted average of function values.\n• Concave f: reverse the inequality.\n• Convexity/concavity must hold across the interval containing the inputs.",
+      "details": "For real inputs x₁,…,xₙ in an interval where f is convex, and nonnegative weights w₁,…,wₙ summing to 1:\nf(Σ wᵢxᵢ) ≤ Σ wᵢf(xᵢ).\n\nThe left side averages the inputs first, then applies f. The right side applies f to each input first, then averages those outputs. For a concave function, the inequality reverses.\n\nTWO-POINT FORM\nf((1−t)a + tc) ≤ (1−t)f(a) + tf(c), for 0 ≤ t ≤ 1. Geometrically, a convex graph stays on or below the line segment joining two points on it.\n\nCONNECTION TO OUR ABSOLUTE-SUM DISCUSSION\nAbsolute value is convex. If A ≤ B ≤ C, write B=(1−t)A+tC. Then, for any common added X:\n|B+X| ≤ (1−t)|A+X| + t|C+X| ≤ max(|A+X|,|C+X|).\nIf A=C, all three are equal and the result is immediate.\n\nWATCH OUT\nWeights must be nonnegative and sum to 1. Do not apply this inequality to an arbitrary function without establishing convexity or concavity on the relevant interval. Differentiability is not required.",
+      "tags": [
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
     }
   ]
 }
