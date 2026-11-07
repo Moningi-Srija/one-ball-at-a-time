@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T17:32:35.849Z",
+  "generatedAt": "2026-11-07T17:53:29.198Z",
   "notes": [
     {
       "id": "DP037",
@@ -3206,6 +3206,22 @@
       "code": null,
       "language": null,
       "sourceUrl": null
+    },
+    {
+      "id": "jump-games-rules-objective-dp-comparison",
+      "title": "Jump Games — rules, goal, DP and shortcut",
+      "takeaway": "• I — Reach the last index? Farthest reachable boundary.\n• II — Fewest jumps? BFS-style layers.\n• VI — Maximum score with jumps 1..k? DP + decreasing deque.\n• VII — Reach the last index via zeros, jumps min..max? DP + reachable-window count.\n• VIII (in progress) — Minimum landing cost with value-based jump rules; next-greater/equal and next-smaller stack connection to explore.",
+      "details": "The shared setting is moving between array positions. The legal jumps and the objective decide the DP—not the name “Jump Game”. For the variants below, jumps go forward, so earlier indices can supply prefix-state transitions.\n\nI — JUMP GAME (LC55)\nRule: from j, any forward distance 1..nums[j] is allowed, within the array. Goal: can we reach n−1?\nState: dp[i] = whether i is reachable. Base: dp[0] = true. Transition: OR over reachable j < i with j + nums[j] ≥ i. Answer: dp[n−1].\nShortcut: allowed shorter jumps make the reachable set a prefix. Scan only reachable indices and maintain its farthest boundary: O(n) time, O(1) extra space.\nSource: https://leetcode.com/problems/jump-game/description/\n\nII — JUMP GAME II (LC45)\nRule: the same 1..nums[j] forward jumps; reaching the last index is guaranteed. Goal: minimum jump count.\nState: dp[i] = minimum jumps to reach i. Base: dp[0] = 0; other entries start at infinity. Transition: 1 + minimum dp[j] among legal predecessors. Answer: dp[n−1].\nShortcut: process the range reached with the current jump count and collect the farthest boundary for the next count. These are BFS-style layers, not a rule to land on the farthest index after every jump. O(n) time, O(1) extra space; n = 1 needs zero jumps.\nSource: https://leetcode.com/problems/jump-game-ii/description/\n\nVI — JUMP GAME VI (LC1696)\nRule: jump forward by 1..k. Goal: maximum sum of visited nums values, including index 0 and the last index. k limits one jump's length, not the number of jumps.\nState: dp[i] = maximum score ending at i. Base: dp[0] = nums[0]. Transition: dp[i] = nums[i] + max(dp[j]) for max(0,i−k) ≤ j < i. Answer: dp[n−1], not the maximum over every endpoint.\nShortcut: maintain the eligible DP scores in a decreasing deque. Remove expired indices from the front and dominated scores from the back. Order by dp values, not raw nums values. Each index enters and leaves at most once, giving O(n) time.\nSource: https://leetcode.com/problems/jump-game-vi/description/\n\nVII — JUMP GAME VII (LC1871)\nRule: jump forward by minJump..maxJump and land only on a '0'. The start is '0'. Goal: reach the last index.\nState: dp[i] = whether i is reachable. Base: dp[0] = true. For i > 0, eligible predecessors lie in [max(0,i−maxJump), i−minJump]; a negative upper endpoint means no predecessors. dp[i] is true only if s[i] is '0' and that window contains a true state. Answer: dp[n−1].\nShortcut: maintain the count of reachable predecessors as the window moves. Add dp[i−minJump] when in bounds; remove dp[i−maxJump−1] when in bounds. A positive count supplies the OR result in O(1) per index, O(n) total. Zero landing cells and a minimum jump length can create gaps, so one farthest boundary alone is insufficient.\nSource: https://leetcode.com/problems/jump-game-vii/description/\n\nVIII — JUMP GAME VIII (LC2297): IN PROGRESS\nFor i < j, a legal jump satisfies either:\n• nums[j] ≥ nums[i], with every intermediate value < nums[i]; or\n• nums[j] < nums[i], with every intermediate value ≥ nums[i].\nPay costs[j] when landing; starting at index 0 is free. Goal: minimum cost to reach n−1.\nProposed prefix state, not yet worked through together: dp[i] = minimum landing cost to reach i. Base: dp[0] = 0, others infinity. Candidate transition: costs[i] + minimum dp[j] over legal predecessors j. Intended answer: dp[n−1].\nConnection to explore: the next greater-or-equal and next strictly smaller positions to the right, found with monotonic stacks. Only the rules and this hint have been discussed; the DP derivation and implementation are not marked complete.\nSource: https://algo.monster/liteproblems/2297\n\nKEEP THIS COMPARISON OPEN\nI, II, VI and VII have been covered in the study discussion. Add other variants as they are studied; this card makes no claims about III, IV, V or IX. Similar names do not justify reusing a shortcut without checking its assumptions.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "greedy",
+        "sliding-window",
+        "monotonic-stack"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://algo.monster/liteproblems/2297"
     }
   ]
 }
