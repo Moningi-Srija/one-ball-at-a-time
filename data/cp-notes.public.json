@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T08:54:51.892Z",
+  "generatedAt": "2026-11-07T09:46:33.497Z",
   "notes": [
     {
       "id": "DP037",
@@ -3148,6 +3148,20 @@
       "code": null,
       "language": null,
       "sourceUrl": null
+    },
+    {
+      "id": "maximum-absolute-subarray-signed-extremes",
+      "title": "Maximum Absolute Subarray Sum — Keep Smallest and Largest Signed Sums",
+      "takeaway": "• For maximum absolute subarray sum, keep the smallest and largest signed sums ending here.\n• After adding the same future sum, anything between them cannot beat both ends in absolute value.\n• Jensen's inequality: |b+x| ≤ max(|a+x|, |c+x|) when a ≤ b ≤ c.",
+      "details": "All candidates here are subarrays ending at the same index, so each can take the same future extension x.\n\nIf a ≤ b ≤ c, then a+x ≤ b+x ≤ c+x. The middle number cannot be farther from zero than both ends.\n\nJENSEN PROOF\nFor a<c, write b=(1−t)a+tc with 0≤t≤1. Absolute value is convex, so:\n|b+x| ≤ (1−t)|a+x| + t|c+x| ≤ max(|a+x|, |c+x|).\nIf a=c, all three sums are equal.\n\nDP UPDATE\nlargest = max(currentValue, oldLargest + currentValue)\nsmallest = min(currentValue, oldSmallest + currentValue)\nanswer = max(answer, abs(largest), abs(smallest))\n\nKeep signed sums, not their absolute values. Take the answer over all ending indices, not only the last one. Also allow starting a new subarray at the current element. The proof relies on comparing candidates with the same future choices; it is not a rule for arbitrary DP states.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-absolute-sum-of-any-subarray/description/"
     }
   ]
 }
