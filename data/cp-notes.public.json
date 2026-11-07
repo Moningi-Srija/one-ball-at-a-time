@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T10:10:38.368Z",
+  "generatedAt": "2026-11-07T14:00:20.702Z",
   "notes": [
     {
       "id": "DP037",
@@ -3176,6 +3176,20 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/maximum-subarray/description/"
+    },
+    {
+      "id": "jump-game-earlier-indices-no-more-jumps",
+      "title": "Jump Game II — Earlier Indices Need No More Jumps",
+      "takeaway": "Reaching an earlier index never requires more jumps than reaching a later index.",
+      "details": "For standard Jump Game, every shorter forward jump up to nums[i] is allowed, and each jump costs one. Let dp[i] be the minimum jumps from index 0 to i. Then a < b implies dp[a] ≤ dp[b] whenever b is reachable.\n\nWHY\nTake an optimal path to b. Find the first jump that reaches or passes a. Shorten that jump to land exactly on a, then stop. This uses no more jumps than the path to b. For a = 0, no jumps are needed.\n\nUSE IN DP\nTo reach i, consider reachable predecessors j < i with j + nums[j] ≥ i. The earliest such j has the smallest dp[j] among those candidates, so dp[i] = dp[j] + 1. In a left-to-right predecessor scan, the first valid predecessor is enough; later ones cannot improve the jump count.\n\nWATCH OUT\nThis is about the minimum jumps needed to reach an index, not its outgoing jump length. It does not say to always land at the earliest index or always take the longest jump. The proof depends on being allowed to shorten a jump and on equal per-jump costs; it need not hold for exact-length jumps, arbitrary graph edges, or differently weighted jumps. LC45 guarantees the last index is reachable; otherwise track unreachable states explicitly.",
+      "tags": [
+        "dynamic-programming",
+        "greedy",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/jump-game-ii/description/"
     }
   ]
 }
