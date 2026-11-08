@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-08T07:36:26.085Z",
+  "generatedAt": "2026-11-08T10:32:30.607Z",
   "notes": [
     {
       "id": "DP037",
@@ -3237,6 +3237,20 @@
       "code": "int parity = 0;\nfor (int x : arr) {\n    parity ^= (x & 1);\n}",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/number-of-sub-arrays-with-odd-sum/"
+    },
+    {
+      "id": "dp-memo-tabulation-transition-work",
+      "title": "DP complexity—count the work, not just the states",
+      "takeaway": "• Memoization and tabulation can have different time complexities.\n• LC1027: our memo rescans earlier indices for each (i,d); tabulation processes each pair once—O(n³) vs O(n²) upper bounds.\n• Compare states visited, transition work, and initialization. Tabulation isn’t always faster; memoization can also be optimized.",
+      "details": "Compare the actual implementations, not just the labels “memoization” and “tabulation”. Running time includes initialization, state/cache overhead, and all transition work performed.\n\nEXAMPLE — LONGEST ARITHMETIC SUBSEQUENCE (LC1027)\n• Direct memoization: f(i,d) is the longest arithmetic subsequence ending at index i with difference d. Each requested state scans earlier indices to find valid predecessors. There are at most O(n²) requested states and up to O(n) predecessor checks per state, giving an expected O(n³) upper bound with hash-map caching. Caching removes repeated evaluation of a state, not its first scan.\n• Pair-based tabulation: loop over each pair j < i once, compute d = nums[i] − nums[j], and directly extend dp[j][d] or start a pair of length 2. There are n(n−1)/2 pairs, so expected O(1) hash-map operations per pair give O(n²) expected time.\n\nThe speedup comes from organizing transitions differently and avoiding repeated predecessor scans—not from replacing recursion with loops alone. These are upper bounds for the discussed implementations, not lower bounds or inherent limits of memoization. The bounded difference range can further tighten the memoized state bound.\n\nIf both versions evaluate the same states and dependencies with the same work per transition, they generally have the same asymptotic time. Memoization may skip states that are never reached; tabulation may initialize or fill extra entries. Better predecessor lookup can also optimize a memoized solution. Count the work each version actually does.",
+      "tags": [
+        "dynamic-programming",
+        "complexity",
+        "state-design"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-arithmetic-subsequence/description/"
     }
   ]
 }
