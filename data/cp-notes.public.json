@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-08T10:32:30.607Z",
+  "generatedAt": "2026-11-08T10:57:10.672Z",
   "notes": [
     {
       "id": "DP037",
@@ -3251,6 +3251,21 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/longest-arithmetic-subsequence/description/"
+    },
+    {
+      "id": "longest-mountain-climb-descend",
+      "title": "Longest Mountain: count climbs and descents",
+      "takeaway": "• up/down count steps, not elements.\n• Climb → descent: keep counts. Descent → climb: reset, then up++. Flat: reset.\n• Both > 0 → length = up + down + 1. One pass: O(n) time, O(1) extra space.",
+      "details": "LONGEST MOUNTAIN IN ARRAY — LC845\nFind the longest contiguous subarray that strictly climbs and then strictly descends. Both sides must exist; a flat step breaks the mountain. Return 0 if there is no mountain. This is a subarray problem, not LIS or a subsequence problem.\n\nONE PASS: O(n) TIME, O(1) EXTRA SPACE\nStart up = down = answer = 0. Compare arr[i] with arr[i−1]:\n• A climb after a climb continues the same ascent.\n• A descent after a climb starts the second side of the same mountain: do not reset up.\n• A climb after a descent starts a new mountain at the valley: reset both counters, then increment up for the current rising step. The code detects this with down > 0 && arr[i] > arr[i−1].\n• Equal neighbors break strictness: reset both counters.\nAfter any required reset, increment up for a rising step or down for a falling step. Only when up > 0 and down > 0, consider up + down + 1 as a mountain length. The +1 converts steps to elements. A leading descent alone is not a mountain. Each adjacent pair is processed once and only three counters are stored.\n\nExample: [1,3,5,4,2,6,8,7]. At 2, up = 2 and down = 2, giving length 5. The next step 2 → 6 is descent → climb: reset, then up becomes 1. The valley 2 can be the end of one mountain and the start of the next.\n\nOTHER DISCUSSED VERSIONS — ONE-LINE COMPLEXITIES\n• Memoized increasing/decreasing lengths: O(n) time, O(n) cache space plus up to O(n) recursion stack.\n• Two DP arrays: O(n) time, O(n) extra space. Combine increasing length ending at i with decreasing length starting at i, subtracting the shared peak once. Require both lengths > 1.\n• One DP array + one running length: O(n) time, O(n) extra space; storing only one side saves an array, not the asymptotic space bound.\n• Expand left and right only from strict local peaks: O(n) time, O(1) extra space.\n• One-pass up/down counters: O(n) time, O(1) extra space.\n\nWHY STRICT-PEAK EXPANSION IS LINEAR\nThe outer loop checks n positions. An increasing slope belongs to at most one peak's left expansion; a decreasing slope belongs to at most one peak's right expansion. Expansions stop at valleys or flats. Mountains may share valley elements, but they do not re-traverse the same slope edge. Therefore all successful expansion steps together are at most n−1, with only O(n) stopping checks. Many peaks mean many short slopes, not a full rescan per peak. This argument relies on expanding only from strict local peaks; arbitrary-center expansion has no such guarantee.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "space-optimization",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/longest-mountain-in-array/description/"
     }
   ]
 }
