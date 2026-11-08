@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-08T10:57:10.672Z",
+  "generatedAt": "2026-11-08T12:58:10.236Z",
   "notes": [
     {
       "id": "DP037",
@@ -3266,6 +3266,33 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/longest-mountain-in-array/description/"
+    },
+    {
+      "id": "convex-concave-remember-the-chord",
+      "title": "Convex vs concave — which way does it bend?",
+      "takeaway": "• Convex: U-like bend; curve stays on/below the line joining two points on it.\n• Concave: upside-down U-like bend; curve stays on/above that line.\n• A straight line is both: it lies exactly on the line joining its points.",
+      "details": "Pick any two points on the graph and join them with a straight line segment (a chord). Between those points: convex means the graph stays on or below that segment; concave means it stays on or above it. This must work for every pair of points in the interval being considered.\n\nU and upside-down U are shape reminders, not a requirement to have a turning point. e^x is convex even though it keeps increasing. x^2 is convex; -x^2 is concave. Increasing/decreasing tells you a different thing from convex/concave.\n\nA linear function f(p) = x*p, with x fixed, is both convex and concave. Its graph is a straight line, so the comparison is equality. For A <= B <= C, B*x lies between A*x and C*x, not necessarily between the original A and C. A negative x reverses the endpoints' order.",
+      "tags": [
+        "math"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "memoization-separate-seen-from-answer",
+      "title": "Memoization — use seen when a value cannot mean uncomputed",
+      "takeaway": "Can't reserve a value for 'not computed'? Keep seen[state] separately. If seen, return memo[state]; otherwise compute and store the answer, then mark seen.",
+      "details": "A sentinel such as -1, 0 or INT_MIN works only when it cannot be a valid answer for that state. If it can be a real answer, or choosing a sentinel is awkward, use a separate Boolean array.\n\nStart seen[state] = false. Only read a cached answer when seen[state] is true. Store the complete answer first, then set seen[state] = true. The initial memo value is just a placeholder; it is not the DP base case.\n\nExample: maximum product subarray returns a pair of smallest/largest products ending at an index. Initialize memo pairs to {0, 0} and seen to false; seen tells you whether the pair has actually been calculated, even if the real answer contains zero.\n\nHere seen means calculation finished, not just recursion entered. This is memoization for an acyclic recurrence; cyclic dependencies need separate handling and cannot be fixed by a Boolean cache flag alone.",
+      "tags": [
+        "dynamic-programming",
+        "recursion",
+        "cpp",
+        "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-product-subarray/description/"
     }
   ]
 }
