@@ -72,6 +72,7 @@
     let loaded = false;
     let loading = false;
     let featuredId = null;
+    let featuredExpanded = false;
 
     function element(tag, className, text) {
       const el = doc.createElement(tag);
@@ -82,12 +83,48 @@
 
     function matching() { return filterNotes(notes, search.value, topic.value); }
 
+    // Featured and collection cards share the same safe, complete reading view.
+    function ideaContent(note) {
+      const body = element('div', 'cp-reading-content');
+      if (note.details) body.append(element('p', 'cp-detail-text', note.details));
+      if (note.code) {
+        body.append(element('p', 'cp-code-label', note.language === 'text' ? 'Worked example' : `${note.language} example`));
+        const pre = element('pre', 'cp-code');
+        pre.tabIndex = 0;
+        pre.setAttribute('aria-label', `Code example for ${note.title}`);
+        pre.append(element('code', '', note.code));
+        body.append(pre);
+      }
+      const source = safeSource(note.sourceUrl);
+      if (source) {
+        const link = element('a', 'cp-source', 'Open learning source ↗');
+        link.href = source;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.referrerPolicy = 'no-referrer';
+        body.append(link);
+      }
+      return body;
+    }
+
+    function updateFeaturedDisclosure() {
+      byId('cpFeaturedBody').hidden = !featuredExpanded;
+      byId('cpReadFeatured').setAttribute('aria-expanded', String(featuredExpanded));
+      byId('cpReadFeatured').textContent = featuredExpanded ? 'Close explanation ↑' : 'Read this idea ↓';
+    }
+
     function showFeatured(rotate = false) {
       const pool = matching();
       const previous = pool.find(note => note.id === featuredId);
       const note = !rotate && previous ? previous : chooseNext(pool, featuredId);
       byId('cpFeatured').hidden = !note;
-      if (!note) { featuredId = null; return; }
+      if (!note) {
+        featuredId = null;
+        featuredExpanded = false;
+        byId('cpFeaturedBody').replaceChildren();
+        updateFeaturedDisclosure();
+        return;
+      }
       featuredId = note.id;
       byId('cpFeatured').dataset.noteId = note.id;
       byId('cpFeaturedTitle').textContent = note.title;
@@ -95,6 +132,12 @@
       byId('cpFeaturedMeta').textContent = `${note.id} · ${note.tags.map(topicLabel).join(' / ') || 'Notebook idea'}`;
       byId('cpFeaturedReview').hidden = !note.tags.includes('needs-review');
       byId('cpTurnPage').disabled = pool.length < 2;
+      const body = ideaContent(note);
+      const hasExplanation = body.childElementCount > 0;
+      byId('cpFeaturedBody').replaceChildren(body);
+      byId('cpReadFeatured').hidden = !hasExplanation;
+      if (!hasExplanation) featuredExpanded = false;
+      updateFeaturedDisclosure();
     }
 
     function card(note) {
@@ -119,26 +162,14 @@
       const source = safeSource(note.sourceUrl);
       if (note.details || note.code || source) {
         const disclosure = element('details', 'cp-card-details');
-        const summary = element('summary', '', note.tags.includes('needs-review') ? 'Read caveats + idea' : note.code ? 'Read idea + example' : 'Read the idea');
-        summary.setAttribute('aria-label', `Read ${note.title}`);
+        const summary = element('summary');
+        summary.setAttribute('aria-label', `Full explanation for ${note.title}`);
+        summary.append(
+          element('span', 'cp-read-open', note.tags.includes('needs-review') ? 'Read this idea + caveats' : note.code ? 'Read this idea + example' : 'Read this idea'),
+          element('span', 'cp-read-close', 'Close explanation'),
+        );
         disclosure.append(summary);
-        if (note.details) disclosure.append(element('p', 'cp-detail-text', note.details));
-        if (note.code) {
-          disclosure.append(element('p', 'cp-code-label', note.language === 'text' ? 'Worked example' : `${note.language} example`));
-          const pre = element('pre', 'cp-code');
-          pre.tabIndex = 0;
-          pre.setAttribute('aria-label', `Code example for ${note.title}`);
-          pre.append(element('code', '', note.code));
-          disclosure.append(pre);
-        }
-        if (source) {
-          const link = element('a', 'cp-source', 'Open learning source ↗');
-          link.href = source;
-          link.target = '_blank';
-          link.rel = 'noopener noreferrer';
-          link.referrerPolicy = 'no-referrer';
-          disclosure.append(link);
-        }
+        disclosure.append(ideaContent(note));
         el.append(disclosure);
       }
       return el;
@@ -232,14 +263,9 @@
     });
     byId('cpTurnPage').addEventListener('click', () => showFeatured(true));
     byId('cpReadFeatured').addEventListener('click', () => {
-      const position = matching().findIndex(note => note.id === featuredId);
-      if (position < 0) return;
-      visible = Math.max(visible, position + 1);
-      render();
-      const el = byId(`cp-idea-${featuredId}`);
-      if (el.querySelector('details')) el.querySelector('details').open = true;
-      byId(`cp-title-${featuredId}`).focus();
-      el.scrollIntoView({ block: 'start' });
+      if (!featuredId || byId('cpReadFeatured').hidden) return;
+      featuredExpanded = !featuredExpanded;
+      updateFeaturedDisclosure();
     });
     byId('cpRefresh').addEventListener('click', load);
     return { open: load };

@@ -176,18 +176,19 @@
       </div>
     </div>
 
-    <section class="reminder-featured cp-featured" id="cpFeatured" data-color="lilac" aria-labelledby="cpFeaturedTitle" hidden>
+    <section class="cp-featured" id="cpFeatured" aria-labelledby="cpFeaturedTitle" hidden>
       <div aria-live="polite" aria-atomic="true">
-        <p class="reminder-kicker">A little insight for your next problem</p>
+        <p class="cp-featured-kicker">One idea. Room to understand it.</p>
         <h3 id="cpFeaturedTitle"></h3>
-        <p class="reminder-featured-text" id="cpFeaturedText"></p>
-        <p class="journal-entry-number" id="cpFeaturedMeta"></p>
+        <p class="cp-featured-takeaway" id="cpFeaturedText"></p>
+        <p class="cp-featured-meta" id="cpFeaturedMeta"></p>
         <p class="cp-review-notice" id="cpFeaturedReview" hidden>Needs review — read this idea’s caveats before relying on it.</p>
       </div>
       <div class="cp-featured-actions">
-        <button class="btn ghost small reminder-shuffle" id="cpTurnPage" type="button">Turn the page ↻</button>
-        <button class="link-btn" id="cpReadFeatured" type="button">Read this idea ↓</button>
+        <button class="btn primary" id="cpReadFeatured" type="button" aria-expanded="false" aria-controls="cpFeaturedBody">Read this idea ↓</button>
+        <button class="btn ghost" id="cpTurnPage" type="button">Turn the page ↻</button>
       </div>
+      <div class="cp-featured-body" id="cpFeaturedBody" hidden></div>
     </section>
 
     <div class="cp-toolbar">
@@ -200,7 +201,7 @@
       <button class="btn ghost small" id="cpClear" type="button">Clear filters</button>
     </div>
     <div class="cp-collection-heading">
-      <h3>The collected insights</h3>
+      <h3>The reading collection</h3>
       <p id="cpResults" role="status" aria-live="polite">Open the notebook to load your ideas.</p>
     </div>
     <div class="cp-status-row">
