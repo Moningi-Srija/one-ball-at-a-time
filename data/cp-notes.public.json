@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-07T17:53:29.198Z",
+  "generatedAt": "2026-11-08T07:36:26.085Z",
   "notes": [
     {
       "id": "DP037",
@@ -3222,6 +3222,21 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://algo.monster/liteproblems/2297"
+    },
+    {
+      "id": "sum-parity-xor-lowest-bit",
+      "title": "Track sum parity without calculating the sum",
+      "takeaway": "• Start parity = 0. For every x: parity ^= (x & 1).\n• x & 1 extracts its parity: 0 = even, 1 = odd.\n• Even keeps the running parity unchanged; odd flips it.\n• This stores only the sum’s parity—not its actual value.",
+      "details": "Use this when only whether the running sum is odd or even matters.\n\nx & 1 extracts the lowest bit; it does not change x. The ^= operator updates parity:\nparity = parity ^ (x & 1)\n\nFor parity bits, XOR has the same result as addition modulo 2:\n0 ^ 0 = 0  (even + even)\n0 ^ 1 = 1  (even + odd)\n1 ^ 0 = 1  (odd + even)\n1 ^ 1 = 0  (odd + odd)\n\nStart with 0 because the empty sum is even. If continuing an existing sum, start with that sum's parity instead. After each element, parity is the parity of the processed prefix. The actual sum cannot be recovered from this one bit.",
+      "tags": [
+        "bit-manipulation",
+        "prefix-sums",
+        "state-design",
+        "math"
+      ],
+      "code": "int parity = 0;\nfor (int x : arr) {\n    parity ^= (x & 1);\n}",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/number-of-sub-arrays-with-odd-sum/"
     }
   ]
 }
