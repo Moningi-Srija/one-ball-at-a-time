@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-08T12:58:10.236Z",
+  "generatedAt": "2026-11-11T14:11:16.937Z",
   "notes": [
     {
       "id": "DP037",
@@ -3289,6 +3289,20 @@
         "recursion",
         "cpp",
         "debugging"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": "https://leetcode.com/problems/maximum-product-subarray/description/"
+    },
+    {
+      "id": "maximum-product-prefix-suffix-proof",
+      "title": "Maximum Product Subarray — why checking both ends is enough",
+      "takeaway": "• Zeros split the integer array into zero-free blocks.\n• Even negatives: the whole block works.\n• Odd negatives: compare the prefix before the last negative and the suffix after the first negative.\n• Every other positive-product subarray fits inside one of these candidates, whose product is at least as large. Count zeros too; never count an empty remainder as product 1.",
+      "details": "QUESTION\nFind the maximum product of a nonempty contiguous subarray (LC152). Scanning products from both ends does not calculate every subarray. The proof is that every skipped candidate is no better than something the scans check.\n\n1. SPLIT AT ZEROS\nAny subarray crossing a zero has product 0. Evaluate zeros too, then restart the running product for the next zero-free block. Every nonzero integer has absolute value at least 1.\n\n2. EVEN NUMBER OF NEGATIVES\nThe whole block has positive product. Take any positive-product subarray inside it. Extending it to the whole block adds factors whose combined product is a positive integer, hence at least 1. So the whole block's product is at least as large. The scans visit the whole block. Negative-product subarrays cannot beat this positive candidate.\n\n3. ODD NUMBER OF NEGATIVES\nTake any positive-product subarray inside the block. It cannot contain both the first and last negative: being contiguous, it would contain every negative between them, making its product negative. Therefore it lies inside at least one of these:\n• the suffix strictly after the first negative;\n• the prefix strictly before the last negative.\nEach nonempty candidate has an even number of negatives and positive product. Extending our subarray to that candidate adds factors with positive integer product at least 1. So the candidate is at least as good. The left-to-right scan checks the prefix; the right-to-left scan checks the suffix. We remove an end portion through a negative, not a single interior element.\n\nEXAMPLE\nBlock: [-2, 3, -4, 5, -1].\nSuffix after the first negative: [3, -4, 5, -1], product 60.\nPrefix before the last negative: [-2, 3, -4, 5], product 120.\nEvery positive-product subarray is contained in at least one of those two candidates, so none can beat 120.\n\n4. ZERO AND NEGATIVE ANSWERS\nIgnore empty remainders: product 1 from an empty array is not allowed. If no positive-product subarray exists, the best is 0 when a zero exists; otherwise the array is a lone negative. A zero-free block with at least two elements always has a positive subarray: either a positive singleton or, if all elements are negative, a pair. The scans evaluate zeros and lone negatives directly. Initialize the answer from an actual element, not 1.\n\nWHAT THE SCANS DO\nMultiply the running prefix/suffix by the next actual element, update the answer, then reset a zero product to 1 for the following iteration. Do not reset negative products: a later negative can make them positive. Two scans still take O(n) time and O(1) extra space.\n\nWATCH OUT\n• This proof uses integer inputs. Fractions with absolute value below 1 can make extension reduce a positive product.\n• Say 'at least as large', not 'strictly larger': factors 1 and -1 can create ties.\n• More negative factors do not by themselves mean a larger product. Even/odd count determines sign; the positive-integer extension argument proves the comparison.\n• LC152 guarantees every subarray product fits a 32-bit integer. Other problems may need wider arithmetic or additional overflow handling.",
+      "tags": [
+        "math",
+        "dynamic-programming",
+        "space-optimization"
       ],
       "code": null,
       "language": null,
