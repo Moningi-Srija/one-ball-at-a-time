@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T18:14:19.834Z",
+  "generatedAt": "2026-11-11T18:49:01.774Z",
   "notes": [
     {
       "id": "DP037",
@@ -3352,6 +3352,18 @@
       "code": "// INF is outside all valid answers; dp[prev] is already computed.\n// This example adds one operation. Ensure finite results fit the type.\nif (dp[prev] != INF) {\n    dp[cur] = min(dp[cur], dp[prev] + 1);\n}",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/perfect-squares/description/"
+    },
+    {
+      "id": "cpp-iota-fill-consecutive-values",
+      "title": "C++ iota — fill 0, 1, 2, … without a loop",
+      "takeaway": "#include <numeric>\nstd::iota(v.begin(), v.end(), start);\nFills existing elements with start, start+1, start+2, … . Start at 0 for indices; iota(dp.begin(), dp.end(), 0) gives dp[i] = i.",
+      "details": "SYNTAX\nstd::iota(first, last, start) writes consecutive values into the half-open range [first,last): first is included, last is excluded. It increments the supplied value after each assignment. For a vector of five elements, start=0 gives 0,1,2,3,4; start=10 gives 10,11,12,13,14. Available since C++11; include <numeric>.\n\nCONTEST USES\n• Fill an index/permutation vector with 0…n−1 before sorting indices.\n• Initialize DSU parents so parent[i]=i.\n• Perfect Squares: a vector of n+1 elements starting at 0 gives dp[x]=x, the valid answer using x copies of 1².\n\nWATCH OUT\n• Allocate the elements first: vector<int> v(n). iota does not resize or append; reserve(n) alone leaves size zero.\n• It fills consecutive values, not squares. Use a loop to generate 1,4,9,… .\n• To repeat the same value, use vector<int>(n,value) or std::fill, not iota.\n• Time O(number of elements), extra space O(1) for integer values; the vector itself still occupies O(n).\n• The counter type comes from start. Use an appropriate type, such as 0LL for a long long counter, and keep increments and assignments in range.",
+      "tags": [
+        "cpp"
+      ],
+      "code": "#include <numeric>\n#include <vector>\n\nstd::vector<int> v(5);\nstd::iota(v.begin(), v.end(), 0);   // 0, 1, 2, 3, 4\nstd::iota(v.begin(), v.end(), 10);  // 10, 11, 12, 13, 14\n\n// For a DP with states 0 through n:\nstd::vector<int> dp(n + 1);\nstd::iota(dp.begin(), dp.end(), 0); // dp[x] = x",
+      "language": "cpp",
+      "sourceUrl": null
     }
   ]
 }
