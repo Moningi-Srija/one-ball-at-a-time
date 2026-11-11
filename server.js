@@ -5,6 +5,8 @@ const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const db = require('./db');
+const { createProgressStore } = require('./progress-store');
+const { registerProgressRoutes } = require('./progress-routes');
 const { createFixedWindowLimiter, timingSafeStringEqual } = require('./security');
 const { validateCountdowns } = require('./countdown-validation');
 const { validateExpense, validateExpenseFilters, validateExpenseId } = require('./expense-validation');
@@ -463,6 +465,8 @@ app.delete('/api/focus-sessions/:id', requireAuth, async (req, res) => {
   }
 });
 
+registerProgressRoutes(app, requireAuth, createProgressStore(db.pool));
+
 const sendIndex = (req, res) => {
   res.set('Cache-Control', 'no-cache');
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -476,6 +480,9 @@ app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 
 app.get('/goal-calendar-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'goal-calendar-logic.js')));
 app.get('/notes-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'notes-logic.js')));
 app.get('/cp-notebook.js', (req, res) => res.sendFile(path.join(__dirname, 'cp-notebook.js')));
+for (const file of ['progress-logic.js', 'progress-rewards.js', 'progress-floating.js', 'progress.js']) {
+  app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, file)));
+}
 // Only the validated, privacy-filtered export is served. Never expose the master file.
 app.get('/cp-notes.json', (req, res) => {
   res.set('Cache-Control', 'no-store');

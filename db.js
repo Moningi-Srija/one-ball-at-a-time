@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { initProgressSchema } = require('./progress-store');
 const { defaultWinterArcSettings } = require('./winter-arc-logic');
 
 const pool = new Pool({
@@ -208,6 +209,7 @@ async function init() {
       );
     }
 
+    await initProgressSchema(client);
     await client.query('COMMIT');
   } catch (error) {
     try {

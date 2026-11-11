@@ -8,9 +8,9 @@
 
 [Open the no-login public demo](https://one-ball-at-a-time.onrender.com/demo)
 
-The demo keeps its task, focus-session, and expense state separate from the owner's private data:
+The demo keeps its task, focus-session, progress-goal, and expense state separate from the owner's private data:
 
-- its task, focus-session, and expense data are never sent to the app's private APIs;
+- its task, focus-session, progress-goal, and expense data are never sent to the app's private APIs;
 - its sample data and every change you make stay in your browser's `localStorage`;
 - **Reset demo** restores the original sample board;
 - the public copy uses generic protected body and future-building slots.
@@ -27,6 +27,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 - Records completed tasks with category, points, timestamps, duration, and notes.
 - Shows today's progress against a configurable daily goal.
 - Adds live day and milestone countdowns in three original views: Ball Ring, Court Grid, and Clean Bar.
+- Adds a **Progress** tab for custom counts and targets, bar/ring/dot-grid styles, decimal steps, quick increments, corrections, daily charts, and a dated change history. Private goals live in PostgreSQL; demo goals stay in browser storage. Floating views use interactive Document Picture-in-Picture when available, read-only video PiP otherwise, or a standard popup that is not always on top. Progress counts do not change task points or focus time.
 - Adds a configurable **Winter Arc** card where a day is secured by finishing both a Glow Up task and a Jenny Humphrey Hustle task—without requiring the daily points goal—and tracks total days shown up without a resettable streak.
 - Includes an Eisenhower Matrix, category/date-filterable log, points dashboard, streaks, consistency map, category rankings, and all-time/category charts.
 - Includes a refresh-safe **Focus Room** with stopwatch, 10/25/50/90-minute presets, and custom 1–720-minute countdowns that never log more than their chosen duration, plus pause/resume, an optional always-on-top floating timer, optional tags and focus-quality notes, editable/deletable session logs, Day/Week/Month/All Time charts, and a compact preview in Analytics.
@@ -68,7 +69,11 @@ Create a PostgreSQL database, then replace the sample values in `.env`. Start th
 npm start
 ```
 
-Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its task state, expense, focus-session, migration, and login-session tables on startup.
+Open [http://localhost:8791](http://localhost:8791) for the private app or [http://localhost:8791/demo](http://localhost:8791/demo) for the browser-only demo. The app creates its task state, expense, focus-session, progress-goal/history, migration, and login-session tables on startup.
+
+Progress goal updates use revision checks and retry-safe change IDs, so an interrupted save can be retried without adding twice. A starting count is recorded as a baseline, not new work on the daily chart. History displays the most recent 1,000 entries (and clearly labels truncation); stored history is retained until the whole goal is deleted. Count/target values support two decimal places up to 1 billion; up to 100 goals are supported. This single-owner feature does not add multi-user accounts. A live-site update still requires deployment; local preview edits do not update Render automatically.
+
+Saved increments animate the count and fill, with a small `+step` pop. Milestones at 25%, 50%, 75%, 90%, and 100% get encouraging messages and a brief paper-confetti celebration. Loading a goal, editing its target, and correcting its count do not trigger a celebration. Reduced-motion preferences keep the encouragement but remove movement. No sounds or endless animations are used.
 
 To install it like an app, open **Countdowns** and use **Install app**. On iPhone, use Safari's Share menu and choose **Add to Home Screen**. The PWA is a full-screen version of the website; the repository also includes a native Android shell with a real Home Screen widget.
 

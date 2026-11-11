@@ -1,4 +1,4 @@
-const CACHE_NAME = 'one-ball-shell-v19';
+const CACHE_NAME = 'one-ball-shell-v20';
 const SHELL_FILES = [
   '/offline.html',
   '/style.css',
@@ -6,6 +6,10 @@ const SHELL_FILES = [
   '/goal-calendar-logic.js',
   '/notes-logic.js',
   '/cp-notebook.js',
+  '/progress-logic.js',
+  '/progress-rewards.js',
+  '/progress-floating.js',
+  '/progress.js',
   '/app.js',
   '/assets/app-icon-192.png',
   '/assets/app-icon-512.png'

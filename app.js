@@ -911,6 +911,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       document.getElementById('remindersWall').open = true;
     }
     if (btn.dataset.tab === 'cp-notebook') window.CPNotebook?.open();
+    if (btn.dataset.tab === 'progress') progressUI.open();
     if (btn.dataset.tab === 'matrix') renderMatrix();
     if (btn.dataset.tab === 'dashboard') renderDashboard();
     if (btn.dataset.tab === 'focus') renderFocus();
@@ -926,7 +927,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 function applyDeepLinkFromQuery() {
   const params = new URLSearchParams(window.location.search);
   const requestedTab = params.get('tab');
-  if (!['board', 'goal-calendar', 'countdowns', 'notes', 'cp-notebook', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
+  if (!['board', 'goal-calendar', 'countdowns', 'progress', 'notes', 'cp-notebook', 'focus', 'analytics', 'expenses'].includes(requestedTab)) return;
   const tabButton = document.querySelector(`.tab-btn[data-tab="${requestedTab}"]`);
   if (!tabButton) return;
   tabButton.click();
@@ -6468,6 +6469,13 @@ const sessionNotice = document.getElementById('sessionNotice');
 const demoBanner = document.getElementById('demoBanner');
 const resetDemoButton = document.getElementById('resetDemo');
 const activeBoardHint = document.getElementById('activeBoardHint');
+const progressUI = window.ProgressUI.mount({
+  document,
+  demo: DEMO_MODE,
+  request: apiRequest,
+  toast: showToast,
+  onUnauthorized: () => showLogin('Your session expired. Sign in to load your progress again.'),
+});
 
 function configureDemoUi() {
   if (!DEMO_MODE) return;
@@ -6481,10 +6489,12 @@ resetDemoButton.addEventListener('click', () => {
   if (!DEMO_MODE) return;
   if (!window.confirm('Reset this browser demo to its original sample tasks?')) return;
   localStorage.removeItem(DEMO_STORAGE_KEY);
+  progressUI.resetDemo();
   window.location.reload();
 });
 
 function showLogin(message) {
+  progressUI.close();
   if (message) {
     sessionNotice.textContent = message;
     sessionNotice.classList.add('show');

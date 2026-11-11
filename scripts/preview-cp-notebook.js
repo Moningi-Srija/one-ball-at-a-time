@@ -7,7 +7,7 @@ const root = path.join(__dirname, '..');
 const routes = new Map([
   ['/demo', 'index.html'],
   ['/cp-notes.json', 'data/cp-notes.public.json'],
-  ...['app.js', 'style.css', 'cp-notebook.js', 'notes-logic.js', 'goal-calendar-logic.js', 'winter-arc-logic.js', 'sw.js', 'offline.html', 'demo-manifest.webmanifest'].map(file => [`/${file}`, file]),
+  ...['app.js', 'style.css', 'cp-notebook.js', 'progress.js', 'progress-logic.js', 'progress-rewards.js', 'progress-floating.js', 'notes-logic.js', 'goal-calendar-logic.js', 'winter-arc-logic.js', 'sw.js', 'offline.html', 'demo-manifest.webmanifest'].map(file => [`/${file}`, file]),
   ...['manifest-loader.js', 'app-icon-192.png', 'app-icon-512.png', 'apple-touch-icon.png'].map(file => [`/assets/${file}`, `assets/${file}`]),
 ]);
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.png': 'image/png' };
