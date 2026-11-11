@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T14:11:16.937Z",
+  "generatedAt": "2026-11-11T16:01:12.322Z",
   "notes": [
     {
       "id": "DP037",
@@ -3307,6 +3307,36 @@
       "code": null,
       "language": null,
       "sourceUrl": "https://leetcode.com/problems/maximum-product-subarray/description/"
+    },
+    {
+      "id": "cpp-vector-map-choose-by-state-space",
+      "title": "Vector, map, or unordered_map — choose from the state space",
+      "takeaway": "• Dense indices 0…n−1 → vector: direct O(1) access, compact contiguous storage.\n• Small affordable value range → vector with an offset.\n• Few states in a huge key range → unordered_map for average O(1) lookup; map for ordered O(log S) lookup.\n• Need dynamic sorted keys / lower_bound → map.\n• Keys known beforehand → consider sorting/compression + vector; rank lookup still has a cost.",
+      "details": "Choose by the keys, how many states you actually visit, and which operations you need—not by a rule that vector or map is always best.\n\nCASE 1 — DP ENDING AT EACH INDEX\nMaximum Product Subarray has states 0…n−1, and the recurrence visits all of them. Use a vector for memoization/tabulation: no key search or hashing, O(1) indexed access, and compact contiguous elements. Filling n slots costs O(n) time and space. Once only the previous state is needed, scalar variables save more space than either container.\n\nCASE 2 — SMALL BOUNDED VALUES\nFor frequencies or value-based DP over [L,R], use vector[R-L+1] and index value-L if the range fits comfortably. Example: values -10000…10000 need 20001 slots. Compute the range size and offset safely; a small number of input elements does not imply a small value range.\n\nCASE 3 — SPARSE STATES, HUGE KEYS\nIf only S keys are visited but keys can be as large as 10^12, allocating every possible vector slot is wasteful. unordered_map stores the visited keys and gives average O(1) lookup, worst-case O(S). map gives O(log S) lookup and keeps keys ordered. Both have per-entry overhead; hashing also needs buckets. A map saves storage only if the algorithm avoids exploring the missing states—a recurrence that still visits the whole range is not made sparse by changing its container.\n\nCASE 4 — ORDER MATTERS\nFor dynamically changing keys where you need sorted iteration, predecessor/successor, or lower_bound, map is a useful fit. unordered_map does not provide sorted order. For mostly static data, a sorted vector is another option: O(log K) binary search, but inserting/removing in the middle generally shifts O(K) elements.\n\nCASE 5 — ALL KEYS KNOWN FIRST\nSort and deduplicate K keys, assign ranks, then store answers in a vector of K slots. Sorting costs O(K log K). Access by an already-known rank is O(1); finding the rank with binary search costs O(log K), unless you precompute it or maintain a lookup. Compression preserves equality/order, not numeric distance: rank(x)-rank(y) is not generally x-y. It also does not automatically make a K-by-K DP small.\n\nCASE 6 — EVEN DENSE STORAGE IS TOO LARGE\nCheck whether dependencies allow rolling rows or a circular buffer, or whether a different state removes a dimension. Switching to a map does not reduce the number of necessary dense states.\n\nINTERVIEW LINE\nThese state IDs are dense and all are needed, so a vector is a simpler, lower-overhead fit. I would reconsider if the key space were sparse or I needed ordered-key operations.\n\nWATCH OUT\n• Contiguous storage often helps cache locality; it is not an unconditional speed guarantee. vector<bool> is a specialized representation, not an ordinary contiguous array of bool objects.\n• vector[i] does not check bounds. Allocate/resize enough elements; reserve alone does not create them.\n• map[key] and unordered_map[key] insert a missing key. Use find/contains to test whether a memo entry exists without inserting it.\n• Container choice does not change which DP states/transitions the algorithm must compute.",
+      "tags": [
+        "cpp",
+        "dynamic-programming",
+        "state-design",
+        "complexity"
+      ],
+      "code": null,
+      "language": null,
+      "sourceUrl": null
+    },
+    {
+      "id": "positive-product-length-no-phantom-extension",
+      "title": "Positive-product length — zero means no subarray to extend",
+      "takeaway": "LC1567: p/n = longest positive/negative-product subarray ending here; 0 means none.\n• x > 0: p = oldP+1; n = oldN ? oldN+1 : 0.\n• x < 0: p = oldN ? oldN+1 : 0; n = oldP+1.\n• x == 0: reset both to 0.\nDon't extend a nonexistent negative subarray. The unguarded +1 works because [x] can start a new subarray of its own sign.",
+      "details": "QUESTION\nFind the maximum length of a contiguous subarray whose product is positive. We store lengths, not actual products. Both states refer to subarrays ending exactly at the current index.\n\nTHE TWO GUARDS\n1. A positive x keeps an existing negative product negative. But if oldN is 0, there is no negative subarray to extend, and the singleton [x] is positive. So the new negative length stays 0, not 1.\n2. A negative x turns an existing negative product positive. But if oldN is 0, there is no negative subarray to flip, and [x] itself is negative. So the new positive length stays 0, not 1.\n\nWHY oldP+1 DOES NOT NEED A GUARD\nFor x > 0 it gives the new positive length; for x < 0 it gives the new negative length. If oldP > 0, extend that positive-product subarray. If oldP == 0, the same expression gives 1, representing the valid new singleton [x]. This is start-fresh OR extend, not permission to extend any nonexistent state.\n\nSMALL CHECKS\n• First element 5: oldP=oldN=0 → p=1, n=0. Blindly adding 1 to both invents a negative subarray.\n• First element -5: oldP=oldN=0 → p=0, n=1. Blindly swapping and incrementing invents a positive subarray.\n• Next element -2 after -5: oldP=0, oldN=1 → p=2, n=1. [-5,-2] is positive; [-2] is negative.\n• At zero, every ending-here product contains zero, so neither sign exists: p=n=0.\n\nIMPLEMENTATION\nRead oldP and oldN before writing either new state. Keep the answer as the maximum p over all positions, not just the final p. This takes O(n) time and O(1) extra space; multiplying input values is unnecessary.\n\nMEMOIZATION DISTINCTION\nHere valid lengths are nonnegative, so {-1,-1} can mean uncomputed and a separate seen array is optional. Do not use 0 as uncomputed: it is a valid computed result meaning no subarray of that sign exists. A length-0 positive-product subarray is not being counted as a valid answer here.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "debugging",
+        "space-optimization"
+      ],
+      "code": "int oldP = p, oldN = n;\nif (x > 0) {\n    p = oldP + 1;\n    n = oldN > 0 ? oldN + 1 : 0;\n} else if (x < 0) {\n    p = oldN > 0 ? oldN + 1 : 0;\n    n = oldP + 1;\n} else {\n    p = n = 0;\n}\nanswer = max(answer, p);",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/maximum-length-of-subarray-with-positive-product/description/"
     }
   ]
 }
