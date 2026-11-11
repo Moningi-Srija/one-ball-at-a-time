@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T18:49:01.774Z",
+  "generatedAt": "2026-11-11T19:13:26.068Z",
   "notes": [
     {
       "id": "DP037",
@@ -3364,6 +3364,19 @@
       "code": "#include <numeric>\n#include <vector>\n\nstd::vector<int> v(5);\nstd::iota(v.begin(), v.end(), 0);   // 0, 1, 2, 3, 4\nstd::iota(v.begin(), v.end(), 10);  // 10, 11, 12, 13, 14\n\n// For a DP with states 0 through n:\nstd::vector<int> dp(n + 1);\nstd::iota(dp.begin(), dp.end(), 0); // dp[x] = x",
       "language": "cpp",
       "sourceUrl": null
+    },
+    {
+      "id": "perfect-squares-one-two-three-four",
+      "title": "Perfect Squares — the answer is always 1, 2, 3, or 4",
+      "takeaway": "For positive n, the minimum number of square terms is 1, 2, 3, or 4; repeats are allowed.\n• 4 exactly when n = 4^a × (8b + 7), with a,b ≥ 0. Strip factors of 4, then check remainder % 8 == 7.\n• Otherwise: a square → 1; a sum of two squares → 2; else → 3.\nNumbers outside that form cannot require 4.",
+      "details": "WHAT IS BEING COUNTED\nLC279 asks for the fewest square terms adding to n. Repeated square values are allowed: 12 = 2² + 2² + 2² uses three terms, not one distinct square. More than four terms can still represent n; the theorem guarantees a representation with at most four. For n=0 the minimum is 0, outside the positive-n statement.\n\nTHE TWO THEOREMS\nLagrange's four-square theorem: every nonnegative integer is a sum of four integer squares, allowing zero terms. Dropping zero terms gives at most four positive square terms.\nGauss–Legendre's three-square theorem: a positive integer is a sum of three squares, allowing zero terms, if and only if it is NOT of the form 4^a × (8b + 7), for nonnegative integers a and b. Combining the results gives exactly four for that form, and at most three for everything else. The expression is 8*b + 7, not a*b + 7 and not a*b + 1.\n\nDECISION ORDER\n1. If n is already a square, return 1.\n2. Divide a copy of n by 4 while divisible. If the result modulo 8 is 7, return 4.\n3. Try a >= 1 with a² <= n; if n-a² is a square, return 2.\n4. Otherwise return 3: the four-only obstruction is absent, and we have ruled out one and two.\n\nEXAMPLES\n16 = 4² → 1.\n13 = 2² + 3² → 2.\n12 = 2² + 2² + 2² → 3.\n7 = 2² + 1² + 1² + 1² → 4.\n28 = 4 × 7 → the four-only form; 28 = 4² + 2² + 2² + 2².\n341 = 1² + 2² + 4² + 8² + 16² can be rewritten as 18² + 4² + 1². A shorter representation may change all the original squares; this is not a rule that merges one pair of existing terms.\n\nPROOF BOUNDARY\nThese are number-theory results used by the algorithm, not consequences of the DP recurrence. A square modulo 8 is 0,1,or4; three such residues cannot sum to 7 modulo 8. If a sum of three squares is divisible by 4, all three roots must be even, so division by 4 repeats the obstruction. This explains why numbers of the stated form cannot use three or fewer squares. It does NOT prove Lagrange's existence result or the converse that every other integer admits three squares. The full theorem proofs have not been worked through in this discussion.\n\nIMPLEMENTATION AND COMPLEXITY\nFor LC279's bound n <= 10000, try O(sqrt(n)) possible first roots and test the remainder with sqrt plus integer multiplication. Time O(sqrt(n)), extra space O(1). Removing factors of 4 takes O(log n) iterations. The function returns the count, not the actual squares.\n\nsqrt returns floating point; casting to int truncates, then root*root == x verifies the candidate. For larger numeric domains, account for precision and overflow. An exact integer binary-search square check costs O(log n) per call, changing this implementation to O(sqrt(n) log n). This theorem shortcut is not greedy: choosing the largest square first fails at 12, producing 9+1+1+1 instead of 4+4+4.",
+      "tags": [
+        "math",
+        "dynamic-programming"
+      ],
+      "code": "#include <cmath>\nusing namespace std;\n\nclass Solution {\n    bool isSquare(int x) {\n        int root = static_cast<int>(sqrt(x));\n        return root * root == x;\n    }\n\npublic:\n    int numSquares(int n) {\n        if (n == 0) return 0;\n        if (isSquare(n)) return 1;\n\n        int reduced = n;\n        while (reduced % 4 == 0)\n            reduced /= 4;\n        if (reduced % 8 == 7)\n            return 4;\n\n        for (int a = 1; a * a <= n; ++a)\n            if (isSquare(n - a * a))\n                return 2;\n\n        return 3;\n    }\n};",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/perfect-squares/description/"
     }
   ]
 }
