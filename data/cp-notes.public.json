@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T16:01:12.322Z",
+  "generatedAt": "2026-11-11T18:14:19.834Z",
   "notes": [
     {
       "id": "DP037",
@@ -3337,6 +3337,21 @@
       "code": "int oldP = p, oldN = n;\nif (x > 0) {\n    p = oldP + 1;\n    n = oldN > 0 ? oldN + 1 : 0;\n} else if (x < 0) {\n    p = oldN > 0 ? oldN + 1 : 0;\n    n = oldP + 1;\n} else {\n    p = n = 0;\n}\nanswer = max(answer, p);",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/maximum-length-of-subarray-with-positive-product/description/"
+    },
+    {
+      "id": "dp-infinity-guard-before-transition",
+      "title": "DP infinity — don't extend an unreachable state",
+      "takeaway": "• If INF means unreachable, skip that state before adding a transition cost.\n• INT_MAX + 1 overflows; a huge number is not mathematical infinity.\n• Choose a sentinel outside all valid answers and keep arithmetic in range.\n• Perfect Squares needs no unreachable sentinel: dp[x] = x is valid using x copies of 1².",
+      "details": "WHEN THIS APPLIES\nFor a minimization DP, a finite sentinel INF often means that no valid way reaches a state. Before forming dp[prev] + cost, verify that dp[prev] is a real, computed answer. An impossible predecessor must not create a possible successor.\n\nWHY CHECK\nINT_MAX + 1 is signed-integer overflow in C++, not infinity. Even without overflow, arithmetic can corrupt the meaning: INF plus a negative cost becomes smaller than INF and may look like an improvement from an impossible state. Maximization with a negative-infinity sentinel has the analogous issue.\n\nCHOOSE INF FROM THE BOUNDS\nINF must be distinguishable from every valid answer, and the numeric type must safely hold all finite transition results. Using INT_MAX/4 or long long can leave headroom, but neither automatically proves all additions safe. The reachability guard prevents sentinel arithmetic; finite answers can still overflow if their bounds are wrong. 1000000007 has no special protective meaning here—it is just a finite integer, and using it as a modulus would not preserve a minimum-cost DP.\n\nNOT AN ALWAYS RULE\nThe guard is unnecessary when you prove every predecessor read is reachable, or when a carefully designed bounded/saturating transition preserves the unreachable sentinel safely. If INF is merely an initial best-answer placeholder and is never read as a predecessor, there is no sentinel arithmetic to guard. Also distinguish unreachable from uncomputed: memoized states must be computed before their answers are used.\n\nPERFECT SQUARES EXAMPLE\nEvery nonnegative sum x is reachable using x copies of 1². Set dp[0] = 0, initialize the current dp[x] = x, and improve it with 1 + dp[x - q*q] for q >= 1 and q*q <= x. The dependency is a smaller, already-computed sum. No unreachable check is needed in this implementation. The q*q <= x condition handles the lower array bound; INF does not prevent out-of-bounds access.",
+      "tags": [
+        "dynamic-programming",
+        "cpp",
+        "debugging",
+        "state-design"
+      ],
+      "code": "// INF is outside all valid answers; dp[prev] is already computed.\n// This example adds one operation. Ensure finite results fit the type.\nif (dp[prev] != INF) {\n    dp[cur] = min(dp[cur], dp[prev] + 1);\n}",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/perfect-squares/description/"
     }
   ]
 }
