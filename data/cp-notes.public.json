@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T07:23:52.040Z",
+  "generatedAt": "2026-11-12T11:42:34.248Z",
   "notes": [
     {
       "id": "DP037",
@@ -3406,6 +3406,20 @@
       "code": "// Preconditions: x >= 0; a >= 0 and b > 0.\n// No floating point and no x+1 or a+b intermediate.\nlong long halfUp(long long x) {\n    return x / 2 + x % 2;\n}\n\nlong long ceilDiv(long long a, long long b) {\n    return a / b + (a % b != 0);\n}\n\n// LC3366 has small nonnegative values, so this shortcut is safe:\n// int half = (x + 1) / 2;\n\n// Examples:\n// halfUp(5)   == 3\n// halfUp(4)   == 2\n// ceilDiv(7, 3) == 3\n// ceilDiv(6, 3) == 2\n// ceilDiv(0, 3) == 0",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/minimum-array-sum/description/"
+    },
+    {
+      "id": "sightseeing-pair-replace-right-endpoint",
+      "title": "Best Sightseeing Pair — replace the right endpoint",
+      "takeaway": "• dp[j] = best pair score ending at j.\n• Replace j−1 with j: dp[j−1] − values[j−1] + values[j] − 1. Also compare the new adjacent pair (j−1,j).\n• The previous best stays best because EVERY old left endpoint stays valid and gets the SAME adjustment.",
+      "details": "QUESTION AND STATE\nLC1014 asks for the maximum score values[i]+values[j]+i-j over two indices i<j. They are two chosen elements, not a contiguous subarray. Let dp[j] be the best pair score whose right endpoint is exactly j. This is not the best score anywhere in the prefix.\n\nREPLACE THE RIGHT ENDPOINT\nTake any old pair (i,j-1), with i<=j-2. Change only its right endpoint to j:\n• subtract values[j-1], because that endpoint is no longer selected;\n• add values[j];\n• subtract 1, because the distance from the unchanged i increased by one.\nSo score(i,j)=score(i,j-1)-values[j-1]+values[j]-1.\n\nWHY ONE PREVIOUS BEST IS ENOUGH\nThe adjustment values[j]-values[j-1]-1 is independent of i, and every old left endpoint remains legal. Adding the same amount to every old pair preserves their ordering. Therefore the best old pair gives the best new pair among i<=j-2. We do not need to rescan those left endpoints.\n\nDO NOT MISS THE NEW LEFT ENDPOINT\nThe old state did not contain i=j-1, because a pair cannot use the same index twice. Consider the adjacent pair (j-1,j) separately; its score is values[j-1]+values[j]-1.\n\nRECURRENCE\nFor j>=2:\ndp[j]=max(dp[j-1]-values[j-1]+values[j]-1, values[j-1]+values[j]-1).\nBase: dp[1]=values[0]+values[1]-1. There is no valid pair ending at index 0. Answer: max(dp[1],...,dp[n-1]), not necessarily dp[n-1].\n\nEXAMPLE\nvalues=[8,1,5,2,6].\nAt j=1: dp[1]=8+1-1=8, pair (0,1).\nAt j=2: replace the right endpoint: 8-1+5-1=11; adjacent pair gives 1+5-1=5. So dp[2]=11, pair (0,2).\nThe later dp values are 7 and 10. The final answer remains 11 even though the best pair ending at the last index scores 10.\n\nWHEN TO TRY THIS IDEA\nFor a pair-scoring DP, ask: if I move one endpoint, can I update the previous candidates without checking all of them again? Here the shared adjustment and unchanged eligibility justify keeping only the best. This is not a general rule that replacing one endpoint always works: an adjustment depending on the old left endpoint can change the ranking, and new restrictions can make the old best invalid. You would need a new proof or more state in those cases.\n\nCODE AND COMPLEXITY\nThe code below is the discussed array version: O(n) time and O(n) extra space. Since it only reads dp[j-1], the dp array can also be replaced by one previous-score variable, giving O(1) extra space while keeping a separate global answer. LC1014 guarantees at least two elements; the base case relies on that.",
+      "tags": [
+        "dynamic-programming",
+        "state-design",
+        "space-optimization"
+      ],
+      "code": "#include <algorithm>\n#include <vector>\nusing namespace std;\n\nclass Solution {\npublic:\n    int maxScoreSightseeingPair(vector<int>& values) {\n        int n = values.size();  // LC1014 guarantees n >= 2.\n        vector<int> dp(n);\n\n        // dp[j]: best pair score whose right endpoint is j.\n        dp[1] = values[0] + values[1] - 1;\n        int answer = dp[1];\n\n        for (int j = 2; j < n; ++j) {\n            int replaceRightEndpoint =\n                dp[j - 1] - values[j - 1] + values[j] - 1;\n\n            int adjacentPair =\n                values[j - 1] + values[j] - 1;\n\n            dp[j] = max(replaceRightEndpoint, adjacentPair);\n            answer = max(answer, dp[j]);\n        }\n\n        return answer;\n    }\n};",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/best-sightseeing-pair/description/"
     }
   ]
 }
