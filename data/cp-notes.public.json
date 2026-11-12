@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-11T19:13:26.068Z",
+  "generatedAt": "2026-11-12T07:00:39.908Z",
   "notes": [
     {
       "id": "DP037",
@@ -3377,6 +3377,21 @@
       "code": "#include <cmath>\nusing namespace std;\n\nclass Solution {\n    bool isSquare(int x) {\n        int root = static_cast<int>(sqrt(x));\n        return root * root == x;\n    }\n\npublic:\n    int numSquares(int n) {\n        if (n == 0) return 0;\n        if (isSquare(n)) return 1;\n\n        int reduced = n;\n        while (reduced % 4 == 0)\n            reduced /= 4;\n        if (reduced % 8 == 7)\n            return 4;\n\n        for (int a = 1; a * a <= n; ++a)\n            if (isSquare(n - a * a))\n                return 2;\n\n        return 3;\n    }\n};",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/perfect-squares/description/"
+    },
+    {
+      "id": "counting-dp-widen-cap-narrow",
+      "title": "Counting DP — add in long long, cap only with proof",
+      "takeaway": "• Final answer fits int ≠ every DP state fits int.\n• Widen BEFORE adding: 1LL*a + b. Casting (a+b) afterward is too late.\n• LC377 can cap at INT_MAX: transitions only add nonnegative counts, and the requested answer is guaranteed to fit.\n• Cast back to int only after the value is in range. Don't blindly cap other DPs.",
+      "details": "THE TRAP IN COMBINATION SUM IV\nLC377 guarantees that the requested answer fits a signed 32-bit int. It does not guarantee that every sum visited by a full tabulation has a fitting count. With nums = [2,4,6] and target = 999, the answer is zero because every chosen number is even, while some smaller even sums have counts exceeding even 64-bit long long. Just changing the whole DP array to long long is not a complete fix.\n\nWHAT THE HELPER DOES\n1. Accept two nonnegative counts, each already at most INT_MAX.\n2. Compute 1LL*a + b. The 1LL makes the multiplication and then the addition use long long. static_cast<long long>(a) + b also works. With 32-bit int inputs, the sum is at most 2*INT_MAX and fits a 64-bit long long.\n3. If total >= INT_MAX, return INT_MAX; otherwise total is in [0, INT_MAX), so static_cast<int>(total) preserves its value.\n\nWIDEN BEFORE, NOT AFTER\nlong long total = a + b still performs a+b as int when both operands are int. An overflowing signed-int addition is already invalid before assignment to long long. static_cast<long long>(a + b) has the same problem. Similarly, casting back to int does not check the range or automatically clamp the value.\n\nWHY CAPPING IS CORRECT HERE\nLet K = INT_MAX. For nonnegative a and b:\nmin(K, a+b) = min(K, min(K,a) + min(K,b)).\nThe recurrence only adds nonnegative counts, so by induction every stored value equals min(K, its true count). Since the true requested answer is guaranteed to be <= K, the final stored answer is exact, including when it equals K. Large counts at other states need not be represented exactly.\n\nWATCH OUT\n• Widening prevents overflow in an operation; capping changes the information stored. They are separate decisions.\n• This helper is for the stated nonnegative counting recurrence and final-answer bound, not an automatic repair for arbitrary DP. Subtraction or cancellation can need the original large values: with cap 10, 20-15 is 5, but 10-10 is 0.\n• If the exact result may exceed the cap, this helper returns a capped result, not that exact result. Use a sufficiently wide or arbitrary-precision representation when exact large values matter.\n• Do not introduce modulo 1e9+7 unless the problem asks for it. LC377 asks for the exact count.\n• Top-down states reached from the target have a stronger bound here: fixing the path to such a state injects its completions into the target's solutions. The full-table intermediate-state issue need not occur in that restricted evaluation; using the shared helper remains valid.",
+      "tags": [
+        "dynamic-programming",
+        "counting",
+        "cpp",
+        "debugging"
+      ],
+      "code": "#include <climits>\n\n// LC377: nonnegative counts; the requested answer fits a 32-bit int.\n// Inputs are already capped at INT_MAX. long long holds their sum.\nint addWays(int a, int b) {\n    long long total = 1LL * a + b;  // Widen BEFORE adding.\n    return total >= INT_MAX ? INT_MAX : static_cast<int>(total);\n}\n\n// Use in the counting transition:\n// dp[sum] = addWays(dp[sum], dp[sum - x]);\n\n// Not safe if a+b overflows int:\n// long long total = a + b;\n// long long total = static_cast<long long>(a + b);",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/combination-sum-iv/description/"
     }
   ]
 }
