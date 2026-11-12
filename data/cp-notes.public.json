@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T07:00:39.908Z",
+  "generatedAt": "2026-11-12T07:23:52.040Z",
   "notes": [
     {
       "id": "DP037",
@@ -3392,6 +3392,20 @@
       "code": "#include <climits>\n\n// LC377: nonnegative counts; the requested answer fits a 32-bit int.\n// Inputs are already capped at INT_MAX. long long holds their sum.\nint addWays(int a, int b) {\n    long long total = 1LL * a + b;  // Widen BEFORE adding.\n    return total >= INT_MAX ? INT_MAX : static_cast<int>(total);\n}\n\n// Use in the counting transition:\n// dp[sum] = addWays(dp[sum], dp[sum - x]);\n\n// Not safe if a+b overflows int:\n// long long total = a + b;\n// long long total = static_cast<long long>(a + b);",
       "language": "cpp",
       "sourceUrl": "https://leetcode.com/problems/combination-sum-iv/description/"
+    },
+    {
+      "id": "cpp-integer-ceiling-division",
+      "title": "Integer division — round up without floating point",
+      "takeaway": "• For x ≥ 0, (x + 1) / 2 gives ceil(x / 2): round UP, not to nearest.\n• Avoid x+1 overflow: use x / 2 + x % 2.\n• General form for a ≥ 0, b > 0: a / b + (a % b != 0).",
+      "details": "WHY THE HALF FORMULA WORKS\nFor nonnegative integer x, C++ x/2 discards the fractional part. If x is even, the division is already exact. If x is odd, add one. Thus ceil(x/2) = x/2 + x%2. Examples: 0 → 0, 4 → 2, 5 → 3. Rounding upward means the smallest integer at least as large as the exact quotient; it is not rounding to nearest.\n\nTHE SHORTCUT IN MINIMUM ARRAY SUM\nLC3366 divides the chosen value by two and rounds up. Here nums[i] <= 100000, so (x+1)/2 is safe in a 32-bit int. For a general x that can equal the type's maximum, x+1 can overflow; x/2 + x%2 avoids that addition entirely.\n\nGENERAL NONNEGATIVE CEILING DIVISION\nFor a >= 0 and b > 0, write a = q*b + r, with 0 <= r < b. If r is zero, the answer is q; otherwise it is q+1. In C++: a/b + (a%b != 0). The comparison contributes zero or one. The result fits whenever a fits: when b=1 the remainder is zero, and when b>=2 the rounded-up quotient is at most a for a>0. The a=0 case returns zero.\n\nWATCH OUT\n• These snippets require nonnegative numerators and positive divisors. C++ division truncates toward zero, so do not apply the formulas unchanged to negative inputs. Division or remainder by zero is invalid.\n• The common (a+b-1)/b shortcut requires every intermediate addition to fit. C++ evaluates a+b before subtracting one: a=LLONG_MAX, b=1 overflows at a+b even though the mathematical a+b-1 fits. Parenthesizing a+(b-1) avoids that particular intermediate but still needs the addition to fit. The quotient-plus-remainder formula avoids both issues.\n• std::ceil(a/b) does not restore a fractional part already lost by integer division. Floating-point conversion is unnecessary for these integer formulas and can lose precision for very large integers.",
+      "tags": [
+        "cpp",
+        "math",
+        "debugging"
+      ],
+      "code": "// Preconditions: x >= 0; a >= 0 and b > 0.\n// No floating point and no x+1 or a+b intermediate.\nlong long halfUp(long long x) {\n    return x / 2 + x % 2;\n}\n\nlong long ceilDiv(long long a, long long b) {\n    return a / b + (a % b != 0);\n}\n\n// LC3366 has small nonnegative values, so this shortcut is safe:\n// int half = (x + 1) / 2;\n\n// Examples:\n// halfUp(5)   == 3\n// halfUp(4)   == 2\n// ceilDiv(7, 3) == 3\n// ceilDiv(6, 3) == 2\n// ceilDiv(0, 3) == 0",
+      "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/minimum-array-sum/description/"
     }
   ]
 }
