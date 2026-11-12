@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-12T15:45:41.522Z",
+  "generatedAt": "2026-11-12T16:08:15.487Z",
   "notes": [
     {
       "id": "DP037",
@@ -3447,6 +3447,19 @@
       ],
       "code": "class Solution {\npublic:\n    int integerBreak(int n) {\n        // These inputs must still be split into at least two parts.\n        if (n <= 3) return n - 1;\n\n        long long product = 1;\n        while (n > 4) {\n            product *= 3;\n            n -= 3;\n        }\n\n        // Remaining 4 stands for 2+2, whose product is also 4.\n        return static_cast<int>(product * n);\n    }\n};",
       "language": "cpp",
+      "sourceUrl": "https://leetcode.com/problems/integer-break/"
+    },
+    {
+      "id": "greedy-exchange-argument-proof-template",
+      "title": "Exchange argument — make an optimum agree with greedy",
+      "takeaway": "• Start with an optimal solution that differs from greedy.\n• Exchange choices: keep it legal and make the answer no worse.\n• Repeat without undoing earlier greedy choices.\n• Ties are fine: greedy need not be the only optimum.",
+      "details": "WHAT WE ARE TRYING TO PROVE\nCan our greedy choice be part of an optimal solution? Start with an arbitrary optimum. If it already agrees, there is nothing to exchange at that step. Otherwise, show how to change it to include our choice without losing optimality. Then apply the same argument to the remaining decisions. Exchange is a common greedy proof technique, not the only way to prove an algorithm correct.\n\nTHE CHECKLIST\n1. Say exactly what greedy chooses and where the optimum differs.\n2. Specify what you remove, add, or rearrange. Prove the replacement is available and still satisfies EVERY constraint.\n3. Compare the full objective, including any effect on the unchanged part. For maximization, new >= old; for minimization, new <= old.\n4. Keep the earlier greedy decisions intact. Explain progress: one more decision agrees, a bad pattern disappears, or a smaller remaining problem is solved. Finish by induction or a terminating sequence of exchanges.\n5. Check that the actual algorithm constructs the form you proved sufficient, including small inputs and ties. One good local swap alone is not the whole proof.\n\nNO WORSE, NOT NECESSARILY STRICTLY BETTER\nAn optimum cannot be strictly improved by a feasible exchange. If you derive a strict improvement, that rules out the assumed bad pattern in an optimum. If the exchange ties, you have another optimum that agrees more with greedy. Both are useful conclusions; do not demand that every alternative be strictly worse.\n\nFIRST WORKED EXAMPLE: INTEGER BREAK (LC343)\nSplit n into at least two positive integer parts with sum n, maximizing their product. For n>=4:\n• Remove 1s. With at least three parts, merge 1 and a into a+1: the product increases and at least two parts remain. With exactly two parts 1+(n-1), instead use 2+(n-2); the product improves by n-3>0. Merging into one part would be illegal.\n• Replace any part x>=5 with 3+(x-3): same sum, and 3(x-3)-x=2x-9>0.\n• Replace 4 with 2+2: same sum AND same product. This proves we can choose an optimum without a part 4, not that using 4 is wrong.\n• Replace 2+2+2 with 3+3: same sum 6, product improves from 8 to 9.\nEvery other factor is positive, so these local product comparisons apply to the whole product. Applying the exchanges in this order terminates with only 3s and at most two 2s.\n\nThe remainder fixes that form: n%3==0 uses zero 2s; remainder 1 uses two 2s (a factor 4); remainder 2 uses one 2. These are modulo-3 cases, not even/odd cases. For n>=4 the construction is feasible and every partition can be transformed into it without worsening the product. Handle n=2 -> 1 and n=3 -> 2 separately because the mandatory split needs a 1.\n\nExample of a tie: for n=10, 3+3+4 and 3+3+2+2 both give 36. A correct greedy algorithm does not have to return the only optimal partition.\n\nWATCH OUT\nA replacement that breaks feasibility proves nothing. A local improvement without a path to the algorithm's final structure is incomplete. Examples help explain a proof but cannot replace an argument for all valid inputs. Some greedy algorithms are proved with stays-ahead arguments, bounds, or other techniques instead.",
+      "tags": [
+        "greedy",
+        "math"
+      ],
+      "code": null,
+      "language": null,
       "sourceUrl": "https://leetcode.com/problems/integer-break/"
     }
   ]
