@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-11-14T07:11:09.248Z",
+  "generatedAt": "2026-11-14T09:57:06.927Z",
   "notes": [
     {
       "id": "DP037",
@@ -580,16 +580,16 @@
     },
     {
       "id": "trees_a_044",
-      "title": "Judge Candidate BST Subtrees Independently",
-      "takeaway": "An ancestor outside a candidate subtree must not disqualify that subtree.",
-      "details": "A candidate BST subtree need not obey value bounds imposed by ancestors outside that subtree. Return local validity, size, and extrema upward, and continue exploring below invalid ancestors so a valid descendant subtree is not rejected prematurely.",
+      "title": "Largest BST Subtree — the whole tree can fail while a subtree passes",
+      "takeaway": "Check each subtree on its own. Ignore the nodes above its root, but follow all BST rules inside it.",
+      "details": "Look at the tree below.\n• The whole tree is NOT a BST: 15 is on the left of 10, but 15 > 10.\n• The subtree rooted at 15 IS a BST: 12 < 15 < 20. Its size is 3.\n• When checking that subtree, 10 is not included. So don't reject 15 just because it is greater than 10.\n\nA subtree means its root and ALL nodes below it. We cannot remove a node just to make it valid.\n\nWhole-tree BST check: every node must obey the bounds from the nodes above it. Largest BST Subtree: those bounds must not reject a smaller subtree that is valid on its own.\n\nCheck the children first. Return whether each subtree is a BST, its size, its smallest value and its largest value. Join them with the parent only if both are BSTs and left.max < parent < right.min (an empty side adds no restriction). Keep the largest valid size found, even if the parent fails.",
       "tags": [
         "trees",
         "binary-search-trees",
         "state-design"
       ],
-      "code": null,
-      "language": null,
+      "code": "       10\n      /\n     15\n    /  \\\n   12  20",
+      "language": "text",
       "sourceUrl": "https://takeuforward.org/practice/dsa/largest-bst-in-binary-tree"
     },
     {
