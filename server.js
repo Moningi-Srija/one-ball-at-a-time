@@ -13,6 +13,7 @@ const { validateExpense, validateExpenseFilters, validateExpenseId } = require('
 const { validateGoalCalendar } = require('./goal-calendar-logic');
 const { validateReminders } = require('./notes-logic');
 const { validateWinterArcSettings } = require('./winter-arc-logic');
+const { validateSettings: validateSlotSettings } = require('./board-slots');
 const {
   validateEmptyAction,
   validateFocusFilters,
@@ -183,6 +184,31 @@ app.put('/api/winter-arc', requireAuth, async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'failed_to_save_winter_arc' });
+  }
+});
+
+app.put('/api/slot-settings', requireAuth, async (req, res) => {
+  const result = validateSlotSettings(req.body);
+  if (!result.ok) {
+    return res.status(400).json({
+      error: 'invalid_slot_settings',
+      field: result.field,
+      message: result.error,
+    });
+  }
+  try {
+    const saved = await db.compareAndSetSlotSettings(result.value.revision, result.value);
+    if (!saved.ok) {
+      return res.status(409).json({
+        error: 'slot_settings_conflict',
+        message: 'Your slot settings changed in another tab or device. The latest version has been loaded; try again.',
+        slotSettings: saved.current,
+      });
+    }
+    return res.json({ slotSettings: saved.value });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'failed_to_save_slot_settings' });
   }
 });
 
@@ -479,6 +505,7 @@ app.get('/app.js', (req, res) => res.sendFile(path.join(__dirname, 'app.js')));
 app.get('/winter-arc-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'winter-arc-logic.js')));
 app.get('/goal-calendar-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'goal-calendar-logic.js')));
 app.get('/notes-logic.js', (req, res) => res.sendFile(path.join(__dirname, 'notes-logic.js')));
+app.get('/board-slots.js', (req, res) => res.sendFile(path.join(__dirname, 'board-slots.js')));
 app.get('/cp-notebook.js', (req, res) => res.sendFile(path.join(__dirname, 'cp-notebook.js')));
 for (const file of ['progress-logic.js', 'progress-rewards.js', 'progress-floating.js', 'progress.js']) {
   app.get(`/${file}`, (req, res) => res.sendFile(path.join(__dirname, file)));

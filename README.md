@@ -19,7 +19,7 @@ The normal root URL (`/`) remains the owner's PIN-protected, database-backed app
 
 ## What it does
 
-- Keeps a focused board of five: three flexible priorities plus protected body and future-building slots.
+- Keeps a focused board of five: three flexible priorities plus body and future-building slots, each independently unlockable from the Board. Unlocking preserves existing tasks and makes room for any category; locking again reuses a matching-category task or an empty slot, never deleting or retagging tasks. Preferences sync to PostgreSQL in the private app and stay browser-local in the demo. Both slots start locked for existing and new boards.
 - Adds a persistent **Study Goal Calendar** with a custom date range and per-day advance checklists.
 - Adds a dedicated **Notes to self** tab styled as **Phil’s-osophy**, a Phil Dunphy-inspired journal filled with the user's own reminders, numbered lessons, ruled pink/butter/lilac pages, a daily featured reminder, and pinned favourites. A random saved lesson appears at the top of the Board each visit. Private notes sync across devices; the public demo saves them in the browser.
 - Adds a separate **CP Notebook** with a rotating featured idea, searchable/topic-filtered study cards, and literal code examples. It reads a privacy-filtered generated JSON snapshot, not the private authoring source. See the [local import and preview workflow](docs/cp-notebook.md); importing locally does not update production.

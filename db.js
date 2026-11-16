@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const { initProgressSchema } = require('./progress-store');
 const { defaultWinterArcSettings } = require('./winter-arc-logic');
+const { defaultSettings: defaultSlotSettings } = require('./board-slots');
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -32,6 +33,7 @@ async function init() {
       countdowns: [],
       targets: { day: 25, week: 150, weekend: 50, month: 600 },
       winterArc: defaultWinterArcSettings(),
+      slotSettings: defaultSlotSettings(),
       // The first browser visit initializes this from the owner's local calendar day.
       goalCalendar: null,
       reminders: null,
@@ -299,6 +301,10 @@ function compareAndSetGoalCalendar(expectedRevision, value) {
 
 function compareAndSetReminders(expectedRevision, value) {
   return compareAndSetState('reminders', expectedRevision, value);
+}
+
+function compareAndSetSlotSettings(expectedRevision, value) {
+  return compareAndSetState('slotSettings', expectedRevision, value);
 }
 
 const EXPENSE_COLUMNS = `
@@ -650,6 +656,7 @@ module.exports = {
   setState,
   compareAndSetGoalCalendar,
   compareAndSetReminders,
+  compareAndSetSlotSettings,
   listExpenses,
   createExpense,
   updateExpense,

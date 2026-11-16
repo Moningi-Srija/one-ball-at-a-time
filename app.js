@@ -6,6 +6,8 @@ const GoalCalendar = window.GoalCalendarLogic;
 if (!GoalCalendar) throw new Error('Goal Calendar logic failed to load.');
 const NotesToSelf = window.NotesToSelf;
 if (!NotesToSelf) throw new Error('Notes to self logic failed to load.');
+const BoardSlots = window.BoardSlots;
+if (!BoardSlots) throw new Error('Board slot logic failed to load.');
 
 // ---------- Data ----------
 
@@ -158,6 +160,8 @@ const FOCUS_LEVELS = {
 // ---------- Storage (API-backed) ----------
 
 let active = [];   // up to 5 tasks on the board
+let slotSettings = BoardSlots.defaultSettings();
+let slotSettingsSaving = false;
 let log = [];      // finished tasks
 let countdowns = []; // moments and milestones worth making visible
 let targets = DEFAULT_TARGETS;
@@ -436,6 +440,7 @@ function createDemoState() {
       }
     ],
     targets: { ...DEFAULT_TARGETS },
+    slotSettings: BoardSlots.defaultSettings(),
     winterArc: WinterArc.defaultWinterArcSettings(new Date(), browserTimeZone()),
     goalCalendar: createDemoGoalCalendar(),
     reminders: NotesToSelf.defaultReminders(),
@@ -458,7 +463,7 @@ function createDemoState() {
 
 function persistDemoState() {
   try {
-    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 8, active, log, countdowns, targets, winterArc: winterArcSettings, goalCalendar, reminders, frog, expenses, focusSessions, activeFocusSession }));
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ version: 8, active, slotSettings, log, countdowns, targets, winterArc: winterArcSettings, goalCalendar, reminders, frog, expenses, focusSessions, activeFocusSession }));
     return true;
   } catch (err) {
     console.error(err);
@@ -552,6 +557,7 @@ async function loadState() {
     if (!state || !Array.isArray(state.active) || !Array.isArray(state.log)) {
       state = createDemoState();
       active = state.active;
+      slotSettings = BoardSlots.normalizeSettings(state.slotSettings);
       log = state.log;
       countdowns = state.countdowns;
       targets = state.targets;
@@ -587,6 +593,7 @@ async function loadState() {
     }
   }
   active = Array.isArray(state.active) ? state.active : [];
+  slotSettings = BoardSlots.normalizeSettings(state.slotSettings);
   log = Array.isArray(state.log) ? state.log : [];
   countdowns = Array.isArray(state.countdowns) ? state.countdowns : [];
   targets = { ...DEFAULT_TARGETS, ...(state.targets || {}) };
@@ -2318,19 +2325,78 @@ function renderWinterArc() {
     : `Day ${summary.dayNumber} of ${summary.totalDays}`);
 }
 
+function renderSlotControls() {
+  for (const slot of ['body', 'career']) {
+    const button = document.getElementById(`${slot}SlotToggle`);
+    const label = slot === 'body' ? 'Glow Up' : (DEMO_MODE ? 'Future Building' : 'Quant Dev');
+    const locked = slotSettings[`${slot}Locked`];
+    button.textContent = `${locked ? '🔒' : '🔓'} ${label}`;
+    button.setAttribute('aria-label', `${locked ? 'Unlock' : 'Lock'} ${label} slot`);
+    button.title = locked ? `Unlock ${label} slot to use any category` : `Lock ${label} slot again`;
+    button.disabled = slotSettingsSaving;
+  }
+}
+
+async function toggleSlotLock(slot) {
+  if (slotSettingsSaving) return;
+  const locked = !slotSettings[`${slot}Locked`];
+  const status = document.getElementById('slotSettingsStatus');
+  const label = slot === 'body' ? 'Glow Up' : (DEMO_MODE ? 'Future Building' : 'Quant Dev');
+  if (!BoardSlots.canChange(active, slotSettings, slot, locked)) {
+    status.textContent = `No room to lock ${label} yet. Finish a task or change one to ${catById(BoardSlots.SLOT_CATEGORIES[slot]).label} first. Your tasks haven't changed.`;
+    return;
+  }
+  const previous = slotSettings;
+  const candidate = { ...slotSettings, [`${slot}Locked`]: locked };
+  slotSettingsSaving = true;
+  status.textContent = '';
+  renderBoard();
+  try {
+    if (DEMO_MODE) {
+      slotSettings = { ...candidate, revision: candidate.revision + 1 };
+      if (!persistDemoState()) {
+        slotSettings = previous;
+        throw new Error('Demo storage unavailable');
+      }
+    } else {
+      const response = await apiPut('/api/slot-settings', candidate);
+      const result = BoardSlots.validateSettings(response.slotSettings);
+      if (!result.ok) throw new Error('Invalid saved slot settings');
+      slotSettings = result.value;
+    }
+    showToast(locked ? `${label} slot locked` : `${label} slot unlocked — any category now`);
+  } catch (error) {
+    if (error.status === 409) {
+      slotSettings = BoardSlots.normalizeSettings(error.payload?.slotSettings);
+      status.textContent = 'Slot preferences changed on another device. Loaded the latest settings; please try again.';
+    } else {
+      status.textContent = "Couldn't save your slot preference. Please check your connection and try again.";
+      handleSaveError(error);
+    }
+  } finally {
+    slotSettingsSaving = false;
+    renderBoard();
+    document.getElementById(`${slot}SlotToggle`).focus();
+  }
+}
+
+for (const slot of ['body', 'career']) {
+  document.getElementById(`${slot}SlotToggle`).addEventListener('click', () => toggleSlotLock(slot));
+}
+
 function renderBoard(refreshReminder = false) {
   renderBoardReminder(refreshReminder);
+  renderSlotControls();
   const board = document.getElementById('board');
   board.innerHTML = '';
   const now = Date.now();
-  const bodyTask = active.find(task => task.bodySlot);
-  const careerTask = active.find(task => task.careerSlot);
-  const flexibleTasks = active.filter(task => !task.bodySlot && !task.careerSlot);
+  const { body: bodyTask, career: careerTask, flexible: flexibleTasks, capacity } = BoardSlots.layout(active, slotSettings);
 
-  for (let i = 0; i < Math.max(3, flexibleTasks.length); i++) {
+  for (let i = 0; i < Math.max(capacity, flexibleTasks.length); i++) {
     const task = flexibleTasks[i];
     if (!task) {
-      const slot = document.createElement('div');
+      const slot = document.createElement('button');
+      slot.type = 'button';
       slot.className = 'slot-empty';
       slot.textContent = '+ Add Task';
       slot.addEventListener('click', () => openAddModal('flexible'));
@@ -2340,8 +2406,9 @@ function renderBoard(refreshReminder = false) {
     board.appendChild(renderTaskCard(task, now));
   }
 
-  board.appendChild(renderBodySlot(bodyTask, now));
-  board.appendChild(renderCareerSlot(careerTask, now));
+  if (slotSettings.bodyLocked) board.appendChild(renderBodySlot(bodyTask, now));
+  if (slotSettings.careerLocked) board.appendChild(renderCareerSlot(careerTask, now));
+  if (slotSettingsSaving) board.querySelectorAll('button').forEach(button => { button.disabled = true; });
 
   renderWinterArc();
   renderTodayProgress();
@@ -2563,6 +2630,7 @@ function finishTask(id) {
   const idx = active.findIndex(t => t.id === id);
   if (idx === -1) return;
   const task = active[idx];
+  const protectedSlot = BoardSlots.protectedSlot(task, active, slotSettings);
   const completedAt = Date.now();
   log.push({
     id: task.id,
@@ -2570,8 +2638,8 @@ function finishTask(id) {
     note: task.note || '',
     category: task.category,
     points: task.points,
-    bodySlot: Boolean(task.bodySlot),
-    careerSlot: Boolean(task.careerSlot),
+    bodySlot: protectedSlot === 'body',
+    careerSlot: protectedSlot === 'career',
     startedAt: task.startedAt,
     completedAt,
     duration: completedAt - task.startedAt
@@ -2853,12 +2921,9 @@ const saveTaskBtn = document.getElementById('saveTask');
 const taskQuadrantLabel = taskQuadrantSelect.parentElement;
 
 function openAddModal(slotType = 'flexible') {
+  if (slotSettingsSaving || !BoardSlots.canAdd(active, slotSettings, slotType)) return;
   const forBodySlot = slotType === 'body';
   const forCareerSlot = slotType === 'career';
-  const flexibleTaskCount = active.filter(task => !task.bodySlot && !task.careerSlot).length;
-  if ((forBodySlot && active.some(task => task.bodySlot))
-    || (forCareerSlot && active.some(task => task.careerSlot))
-    || (slotType === 'flexible' && flexibleTaskCount >= 3)) return;
   editingTaskId = null;
   editingTaskCompletedAt = null;
   editingTaskSource = 'active';
@@ -2892,7 +2957,7 @@ function openEditModal(id, source = 'active', completedAt = null) {
   taskTitleInput.value = task.title;
   taskNoteInput.value = typeof task.note === 'string' ? task.note : '';
   taskCategorySelect.value = task.category;
-  taskCategorySelect.disabled = source === 'active' && Boolean(task.bodySlot || task.careerSlot);
+  taskCategorySelect.disabled = source === 'active' && Boolean(BoardSlots.protectedSlot(task, active, slotSettings));
   taskQuadrantSelect.value = task.quadrant || 'schedule';
   taskQuadrantLabel.style.display = source === 'log' ? 'none' : '';
   taskPointsInput.value = task.points;
@@ -2916,6 +2981,7 @@ document.getElementById('cancelTask').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', e => { if (e.target === modalBackdrop) closeModal(); });
 
 document.getElementById('saveTask').addEventListener('click', () => {
+  if (slotSettingsSaving) return;
   const title = taskTitleInput.value.trim();
   if (!title) { taskTitleInput.focus(); return; }
   const note = taskNoteInput.value.trim().slice(0, 500);
@@ -2929,7 +2995,12 @@ document.getElementById('saveTask').addEventListener('click', () => {
     if (task) {
       task.title = title;
       task.note = note;
-      task.category = taskCategorySelect.value;
+      const protectedSlot = source === 'active' ? BoardSlots.protectedSlot(task, active, slotSettings) : null;
+      task.category = protectedSlot ? BoardSlots.SLOT_CATEGORIES[protectedSlot] : taskCategorySelect.value;
+      if (source === 'active') {
+        task.bodySlot = protectedSlot === 'body';
+        task.careerSlot = protectedSlot === 'career';
+      }
       if (source === 'active') task.quadrant = taskQuadrantSelect.value;
       task.points = points;
       if (frog && frog.date === localDateKey() && frog.taskId === task.id) {
@@ -2951,15 +3022,12 @@ document.getElementById('saveTask').addEventListener('click', () => {
     return;
   }
 
-  const flexibleTaskCount = active.filter(task => !task.bodySlot && !task.careerSlot).length;
-  if ((addingToProtectedSlot === 'body' && active.some(task => task.bodySlot))
-    || (addingToProtectedSlot === 'career' && active.some(task => task.careerSlot))
-    || (!addingToProtectedSlot && flexibleTaskCount >= 3)) { closeModal(); return; }
+  if (!BoardSlots.canAdd(active, slotSettings, addingToProtectedSlot || 'flexible')) { closeModal(); return; }
   active.push({
     id: uid(),
     title,
     note,
-    category: taskCategorySelect.value,
+    category: addingToProtectedSlot ? BoardSlots.SLOT_CATEGORIES[addingToProtectedSlot] : taskCategorySelect.value,
     quadrant: taskQuadrantSelect.value,
     points,
     bodySlot: addingToProtectedSlot === 'body',
@@ -6468,7 +6536,6 @@ const pinForm = document.getElementById('pinForm');
 const sessionNotice = document.getElementById('sessionNotice');
 const demoBanner = document.getElementById('demoBanner');
 const resetDemoButton = document.getElementById('resetDemo');
-const activeBoardHint = document.getElementById('activeBoardHint');
 const progressUI = window.ProgressUI.mount({
   document,
   demo: DEMO_MODE,
@@ -6482,7 +6549,6 @@ function configureDemoUi() {
   document.body.classList.add('demo-mode');
   document.title = 'One Ball at a Time — Public Demo';
   demoBanner.hidden = false;
-  activeBoardHint.textContent = 'Three priorities + two protected promises: your body and your future.';
 }
 
 resetDemoButton.addEventListener('click', () => {
@@ -6555,15 +6621,7 @@ async function startApp() {
 
   const activeChanged = migrateCategoryIds(active);
   const logChanged = migrateCategoryIds(log);
-  let protectedSlotChanged = false;
-  if (!DEMO_MODE && !active.some(task => task.careerSlot)) {
-    const existingQuantTask = active.find(task => !task.bodySlot && task.category === 'empire_building');
-    if (existingQuantTask) {
-      existingQuantTask.careerSlot = true;
-      protectedSlotChanged = true;
-    }
-  }
-  if (activeChanged || protectedSlotChanged) saveActive();
+  if (activeChanged) saveActive();
   if (logChanged) saveLog();
 
   document.getElementById('todayLabel').textContent = new Date().toLocaleDateString(undefined, {

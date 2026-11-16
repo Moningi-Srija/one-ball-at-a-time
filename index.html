@@ -127,10 +127,14 @@
       <div id="todayProgress"></div>
     </section>
 
-    <div class="section-head">
+    <div class="section-head board-heading">
       <h2>Active Top 5</h2>
-      <span class="hint" id="activeBoardHint">Three priorities + two protected promises: your body and your quant-dev future.</span>
+      <div class="slot-locks" role="group" aria-label="Protected slot preferences">
+        <button class="slot-lock-toggle" id="bodySlotToggle" type="button">🔒 Glow Up</button>
+        <button class="slot-lock-toggle" id="careerSlotToggle" type="button">🔒 Quant Dev</button>
+      </div>
     </div>
+    <p class="slot-settings-status" id="slotSettingsStatus" role="status"></p>
     <div class="board-grid" id="board"></div>
   </section>
 
@@ -982,6 +986,7 @@
 </div>
 
 <script src="/winter-arc-logic.js"></script>
+<script src="/board-slots.js"></script>
 <script src="/goal-calendar-logic.js"></script>
 <script src="/notes-logic.js"></script>
 <script src="/cp-notebook.js"></script>
