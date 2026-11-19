@@ -22,7 +22,7 @@ const CATEGORIES = [
   { id: 'empire_building',label: 'Jenny Humphrey Hustle',  icon: '👑', desc: 'CP practice, resume, skills, projects, hackathons, contests, job applications — pick the points per task, this one has range.', points: 9,  color: '#8c52d9' },
   { id: 'ride_or_die',    label: 'Ride or Die',            icon: '💕', desc: 'Love, loyalty, good deeds — how loving and friendly you are, not the top category but good points.', points: 6,  color: '#ff6f9c' },
   { id: 'main_character', label: 'It Girl Energy',         icon: '🌟', desc: 'Socializing, style, going out, plans, presenting yourself well, Instagram stories.',      points: 4,  color: '#4fb3c9' },
-  { id: 'passport_stamps',label: 'Passport Stamps',        icon: '✈️', desc: 'Trips and travel.',                                                                       points: 6,  color: '#e6547a' },
+  { id: 'passport_stamps',label: 'Srija the Explorer',     icon: '✈️', desc: 'Trips and travel.',                                                                       points: 6,  color: '#e6547a' },
   { id: 'other',          label: 'Plot Twist',             icon: '✨', desc: 'Anything that doesn\'t fit elsewhere.',                                                   points: 3,  color: '#9a8f99' },
 ];
 
